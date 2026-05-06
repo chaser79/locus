@@ -1,3 +1,9 @@
+## Detected Tech Stack
+
+**Primary**: Flutter (`flutter`) — confidence 9.6
+Evidence: pubspec.yaml with flutter SDK reference
+Toolchain: test runner: flutter-test · build tool: flutter-build · infra: github-actions
+
 # locus
 
 ## Tech Stack
@@ -45,6 +51,7 @@ locus/
 │       │   ├── sync/             # HTTP queue, batch sync, retry, connectivity handling
 │       │   ├── tracking/         # Tracking profiles, rule-based profile switching
 │       │   └── diagnostics/      # Logging, debug overlay widget, error recovery
+│       ├── observability/        # Telemetry/metrics surface for host apps
 │       ├── services/             # Service interfaces + default implementations
 │       ├── shared/               # Cross-cutting models (Coords, Activity, Battery, …)
 │       └── testing/              # MockLocus — for host-app tests
@@ -82,7 +89,7 @@ Host apps import **only** `package:locus/locus.dart`. Everything under `lib/src/
 - `logging` — Structured `Logger` tree exposed through `LocusDiagnostics` and the debug overlay.
 - `args` — Argument parsing for CLI executables (`bin/setup.dart`, `bin/doctor.dart`, `bin/migrate.dart`). CLI-only; reachable from `bin/` only, so Flutter tree-shakes it from host app bundles.
 
-Anything previously delegated to a Dart-side helper now lives in native code: HTTP sync, queue/UUID generation, and OEM/manufacturer detection all run on the platform side and are exposed to Dart through `LocusChannels.methods` (e.g., `sync`, `getDiagnosticsMetadata`).
+Anything previously delegated to a Dart-side helper now lives in native code: HTTP sync, queue/UUID generation, and OEM/manufacturer detection all run on the platform side and are exposed to Dart through `LocusChannels.methods` (e.g., `sync`, `getManufacturer`).
 
 **Dev / test**:
 
@@ -99,10 +106,27 @@ The SDK deliberately keeps its Dart dependency surface **minimal** — no Riverp
 ## Quality Standards
 
 - Quality over speed — always
-- Spec before code for non-trivial changes (use the design-spec skill)
+- Spec before code for non-trivial changes (handled by forge-plan → forge-implement → forge-review → forge-fix → forge-test)
 - Write or update tests alongside every change
 - Evidence-based debugging: reproduce → trace → fix → verify
 - Follow existing patterns in this codebase — consistency over preference
+
+### Forge
+
+Six user-invoked pipelines orchestrate any work from one-line fix to multi-quarter SaaS:
+
+1. `/forge-plan` — Discovery → Source triangulation → Risk classification (`inline | standard | high`) → Contract draft → Approval gate. Higher-altitude artifacts (Vision / Roadmap milestone / Epic) auto-spawn only when scale signals require.
+2. `/forge-implement` — Executes only the approved Contract. Commits per AC. Status flips to `implemented`.
+3. `/forge-review` — Desk inspection: Validation Matrix + Gap Ledger + (High-risk) Ship-Readiness Report. Status flips to `review_complete`.
+4. `/forge-fix` — Closes user-decided gaps. Out-of-scope discoveries surface as per-item prompts (spawn child Contract / note in followups sidecar / discard). Status flips to `gaps_resolved`.
+5. `/forge-test` — Runtime verification (api / browser-use / mobile-mcp / manual instructions). Same per-item prompt for out-of-scope discoveries. Regressions loop back to `/forge-fix`. Status flips to `tested`, then user signs off → `closed`.
+6. `/forge-status` — Read-only dashboard. Walks `docs/forge/` and prints the Roadmap → Milestone → Epic → Contract tree with status, age (from `lastStatusChangeAt`), and the next-move column.
+
+Contract `status` (`draft → awaiting_approval → approved → implementing → implemented → review_complete → gaps_decided → gaps_resolved → tested → closed`) is the cross-session resume marker. Pipelines refuse using a standardized `[forge:sequence]` block when invoked on a wrong-status Contract; Forge has no `--force` flag.
+
+Escape hatches: `[fast]` prefix bypasses the lifecycle for the prompt; `[full]` forces it; per-repo `.forge.json` sets the default.
+
+Artifact directories live under `docs/forge/`: `visions/`, `roadmap/`, `epics/`, `discussions/`, `decisions/`, `contracts/`. They are user-owned; install never overwrites their contents.
 
 ## Architecture
 
@@ -142,7 +166,7 @@ Reference: [`doc/core/architecture.md`](doc/core/architecture.md).
 ## Investigation & Research Rules
 
 - All findings must cite concrete evidence (file:line, test output, logs)
-- Use confidence labels: CONFIRMED, LIKELY, POSSIBLE
+- Score evidence strength on a decimal 0–10 confidence scale (rubric in `~/.claude/CLAUDE.md` and `docs/quality/forge-shared.md`); floor: <6.0 needs Notes, <4.0 cannot be Pass
 - Never guess at behavior — trace the actual code path
 - When researching unfamiliar APIs or packages, search the web for current documentation
 - Use the investigate, bug-hunt, or arch-audit skills for structured analysis
