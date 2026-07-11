@@ -1,10 +1,10 @@
-## Detected Tech Stack
-
-**Primary**: Flutter (`flutter`) — confidence 9.6
-Evidence: pubspec.yaml with flutter SDK reference
-Toolchain: test runner: flutter-test · build tool: flutter-build · infra: github-actions
-
 # locus
+
+## Project Status
+
+<!-- Set manually. Drives refactor aggressiveness; `unknown` => the agent asks first. -->
+- isDeployed: yes
+- isThereData: no
 
 ## Tech Stack
 
@@ -33,45 +33,35 @@ flutter analyze
 
 ## Project Structure
 
-Locus is a **Flutter plugin** (not an application) — a background geolocation SDK with native Android/iOS implementations and a minimal Dart facade.
+Locus is a **Flutter plugin** (not an app) — a background geolocation SDK with native Android/iOS implementations and a thin Dart facade.
 
 ```
 locus/
-├── lib/                          # Dart SDK (public API)
-│   ├── locus.dart                # Single entry point — barrel re-exports only
+├── lib/
+│   ├── locus.dart            # Single public entry — barrel re-exports only
 │   └── src/
-│       ├── core/                 # Platform channels, abstract interface, event streams, lifecycle
-│       ├── config/               # Config, presets, validators, enums, constants
-│       ├── features/             # Feature-first modules, each with models/ + services/
-│       │   ├── location/         # Core tracking, quality analysis, spoof/anomaly detection
-│       │   ├── geofencing/       # Circular + polygon geofences, workflow engine
-│       │   ├── battery/          # Adaptive tracking, runway estimation, power state
-│       │   ├── privacy/          # Privacy zones (exclude / obfuscate / reduce)
-│       │   ├── trips/            # Trip detection, route recording, persistent trip store
-│       │   ├── sync/             # HTTP queue, batch sync, retry, connectivity handling
-│       │   ├── tracking/         # Tracking profiles, rule-based profile switching
-│       │   └── diagnostics/      # Logging, debug overlay widget, error recovery
-│       ├── observability/        # Telemetry/metrics surface for host apps
-│       ├── services/             # Service interfaces + default implementations
-│       ├── shared/               # Cross-cutting models (Coords, Activity, Battery, …)
-│       └── testing/              # MockLocus — for host-app tests
-├── android/src/main/kotlin/dev/locus/
-│   ├── LocusPlugin.kt            # FlutterPlugin entry; wires method + event channels
-│   ├── core/                     # ConfigManager, LocationTracker, StateManager, TrackingLifecycleController
-│   ├── location/                 # FusedLocationProvider client wrapper
-│   ├── activity/                 # MotionManager (ActivityRecognitionClient)
-│   ├── geofence/                 # GeofencingClient bindings
-│   ├── receiver/                 # Boot, notification action, geofence, activity broadcast receivers
-│   ├── service/                  # ForegroundService, HeadlessService, HeadlessValidationService
-│   └── storage/                  # Persistent queue, SharedPreferences wrappers
-├── ios/Classes/                  # Swift + ObjC plugin (CLLocationManager, CMMotionActivityManager)
-├── bin/                          # Dart CLI executables — setup, doctor, migrate, locus
-├── test/                         # unit/ integration/ benchmark/ fixtures/ helpers/ mocks/
-├── doc/                          # guides/ core/ reference/ advanced/ setup/ api/ testing/
-└── example/                      # Example Flutter app consuming the plugin
+│       ├── core/             # LocusInterface, MethodChannelLocus, channels, lifecycle, headless, event_mapper
+│       ├── config/           # Config, presets, validators, enums, constants
+│       ├── features/         # Feature-first modules, each with models/ + services/
+│       │   ├── location/     # tracking, quality analysis, spoof/anomaly detection, significant-change
+│       │   ├── geofencing/   # circular + polygon geofences, workflow engine
+│       │   ├── battery/      # adaptive tracking, runway estimation, power state, sync policy
+│       │   ├── privacy/      # privacy zones
+│       │   ├── trips/        # trip detection, route recording, trip store
+│       │   ├── sync/         # HTTP queue, batch sync, connectivity handling
+│       │   ├── tracking/     # tracking profiles + rule-based switching
+│       │   └── diagnostics/  # logging, debug overlay widget, error recovery
+│       ├── observability/    # reliability events + metrics surface for hosts
+│       ├── services/         # v2 service interfaces + default impls (location/geofence/privacy/trip/sync/battery/diagnostics)
+│       ├── shared/           # cross-cutting models (Coords, Activity, Battery, events). Zero behavior
+│       └── testing/          # MockLocus for host-app tests
+├── android/src/main/kotlin/dev/locus/  # core/, location/, activity/, geofence/, receiver/, service/, storage/
+├── ios/Classes/              # Swift (SwiftLocusPlugin + extensions) + ObjC shim
+├── bin/                      # Pure-Dart CLI executables: locus, setup, doctor, migrate
+├── doc/ · test/ · example/   # docs, unit/integration/benchmark tests, example app
 ```
 
-Host apps import **only** `package:locus/locus.dart`. Everything under `lib/src/` is an implementation detail and not part of the semver contract. The `bin/` tools (`setup`, `doctor`) are declared as `executables:` in `pubspec.yaml` and run via `dart run locus:<tool>`.
+Host apps import **only** `package:locus/locus.dart`; everything under `lib/src/` is private. The `Locus` singleton (`lib/src/locus.dart`) is the facade. `bin/` tools are declared as `executables:` in `pubspec.yaml` and run via `dart run locus:<tool>`.
 
 ## Code Style & Conventions
 
@@ -83,50 +73,167 @@ Host apps import **only** `package:locus/locus.dart`. Everything under `lib/src/
 
 ## Key Dependencies
 
-**Runtime** (see `pubspec.yaml`):
+**Runtime** (`pubspec.yaml`):
 
-- `permission_handler` — Runtime prompts for location (fine, coarse, background), notifications, activity recognition, and battery-optimization exemption.
-- `logging` — Structured `Logger` tree exposed through `LocusDiagnostics` and the debug overlay.
-- `args` — Argument parsing for CLI executables (`bin/setup.dart`, `bin/doctor.dart`, `bin/migrate.dart`). CLI-only; reachable from `bin/` only, so Flutter tree-shakes it from host app bundles.
+- `permission_handler` — runtime prompts for location (fine/coarse/background), notifications, activity recognition.
+- `logging` — structured `Logger` tree surfaced via diagnostics and the debug overlay.
+- `args` — argument parsing for the CLI executables in `bin/`. CLI-only; reachable from `bin/` so it is tree-shaken from host bundles.
 
-Anything previously delegated to a Dart-side helper now lives in native code: HTTP sync, queue/UUID generation, and OEM/manufacturer detection all run on the platform side and are exposed to Dart through `LocusChannels.methods` (e.g., `sync`, `getManufacturer`).
+**Dev**: `flutter_test`, `flutter_lints` (baseline lints via `analysis_options.yaml`).
 
-**Dev / test**:
+**Native** (relevant only when editing platform code): Android `play-services-location`, `kotlinx-coroutines-android`, `androidx.security:security-crypto` (`android/build.gradle.kts`); iOS `CoreLocation`, `CoreMotion` (`ios/locus.podspec`).
 
-- `flutter_test` — Widget + unit test harness.
-- `flutter_lints` — Baseline lint set referenced by `analysis_options.yaml`.
+The Dart dependency surface is deliberately **minimal** — no Riverpod, freezed, or code-gen; all models are hand-written immutable classes. Do not add runtime Dart deps without explicit approval — each becomes transitive for every consumer.
 
-**Native dependencies** (declared in `android/build.gradle` and the iOS podspec — relevant when changing platform code):
+## Architecture
 
-- Android: `play-services-location`, `play-services-activity-recognition`, `androidx.work`, `androidx.core`.
-- iOS: `CoreLocation`, `CoreMotion`, `UserNotifications`.
+**Feature-first plugin** with a thin Dart facade over native code. Dependencies point inward; outer layers never leak into inner ones.
 
-The SDK deliberately keeps its Dart dependency surface **minimal** — no Riverpod, no freezed, no code-gen. All models are hand-written immutable data classes. This keeps plugin install size small, compile times fast, and avoids dragging host-app state-management opinions into an SDK. **Do not add runtime Dart dependencies without explicit approval** — every one becomes a transitive dependency for every consuming app.
+- **Layers**: host app → public API (`lib/locus.dart` barrel + `Locus` singleton) → feature modules (`lib/src/features/<name>/` with `models/` + `services/`) → `core/` (platform boundary) → `shared/` (pure data). Native (`android/`, `ios/`) owns the long-lived process.
+- **Platform Interface pattern**: `LocusInterface` (abstract) + `MethodChannelLocus` (default, raw `MethodChannel` over `locus/methods`, `locus/events`, `locus/headless`). `MockLocus` swaps in via `Locus.setMockInstance(...)` for host tests.
+- **Event-sourced state**: native is the source of truth; Dart maps native events through `core/event_mapper.dart` and does not cache tracking state (`Locus.isTracking()` calls the platform).
+- **Headless execution**: callbacks registered via `Locus.registerHeadlessTask` run in a second engine after the UI is killed; entry points need `@pragma('vm:entry-point')`.
+- **Boundaries**: features must not import each other — route via `shared/` or event streams; `bin/` CLI is pure Dart (no `package:flutter/*`).
 
-## Quality Standards
+Reference: [`doc/core/architecture.md`](doc/core/architecture.md).
 
-- Quality over speed — always
-- Spec before code for non-trivial changes (handled by forge-plan → forge-implement → forge-review → forge-fix → forge-test)
-- Write or update tests alongside every change
-- Evidence-based debugging: reproduce → trace → fix → verify
-- Follow existing patterns in this codebase — consistency over preference
+## Stack-Specific Rules
 
-### Forge
+# Flutter Best Practices (2026)
 
-Six user-invoked pipelines orchestrate any work from one-line fix to multi-quarter SaaS:
+## Platform & Language
 
-1. `/forge-plan` — Discovery → Source triangulation → Risk classification (`inline | standard | high`) → Contract draft → Approval gate. Higher-altitude artifacts (Vision / Roadmap milestone / Epic) auto-spawn only when scale signals require.
-2. `/forge-implement` — Executes only the approved Contract. Commits per AC. Status flips to `implemented`.
-3. `/forge-review` — Desk inspection: Validation Matrix + Gap Ledger + (High-risk) Ship-Readiness Report. Status flips to `review_complete`.
-4. `/forge-fix` — Closes user-decided gaps. Out-of-scope discoveries surface as per-item prompts (spawn child Contract / note in followups sidecar / discard). Status flips to `gaps_resolved`.
-5. `/forge-test` — Runtime verification (api / browser-use / mobile-mcp / manual instructions). Same per-item prompt for out-of-scope discoveries. Regressions loop back to `/forge-fix`. Status flips to `tested`, then user signs off → `closed`.
-6. `/forge-status` — Read-only dashboard. Walks `docs/forge/` and prints the Roadmap → Milestone → Epic → Contract tree with status, age (from `lastStatusChangeAt`), and the next-move column.
+- Target **Flutter 3.35+** with **Dart 3.9+**.
+- Sound null safety enforced — no `// ignore: null` workarounds.
+- Use Dart 3 features: sealed classes for union types, pattern matching with `switch` expressions, records for lightweight grouping.
 
-Contract `status` (`draft → awaiting_approval → approved → implementing → implemented → review_complete → gaps_decided → gaps_resolved → tested → closed`) is the cross-session resume marker. Pipelines refuse using a standardized `[forge:sequence]` block when invoked on a wrong-status Contract; Forge has no `--force` flag.
+## State Management
 
-Escape hatches: `[fast]` prefix bypasses the lifecycle for the prompt; `[full]` forces it; per-repo `.forge.json` sets the default.
+- **Riverpod 3** is the preferred state management solution.
+- BLoC is acceptable for event-driven architectures with complex state machines.
+- Never use `setState` for anything beyond trivial, widget-local UI state (e.g., toggling a disclosure indicator).
 
-Artifact directories live under `docs/forge/`: `visions/`, `roadmap/`, `epics/`, `discussions/`, `decisions/`, `contracts/`. They are user-owned; install never overwrites their contents.
+```dart
+// GOOD — Riverpod provider with select for granular rebuilds
+final orderProvider = AsyncNotifierProvider<OrderNotifier, List<Order>>(OrderNotifier.new);
+
+class OrderListScreen extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final orderCount = ref.watch(orderProvider.select((s) => s.valueOrNull?.length ?? 0));
+    return Text('Orders: $orderCount');
+  }
+}
+
+// BAD — setState for complex state
+class _OrderListState extends State<OrderList> {
+  List<Order> _orders = [];
+  void _loadOrders() async {
+    final data = await api.fetchOrders();
+    setState(() => _orders = data); // scales poorly, no separation of concerns
+  }
+}
+```
+
+## Navigation
+
+- **go_router** with type-safe routes and declarative navigation.
+- Define routes as constants or enums — no magic path strings scattered across the codebase.
+- Use `StatefulShellRoute` for bottom navigation with preserved state.
+
+```dart
+GoRouter(
+  routes: [
+    GoRoute(
+      path: '/orders/:id',
+      builder: (context, state) => OrderDetailScreen(
+        orderId: state.pathParameters['id']!,
+      ),
+    ),
+  ],
+);
+```
+
+## Models & Data Classes
+
+- **freezed** for immutable data classes with `copyWith`, equality, and serialization.
+- **json_serializable** for JSON encoding/decoding — never hand-write `fromJson`/`toJson`.
+- Use **sealed classes** for union types and exhaustive pattern matching.
+
+```dart
+@freezed
+class Order with _$Order {
+  const factory Order({
+    required String id,
+    required String customerName,
+    required List<OrderItem> items,
+    required OrderStatus status,
+  }) = _Order;
+
+  factory Order.fromJson(Map<String, dynamic> json) => _$OrderFromJson(json);
+}
+
+sealed class OrderStatus {
+  const OrderStatus();
+}
+class Pending extends OrderStatus { const Pending(); }
+class Shipped extends OrderStatus { final String trackingId; const Shipped(this.trackingId); }
+class Delivered extends OrderStatus { const Delivered(); }
+```
+
+## Widget Composition
+
+- Small, focused widgets. Extract early — if `build()` exceeds ~40 lines, it probably needs splitting.
+- Use `const` constructors **everywhere** possible — this enables the framework to skip rebuilds.
+- Prefer composition over inheritance. Never extend `StatelessWidget` to "add" behavior.
+
+## Keys
+
+- **Always** provide keys for list items: `ValueKey(item.id)` or `ObjectKey(item)`.
+- Use `GlobalKey` sparingly — it has a performance cost and breaks encapsulation.
+- Keys on `AnimatedSwitcher` children to trigger animations correctly.
+
+## Platform Channels
+
+- **Pigeon** for type-safe native interop in new code. Generates Dart, Kotlin/Java, and Swift/ObjC bindings.
+- Never use raw `MethodChannel` for new features — it is stringly-typed and error-prone.
+
+## Performance
+
+- Watch specific provider fields with `.select()` to avoid unnecessary rebuilds.
+- Wrap expensive subtrees in `RepaintBoundary`.
+- `ListView.builder` (or `SliverList`) for long/dynamic lists. Never `Column` + `SingleChildScrollView` for unbounded lists.
+- Use `const` widgets to prevent unnecessary rebuilds during parent rebuilds.
+- Profile with DevTools — fix jank before shipping.
+
+## Architecture
+
+- **Feature-first** directory structure:
+  ```
+  lib/
+    features/
+      orders/
+        presentation/   # widgets, screens
+        domain/          # models, repository interfaces
+        data/            # repository implementations, data sources
+      auth/
+        ...
+    core/                # shared utilities, themes, routing
+  ```
+- Each feature exposes its public API through a barrel file. Internal implementation stays private.
+
+## Testing
+
+- **Widget tests** with `tester.pumpWidget()` for interaction and rendering verification.
+- **Golden tests** for visual regression — commit reference images to the repo.
+- **Unit tests** for providers, notifiers, and pure logic.
+- Mock dependencies with `mocktail` or Riverpod overrides.
+
+## Accessibility
+
+- `Semantics` widget on all custom widgets that convey meaning.
+- `ExcludeSemantics` only for purely decorative content (dividers, background images).
+- Test with TalkBack (Android) and VoiceOver (iOS) on real devices before release.
 
 ## Architecture
 
@@ -163,11 +270,3 @@ Locus is a **feature-first plugin** with a thin Dart facade over native implemen
 
 Reference: [`doc/core/architecture.md`](doc/core/architecture.md).
 
-## Investigation & Research Rules
-
-- All findings must cite concrete evidence (file:line, test output, logs)
-- Score evidence strength on a decimal 0–10 confidence scale (rubric in `~/.claude/CLAUDE.md` and `docs/quality/forge-shared.md`); floor: <6.0 needs Notes, <4.0 cannot be Pass
-- Never guess at behavior — trace the actual code path
-- When researching unfamiliar APIs or packages, search the web for current documentation
-- Use the investigate, bug-hunt, or arch-audit skills for structured analysis
-- Every fix must be verified — run tests, check build, confirm behavior

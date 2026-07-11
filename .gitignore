@@ -120,3 +120,5 @@ yarn-error.log*
 # indexers can resolve internal types when files are opened standalone.
 ios/.build/
 ios/Package.resolved
+/docs/planning
+.local-agent.json
