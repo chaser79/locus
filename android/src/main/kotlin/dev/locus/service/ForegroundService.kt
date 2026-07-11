@@ -160,11 +160,24 @@ class ForegroundService : Service() {
             }
         } else {
             Log.e(TAG, "Attempted to start foreground service with null intent or extras.")
+            // We already promoted to foreground with the placeholder above; remove it
+            // so it can't linger after we stop.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(Service.STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
             stopSelf(startId)
             return START_NOT_STICKY
         }
 
-        return START_STICKY
+        // Use REDELIVER_INTENT so that when the OS recreates the service after a
+        // low-memory kill it redelivers the original intent (with the notification
+        // config in extras) instead of a null intent. With START_STICKY the restart
+        // arrives with a null intent, the notification config is lost, and the
+        // service is left stuck on the "Starting…" placeholder before stopping itself.
+        return START_REDELIVER_INTENT
     }
 
     @TargetApi(26)
@@ -206,7 +219,7 @@ class ForegroundService : Service() {
      * Called when the user swipes the task away from the recents screen. The default
      * behavior on many OEMs (notably Samsung One UI and Xiaomi MIUI) is to stop the
      * associated service; we override with a no-op so that tracking survives task
-     * removal. Combined with [START_STICKY] in [onStartCommand] and the soft-detach
+     * removal. Combined with [START_REDELIVER_INTENT] in [onStartCommand] and the soft-detach
      * path in `LocusPlugin.onDetachedFromEngine`, this upholds the documented
      * `stopOnTerminate:false + foregroundService:true` always-on contract.
      *
