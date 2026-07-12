@@ -136,29 +136,10 @@ class ForegroundService : Service() {
         val extras = intent?.extras
         val notificationId = extras?.getInt("id", DEFAULT_NOTIFICATION_ID) ?: DEFAULT_NOTIFICATION_ID
 
-        // Immediately promote to foreground with a minimal notification.
-        // This MUST happen as fast as possible to avoid the 5-second
-        // ForegroundServiceDidNotStartInTimeException on Android 14+.
-        promoteToForeground(notificationId, buildMinimalNotification())
-
-        if (extras != null) {
-            // Save for dynamic updates
-            lastExtras = Bundle(extras)
-            lastNotificationId = notificationId
-
-            try {
-                // Build the full notification and update it in place.
-                val fullNotification = buildNotification(applicationContext, extras)
-                if (fullNotification != null) {
-                    getSystemService(NotificationManager::class.java)
-                        ?.notify(notificationId, fullNotification)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to build full notification, keeping minimal: ${e.message}")
-                // Service is already in foreground with the minimal notification,
-                // so the OS won't kill us.
-            }
-        } else {
+        if (extras == null) {
+            // Must still call startForeground once to satisfy the
+            // startForegroundService() contract before stopping.
+            promoteToForeground(notificationId, buildMinimalNotification())
             Log.e(TAG, "Attempted to start foreground service with null intent or extras.")
             // We already promoted to foreground with the placeholder above; remove it
             // so it can't linger after we stop.
@@ -171,6 +152,27 @@ class ForegroundService : Service() {
             stopSelf(startId)
             return START_NOT_STICKY
         }
+
+        // Save for dynamic updates
+        lastExtras = Bundle(extras)
+        lastNotificationId = notificationId
+
+        // Build the full notification BEFORE promoting to foreground and post it
+        // in a single startForeground call. The previous two-step —
+        // startForeground(minimal) then notify(full) — races: the notification
+        // passed to startForeground is posted asynchronously by system_server and
+        // can land after the app-side notify(), clobbering the full notification
+        // and leaving the "Starting..." placeholder stuck. Building the
+        // notification is fast (no I/O), so the 5-second
+        // ForegroundServiceDidNotStartInTimeException window on Android 14+ —
+        // measured from startForegroundService() — is still comfortably met.
+        val notification = try {
+            buildNotification(applicationContext, extras)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to build full notification, using minimal: ${e.message}")
+            null
+        } ?: buildMinimalNotification()
+        promoteToForeground(notificationId, notification)
 
         // Use REDELIVER_INTENT so that when the OS recreates the service after a
         // low-memory kill it redelivers the original intent (with the notification
