@@ -41,9 +41,14 @@ extension SwiftLocusPlugin {
       "type": eventName,
       "data": payload
     ]
-    sendEvent(event)
+    let privacyGuardEnabled = configManager.privacyModeEnabled
+    sendEvent(
+      event,
+      containsRawLocation: true,
+      privacyGuardEnabled: privacyGuardEnabled
+    )
 
-    if !configManager.privacyModeEnabled {
+    if !privacyGuardEnabled {
       if shouldPersist(eventName: eventName) {
         storage.saveLocation(
           payload,
@@ -150,13 +155,25 @@ extension SwiftLocusPlugin {
     }
   }
 
-  func sendEvent(_ event: [String: Any]) {
+  func sendEvent(
+    _ event: [String: Any],
+    containsRawLocation: Bool = false,
+    privacyGuardEnabled: Bool = false
+  ) {
     DispatchQueue.main.async { [weak self] in
       guard let self = self else { return }
-      if let sink = self.eventSink {
+      switch eventDeliveryRoute(
+        hasEventSink: self.eventSink != nil,
+        containsRawLocation: containsRawLocation,
+        privacyGuardEnabled: privacyGuardEnabled
+      ) {
+      case .eventSink:
+        guard let sink = self.eventSink else { return }
         sink(event)
-      } else {
+      case .headless:
         self.dispatchHeadlessEvent(event)
+      case .suppressed:
+        return
       }
     }
   }
@@ -170,7 +187,11 @@ extension SwiftLocusPlugin {
       "type": "schedule",
       "data": payload
     ]
-    sendEvent(event)
+    sendEvent(
+      event,
+      containsRawLocation: true,
+      privacyGuardEnabled: configManager.privacyModeEnabled
+    )
   }
 
   func buildDiagnosticsMetadata() -> [String: Any] {

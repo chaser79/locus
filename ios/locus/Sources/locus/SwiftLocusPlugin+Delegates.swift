@@ -36,78 +36,91 @@ extension SwiftLocusPlugin {
   }
 
   public func buildSyncBody(locations: [[String: Any]], extras: [String: Any], completion: @escaping ([String: Any]?) -> Void) {
-    // Invoke Dart to build the sync body
-    guard let channel = methodChannel else {
-      completion(nil)
-      return
-    }
-    
     let args: [String: Any] = [
       "locations": locations,
       "extras": extras
     ]
-    
-    DispatchQueue.main.async {
-      channel.invokeMethod("buildSyncBody", arguments: args) { result in
-        if let body = result as? [String: Any] {
-          completion(body)
-        } else {
-          // Dart returned null or error, use default body
-          completion(nil)
+
+    callbackBroker.request(
+      invoke: { owner, reply in
+        guard let engine = owner as? LocusEngineBinding else {
+          reply(nil)
+          return
         }
-      }
-    }
+        DispatchQueue.main.async {
+          engine.methodChannel.invokeMethod("buildSyncBody", arguments: args) { result in
+            reply(result as? [String: Any])
+          }
+        }
+      },
+      fallback: { reply in reply(nil) },
+      terminalDefault: { nil },
+      completion: completion
+    )
   }
 
   public func onPreSyncValidation(locations: [[String: Any]], extras: [String: Any], completion: @escaping (Bool) -> Void) {
-    guard let channel = methodChannel else {
-      // No method channel available (app terminated).
-      // Use headless validation if a callback is registered, otherwise proceed with sync.
-      if headlessValidationDispatcher.isAvailable {
-        headlessValidationDispatcher.validate(locations: locations, extras: extras, completion: completion)
-      } else {
-        // No headless validation available, proceed with sync
-        completion(true)
-      }
-      return
-    }
-    
     let args: [String: Any] = [
       "locations": locations,
       "extras": extras
     ]
-    
-    DispatchQueue.main.async {
-      channel.invokeMethod("validatePreSync", arguments: args) { result in
-        if let proceed = result as? Bool {
-          completion(proceed)
-        } else {
-          // Default to true on error/null
-          completion(true)
+
+    callbackBroker.request(
+      invoke: { owner, reply in
+        guard let engine = owner as? LocusEngineBinding else {
+          reply(true)
+          return
         }
-      }
-    }
+        DispatchQueue.main.async {
+          engine.methodChannel.invokeMethod("validatePreSync", arguments: args) { result in
+            reply(result as? Bool ?? true)
+          }
+        }
+      },
+      fallback: { [headlessValidationDispatcher] reply in
+        // No live UI engine. Use headless validation when registered;
+        // otherwise preserve the existing fail-open sync behavior.
+        if headlessValidationDispatcher.isAvailable {
+          headlessValidationDispatcher.validate(
+            locations: locations,
+            extras: extras,
+            completion: reply
+          )
+        } else {
+          reply(true)
+        }
+      },
+      terminalDefault: { true },
+      completion: completion
+    )
   }
 
   public func onHeadersRefresh(completion: @escaping ([String: String]?) -> Void) {
-    if let channel = methodChannel {
-      DispatchQueue.main.async {
-        channel.invokeMethod("refreshDynamicHeaders", arguments: nil) { result in
-          let headers = (result as? [String: Any])?.reduce(into: [String: String]()) { partial, entry in
-            partial[entry.key] = "\(entry.value)"
-          }
-          completion(headers)
+    callbackBroker.request(
+      invoke: { owner, reply in
+        guard let engine = owner as? LocusEngineBinding else {
+          reply(nil)
+          return
         }
-      }
-      return
-    }
-
-    guard headlessHeadersDispatcher.isAvailable else {
-      completion(nil)
-      return
-    }
-
-    headlessHeadersDispatcher.refreshHeaders(completion: completion)
+        DispatchQueue.main.async {
+          engine.methodChannel.invokeMethod("refreshDynamicHeaders", arguments: nil) { result in
+            let headers = (result as? [String: Any])?.reduce(into: [String: String]()) { partial, entry in
+              partial[entry.key] = "\(entry.value)"
+            }
+            reply(headers)
+          }
+        }
+      },
+      fallback: { [headlessHeadersDispatcher] reply in
+        if headlessHeadersDispatcher.isAvailable {
+          headlessHeadersDispatcher.refreshHeaders(completion: reply)
+        } else {
+          reply(nil)
+        }
+      },
+      terminalDefault: { nil },
+      completion: completion
+    )
   }
 
   // MARK: - SchedulerDelegate
@@ -149,10 +162,13 @@ extension SwiftLocusPlugin {
       "action": action
     ]
 
+    let privacyGuardEnabled = configManager.privacyModeEnabled
+    var containsRawLocation = false
     if let location = lastLocation {
+      containsRawLocation = true
       let locationPayload = buildLocationPayload(location, eventName: "geofence")
       payload["location"] = locationPayload
-      if !configManager.privacyModeEnabled {
+      if !privacyGuardEnabled {
         if shouldPersist(eventName: "geofence") {
           storage.saveLocation(
             locationPayload,
@@ -171,7 +187,11 @@ extension SwiftLocusPlugin {
       "type": "geofence",
       "data": payload
     ]
-    sendEvent(event)
+    sendEvent(
+      event,
+      containsRawLocation: containsRawLocation,
+      privacyGuardEnabled: privacyGuardEnabled
+    )
   }
 
   public func onGeofenceError(identifier: String, error: String) {
@@ -188,7 +208,7 @@ extension SwiftLocusPlugin {
 
   // MARK: - LocationClientDelegate
   public func onLocationUpdate(_ location: CLLocation) {
-    guard isEnabled || pendingLocationResult != nil || configManager.startOnBoot else {
+    guard isEnabled || pendingLocationResult != nil else {
       lastLocation = location
       return
     }
@@ -199,6 +219,7 @@ extension SwiftLocusPlugin {
 
     if let pending = pendingLocationResult {
       pendingLocationResult = nil
+      locationRequestGate.complete()
       let payload = buildLocationPayload(location, eventName: "location")
       pending(payload)
     }
@@ -208,27 +229,19 @@ extension SwiftLocusPlugin {
       lastLocation = location
     }
 
-    // Re-arm tracking on the first location after a process relaunch if either:
-    //   - startOnBoot is set (legacy trigger), OR
-    //   - tracking was previously active (persisted flag from a prior startTracking).
-    // The persisted-flag branch covers stopOnTerminate:false cases where
-    // startMonitoringSignificantLocationChanges relaunched us — this is the iOS
-    // equivalent of Android's soft-detach survival.
-    if !isEnabled,
-       configManager.startOnBoot || UserDefaults.standard.bool(forKey: ConfigManager.trackingActiveKey) {
-      startTracking()
-    }
   }
 
   public func onLocationError(_ error: Error) {
     if let pending = pendingLocationResult {
       pendingLocationResult = nil
+      locationRequestGate.complete()
       pending(FlutterError(code: "LOCATION_ERROR", message: error.localizedDescription, details: nil))
     }
 
     // Emit structured error event through the stream for permission denial
     let nsError = error as NSError
     if nsError.domain == kCLErrorDomain && nsError.code == CLError.denied.rawValue {
+      stopTracking()
       let errorEvent: [String: Any] = [
         "type": "error",
         "data": [
@@ -244,12 +257,17 @@ extension SwiftLocusPlugin {
 
   public func onAuthorizationChange() {
     let status = locationClient.getAuthorizationStatus()
-    if status == .denied || status == .restricted {
+    let hasTerminalLoss = status == .denied
+      || status == .restricted
+      || (isEnabled && status != .authorizedAlways)
+      || !locationClient.isLocationServicesEnabled()
+    if hasTerminalLoss {
+      stopTracking()
       let errorEvent: [String: Any] = [
         "type": "error",
         "data": [
           "code": "ERR_PERMISSION_DENIED",
-          "message": "Location authorization changed to \(status == .denied ? "denied" : "restricted")"
+          "message": "Background location authorization or location services became unavailable"
         ]
       ]
       sendEvent(errorEvent)

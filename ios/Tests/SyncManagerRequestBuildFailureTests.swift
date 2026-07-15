@@ -1,7 +1,21 @@
 import XCTest
+#if canImport(Locus)
 @testable import Locus
+#elseif canImport(locus)
+@testable import locus
+#endif
 
 final class SyncManagerRequestBuildFailureTests: XCTestCase {
+    private final class InMemoryConfigStore: ConfigSnapshotStoring {
+        func read() -> PersistedConfigSnapshot { .absent }
+
+        func write(_ values: [String: Any]) throws {
+            guard JSONSerialization.isValidJSONObject(values) else {
+                throw ConfigSnapshotError.invalidJSON
+            }
+        }
+    }
+
     private final class Delegate: SyncManagerDelegate {
         var requestBuildFailureCount = 0
         var nextFailureExpectation: XCTestExpectation?
@@ -42,9 +56,9 @@ final class SyncManagerRequestBuildFailureTests: XCTestCase {
         func onLog(level: String, message: String) {}
     }
 
-    func testBatchRequestBuildFailureCompletesDrainForAnotherAttempt() {
-        let storage = StorageManager(sqliteStorage: SQLiteStorage())
-        let config = ConfigManager()
+    func testBatchRequestBuildFailureCompletesDrainForAnotherAttempt() throws {
+        let storage = try makeStorage()
+        let config = try makeConfig()
         config.httpUrl = "http://["
         config.maxBatchSize = 10
         config.maxRetry = 1
@@ -71,12 +85,11 @@ final class SyncManagerRequestBuildFailureTests: XCTestCase {
         wait(for: [secondFailure], timeout: 2)
 
         XCTAssertEqual(delegate.requestBuildFailureCount, 2)
-        storage.destroyLocations()
     }
 
-    func testSingleRequestBuildFailureEmitsFailureEvent() {
-        let storage = StorageManager(sqliteStorage: SQLiteStorage())
-        let config = ConfigManager()
+    func testSingleRequestBuildFailureEmitsFailureEvent() throws {
+        let storage = try makeStorage()
+        let config = try makeConfig()
         config.httpUrl = "http://["
         config.maxRetry = 1
         config.retryDelay = 60
@@ -110,5 +123,33 @@ final class SyncManagerRequestBuildFailureTests: XCTestCase {
                 "started_at": "2026-03-13T10:00:00.000Z",
             ],
         ]
+    }
+
+    private func makeStorage() throws -> StorageManager {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("locus-sync-tests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let suiteName = "dev.locus.sync-tests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        addTeardownBlock {
+            defaults.removePersistentDomain(forName: suiteName)
+            try? FileManager.default.removeItem(at: directory)
+        }
+        return StorageManager(
+            sqliteStorage: SQLiteStorage(
+                databaseURL: directory.appendingPathComponent("storage.sqlite"),
+                userDefaults: defaults
+            )
+        )
+    }
+
+    private func makeConfig() throws -> ConfigManager {
+        let suiteName = "dev.locus.sync-config-tests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        addTeardownBlock { defaults.removePersistentDomain(forName: suiteName) }
+        return ConfigManager(
+            snapshotStore: InMemoryConfigStore(),
+            userDefaults: defaults
+        )
     }
 }

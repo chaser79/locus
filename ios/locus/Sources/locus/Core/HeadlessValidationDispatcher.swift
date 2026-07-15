@@ -27,9 +27,8 @@ class HeadlessValidationDispatcher {
     /// Checks if headless validation is available.
     var isAvailable: Bool {
         guard config.enableHeadless else { return false }
-        let dispatcher = SecureStorage.shared.getInt64(forKey: SecureStorage.validationDispatcherKey) ?? 0
-        let callback = SecureStorage.shared.getInt64(forKey: SecureStorage.validationCallbackKey) ?? 0
-        return dispatcher != 0 && callback != 0
+        guard let handles = callbackHandles() else { return false }
+        return handles.dispatcher != 0 && handles.callback != 0
     }
     
     /// Validates locations and extras via headless callback.
@@ -51,13 +50,15 @@ class HeadlessValidationDispatcher {
             return
         }
         
-        guard let dispatcher = SecureStorage.shared.getInt64(forKey: SecureStorage.validationDispatcherKey),
-              let callback = SecureStorage.shared.getInt64(forKey: SecureStorage.validationCallbackKey),
-              dispatcher != 0, callback != 0 else {
+        guard let handles = callbackHandles(),
+              handles.dispatcher != 0,
+              handles.callback != 0 else {
             log("No validation callback registered, allowing sync")
             completion(true)
             return
         }
+        let dispatcher = handles.dispatcher
+        let callback = handles.callback
         
         // Only one validation at a time
         if pendingValidation != nil {
@@ -172,8 +173,19 @@ class HeadlessValidationDispatcher {
     /// - Parameters:
     ///   - dispatcher: The dispatcher callback handle
     ///   - callback: The validation callback handle
-    static func registerCallback(dispatcher: Int64, callback: Int64) {
-        _ = SecureStorage.shared.setInt64(dispatcher, forKey: SecureStorage.validationDispatcherKey)
-        _ = SecureStorage.shared.setInt64(callback, forKey: SecureStorage.validationCallbackKey)
+    static func registerCallback(dispatcher: Int64, callback: Int64) -> Bool {
+        SecureStorage.shared.setCallbackHandles(
+            dispatcher: dispatcher,
+            callback: callback,
+            forKey: SecureStorage.validationHandlesKey
+        )
+    }
+
+    private func callbackHandles() -> SecureStorage.CallbackHandles? {
+        SecureStorage.shared.getCallbackHandles(
+            forKey: SecureStorage.validationHandlesKey,
+            legacyDispatcherKey: SecureStorage.validationDispatcherKey,
+            legacyCallbackKey: SecureStorage.validationCallbackKey
+        )
     }
 }

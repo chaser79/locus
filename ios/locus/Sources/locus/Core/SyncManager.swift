@@ -3,7 +3,8 @@ import Network
 
 protocol SyncManagerDelegate: AnyObject {
     /// Called when SyncManager needs Dart to build a custom sync body.
-    /// Returns nil to use default native body building.
+    /// A nil response is a retryable builder failure; native body building is
+    /// used only when `syncBodyBuilderEnabled` is false.
     func buildSyncBody(locations: [[String: Any]], extras: [String: Any], completion: @escaping ([String: Any]?) -> Void)
     
     /// Called before sync to validate context.

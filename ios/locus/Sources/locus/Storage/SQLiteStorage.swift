@@ -10,15 +10,22 @@ class SQLiteStorage {
     private static let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
     private var db: OpaquePointer?
-    private let dbName = "locus_storage.sqlite"
+    private static let dbName = "locus_storage.sqlite"
+    private let databaseURL: URL?
+    private let userDefaults: UserDefaults
     private let queue = DispatchQueue(label: "dev.locus.sqlite", qos: .utility)
-    
-    init() {
+
+    init(
+        databaseURL: URL? = nil,
+        userDefaults: UserDefaults = .standard
+    ) {
+        self.databaseURL = databaseURL ?? Self.defaultDatabaseURL()
+        self.userDefaults = userDefaults
         openDatabase()
         createTables()
         migrateFromUserDefaults()
     }
-    
+
     deinit {
         queue.sync {
             if let db = self.db {
@@ -31,14 +38,23 @@ class SQLiteStorage {
     // MARK: - Database Setup
     
     private func openDatabase() {
-        let fileManager = FileManager.default
-        guard let documentsUrl = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+        guard let databaseURL else {
+            NSLog("[locus.SQLiteStorage] Documents database directory is unavailable")
             db = nil
             return
         }
-        let dbUrl = documentsUrl.appendingPathComponent(dbName)
+        do {
+            try FileManager.default.createDirectory(
+                at: databaseURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+        } catch {
+            NSLog("[locus.SQLiteStorage] Database directory creation failed: %@", error.localizedDescription)
+            db = nil
+            return
+        }
 
-        if sqlite3_open(dbUrl.path, &db) != SQLITE_OK {
+        if sqlite3_open(databaseURL.path, &db) != SQLITE_OK {
             db = nil
             return
         }
@@ -49,6 +65,50 @@ class SQLiteStorage {
         sqlite3_exec(db, "PRAGMA synchronous=FULL;", nil, nil, nil)
         // Wait up to 5s on contention rather than failing fast with SQLITE_BUSY.
         sqlite3_busy_timeout(db, 5_000)
+        protectDatabaseFiles()
+    }
+
+    private static func defaultDatabaseURL(fileManager: FileManager = .default) -> URL? {
+        // Every released Locus version stores this database in Documents. Keep
+        // that path canonical for both existing and new installations so an app
+        // upgrade or downgrade can never split live tracking data across two
+        // databases. File protection and backup exclusion are applied below.
+        // TODO(locus-3.0): move to Application Support only with a transactional,
+        // crash-resumable migration protocol understood by every supported version.
+        databaseURL(
+            documentsDirectory: fileManager.urls(
+                for: .documentDirectory,
+                in: .userDomainMask
+            ).first
+        )
+    }
+
+    static func databaseURL(
+        documentsDirectory: URL?
+    ) -> URL? {
+        documentsDirectory?.appendingPathComponent(dbName)
+    }
+
+    private func protectDatabaseFiles() {
+        #if os(iOS)
+        guard let databaseURL else { return }
+        for suffix in ["", "-wal", "-shm"] {
+            let url = URL(fileURLWithPath: databaseURL.path + suffix)
+            guard FileManager.default.fileExists(atPath: url.path) else { continue }
+            do {
+                try FileManager.default.setAttributes(
+                    [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                    ofItemAtPath: url.path
+                )
+                var values = URLResourceValues()
+                values.isExcludedFromBackup = true
+                var mutableURL = url
+                try mutableURL.setResourceValues(values)
+            } catch {
+                NSLog("[locus.SQLiteStorage] File protection failed: %@", error.localizedDescription)
+            }
+        }
+        #endif
     }
 
     /// Bound the WAL file size after a write. PASSIVE never blocks readers and
@@ -161,6 +221,12 @@ class SQLiteStorage {
                     tag TEXT
                 );
                 """,
+                """
+                CREATE TABLE IF NOT EXISTS migration_state (
+                    key TEXT PRIMARY KEY,
+                    completed_at REAL NOT NULL DEFAULT (strftime('%s', 'now'))
+                );
+                """,
                 "CREATE INDEX IF NOT EXISTS idx_locations_timestamp ON locations(timestamp);",
                 "CREATE INDEX IF NOT EXISTS idx_queue_retry ON queue(next_retry_at);",
                 "CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp);"
@@ -195,79 +261,141 @@ class SQLiteStorage {
     
     private func migrateFromUserDefaults() {
         let migrationKey = "locus_sqlite_migrated"
-        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
-        
-        // Migrate locations
-        if let locations = UserDefaults.standard.array(forKey: "bg_locations") as? [[String: Any]] {
-            for location in locations {
-                insertLocation(location)
-            }
-            UserDefaults.standard.removeObject(forKey: "bg_locations")
+        let migrationReceipt = "user_defaults_v1"
+        guard !userDefaults.bool(forKey: migrationKey) else { return }
+
+        // A crash can occur after SQLite commits but before UserDefaults source
+        // cleanup. The durable DB receipt makes that window idempotent, including
+        // legacy log rows that do not have a natural unique identifier.
+        let wasAlreadyCommitted = queue.sync {
+            migrationReceiptExistsOnQueue(migrationReceipt)
         }
-        
-        // Migrate geofences
-        if let geofences = UserDefaults.standard.array(forKey: "bg_geofences") as? [[String: Any]] {
-            for geofence in geofences {
-                insertGeofence(geofence)
-            }
-            UserDefaults.standard.removeObject(forKey: "bg_geofences")
-        }
-        
-        // Migrate queue
-        if let queue = UserDefaults.standard.array(forKey: "bg_queue") as? [[String: Any]] {
-            for item in queue {
-                insertQueueItem(item)
-            }
-            UserDefaults.standard.removeObject(forKey: "bg_queue")
+        if wasAlreadyCommitted {
+            clearLegacyUserDefaults(migrationKey: migrationKey)
+            return
         }
 
-        if let log = UserDefaults.standard.string(forKey: "bg_log"), !log.isEmpty {
-            let lines = log.split(separator: "\n")
-            for line in lines {
+        let locations = userDefaults.array(forKey: "bg_locations") as? [[String: Any]] ?? []
+        let geofences = userDefaults.array(forKey: "bg_geofences") as? [[String: Any]] ?? []
+        let queueItems = userDefaults.array(forKey: "bg_queue") as? [[String: Any]] ?? []
+        let log = userDefaults.string(forKey: "bg_log") ?? ""
+
+        let committed = queue.sync { () -> Bool in
+            guard let db = self.db else { return false }
+            guard sqlite3_exec(db, "BEGIN IMMEDIATE TRANSACTION", nil, nil, nil) == SQLITE_OK else {
+                self.logSQLiteError("legacy migration begin")
+                return false
+            }
+
+            var succeeded = true
+            for location in locations {
+                succeeded = self.insertLocationOnQueue(location) && succeeded
+            }
+            for geofence in geofences {
+                succeeded = self.insertGeofenceOnQueue(geofence) && succeeded
+            }
+            for item in queueItems {
+                succeeded = self.insertQueueItemOnQueue(item) && succeeded
+            }
+            for line in log.split(separator: "\n") {
                 let parts = line.split(separator: "|", maxSplits: 2)
-                if parts.count < 3 {
+                guard parts.count == 3, let rawTimestamp = Double(parts[0]) else {
+                    // Old releases skipped malformed log rows. Preserve that
+                    // backwards-compatible best-effort behavior so one corrupt
+                    // diagnostic line cannot hide valid tracking data forever.
+                    NSLog("[locus.SQLiteStorage] Skipping malformed legacy log row")
                     continue
                 }
-                let rawTimestamp = Double(parts[0]) ?? 0
-                let timestampMs: Int64
-                if rawTimestamp < 1_000_000_000_000 {
-                    timestampMs = Int64(rawTimestamp * 1000)
-                } else {
-                    timestampMs = Int64(rawTimestamp)
-                }
-                insertLog(timestampMs: timestampMs,
-                          level: String(parts[1]),
-                          message: String(parts[2]),
-                          tag: "locus")
+                let timestampMs = rawTimestamp < 1_000_000_000_000
+                    ? Int64(rawTimestamp * 1000)
+                    : Int64(rawTimestamp)
+                succeeded = self.insertLogOnQueue(
+                    timestampMs: timestampMs,
+                    level: String(parts[1]),
+                    message: String(parts[2]),
+                    tag: "locus"
+                ) && succeeded
             }
-            UserDefaults.standard.removeObject(forKey: "bg_log")
+            succeeded = self.insertMigrationReceiptOnQueue(migrationReceipt) && succeeded
+
+            if succeeded && sqlite3_exec(db, "COMMIT", nil, nil, nil) == SQLITE_OK {
+                self.walCheckpointOnQueue()
+                return true
+            }
+            let rollbackStatus = sqlite3_exec(db, "ROLLBACK", nil, nil, nil)
+            if rollbackStatus != SQLITE_OK {
+                self.logSQLiteError("legacy migration rollback")
+            }
+            return false
         }
-        
-        UserDefaults.standard.set(true, forKey: migrationKey)
+
+        guard committed else { return }
+        clearLegacyUserDefaults(migrationKey: migrationKey)
+    }
+
+    private func clearLegacyUserDefaults(migrationKey: String) {
+        userDefaults.removeObject(forKey: "bg_locations")
+        userDefaults.removeObject(forKey: "bg_geofences")
+        userDefaults.removeObject(forKey: "bg_queue")
+        userDefaults.removeObject(forKey: "bg_log")
+        userDefaults.set(true, forKey: migrationKey)
+    }
+
+    private func migrationReceiptExistsOnQueue(_ key: String) -> Bool {
+        guard let db else { return false }
+        let sql = "SELECT 1 FROM migration_state WHERE key = ? LIMIT 1"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            logSQLiteError("migration receipt select prepare")
+            sqlite3_finalize(statement)
+            return false
+        }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, key, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        return sqlite3_step(statement) == SQLITE_ROW
+    }
+
+    private func insertMigrationReceiptOnQueue(_ key: String) -> Bool {
+        guard let db else { return false }
+        let sql = "INSERT OR REPLACE INTO migration_state (key) VALUES (?)"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            logSQLiteError("migration receipt insert prepare")
+            sqlite3_finalize(statement)
+            return false
+        }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, key, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        return stepChecked(statement, op: "migration receipt insert")
     }
     
     // MARK: - Locations
-    
+
+    /// Inserts a location while already on the SQLite queue. Kept result-bearing
+    /// so startup migration can commit or preserve its source atomically.
+    private func insertLocationOnQueue(_ payload: [String: Any]) -> Bool {
+        guard let db = db else { return false }
+        let uuid = payload["uuid"] as? String ?? UUID().uuidString
+        let timestamp = payload["timestamp"] as? String ?? ISO8601DateFormatter().string(from: Date())
+        guard let jsonString = serializeJSON(payload, op: "insertLocation") else { return false }
+
+        let sql = "INSERT OR REPLACE INTO locations (uuid, payload, timestamp) VALUES (?, ?, ?)"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            logSQLiteError("insertLocation prepare")
+            sqlite3_finalize(statement)
+            return false
+        }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, uuid, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 2, jsonString, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 3, timestamp, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        return stepChecked(statement, op: "insertLocation")
+    }
+
     func insertLocation(_ payload: [String: Any], completion: (() -> Void)? = nil) {
         queue.async { [weak self] in
-            guard let self = self, let db = self.db else { return }
-
-            let uuid = payload["uuid"] as? String ?? UUID().uuidString
-            let timestamp = payload["timestamp"] as? String ?? ISO8601DateFormatter().string(from: Date())
-            guard let jsonString = self.serializeJSON(payload, op: "insertLocation") else { return }
-
-            let sql = "INSERT OR REPLACE INTO locations (uuid, payload, timestamp) VALUES (?, ?, ?)"
-            var statement: OpaquePointer?
-
-            if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_text(statement, 1, uuid, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                sqlite3_bind_text(statement, 2, jsonString, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                sqlite3_bind_text(statement, 3, timestamp, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                self.stepChecked(statement, op: "insertLocation")
-            } else {
-                self.logSQLiteError("insertLocation prepare")
-            }
-            sqlite3_finalize(statement)
+            guard let self = self, self.insertLocationOnQueue(payload) else { return }
             self.walCheckpointOnQueue()
 
             if let completion {
@@ -394,28 +522,31 @@ class SQLiteStorage {
     }
     
     // MARK: - Geofences
+
+    private func insertGeofenceOnQueue(_ payload: [String: Any]) -> Bool {
+        guard let db = db else { return false }
+        guard let identifier = payload["identifier"] as? String else {
+            NSLog("[locus.SQLiteStorage] insertGeofence skipped: missing 'identifier'")
+            return false
+        }
+        guard let jsonString = serializeJSON(payload, op: "insertGeofence") else { return false }
+
+        let sql = "INSERT OR REPLACE INTO geofences (identifier, payload) VALUES (?, ?)"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            logSQLiteError("insertGeofence prepare")
+            sqlite3_finalize(statement)
+            return false
+        }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, identifier, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 2, jsonString, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        return stepChecked(statement, op: "insertGeofence")
+    }
     
     func insertGeofence(_ payload: [String: Any]) {
         queue.async { [weak self] in
-            guard let self = self, let db = self.db else { return }
-
-            guard let identifier = payload["identifier"] as? String else {
-                NSLog("[locus.SQLiteStorage] insertGeofence skipped: missing 'identifier'")
-                return
-            }
-            guard let jsonString = self.serializeJSON(payload, op: "insertGeofence") else { return }
-            
-            let sql = "INSERT OR REPLACE INTO geofences (identifier, payload) VALUES (?, ?)"
-            var statement: OpaquePointer?
-            
-            if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_text(statement, 1, identifier, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                sqlite3_bind_text(statement, 2, jsonString, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                self.stepChecked(statement, op: "insertGeofence")
-            } else {
-                self.logSQLiteError("insertGeofence prepare")
-            }
-            sqlite3_finalize(statement)
+            guard let self = self, self.insertGeofenceOnQueue(payload) else { return }
             self.walCheckpointOnQueue()
         }
     }
@@ -475,56 +606,49 @@ class SQLiteStorage {
     }
     
     // MARK: - Queue
-    
+
+    private func insertQueueItemOnQueue(_ item: [String: Any]) -> Bool {
+        guard let db = db else { return false }
+        let id = item["id"] as? String ?? UUID().uuidString
+        let type = item["type"] as? String
+        let idempotencyKey = item["idempotencyKey"] as? String
+        let retryCount = item["retryCount"] as? Int ?? 0
+        let nextRetryAt = item["nextRetryAt"] as? String
+        let createdAt = item["created"] as? String ?? ISO8601DateFormatter().string(from: Date())
+        guard let payloadData = item["payload"] else {
+            NSLog("[locus.SQLiteStorage] insertQueueItem skipped: missing 'payload'")
+            return false
+        }
+        guard let jsonString = serializeJSON(payloadData, op: "insertQueueItem") else { return false }
+
+        let sql = """
+            INSERT OR REPLACE INTO queue
+            (id, payload, type, idempotency_key, retry_count, next_retry_at, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            logSQLiteError("insertQueueItem prepare")
+            sqlite3_finalize(statement)
+            return false
+        }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, id, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 2, jsonString, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        if let type { sqlite3_bind_text(statement, 3, type, -1, SQLiteStorage.SQLITE_TRANSIENT) }
+        else { sqlite3_bind_null(statement, 3) }
+        if let idempotencyKey { sqlite3_bind_text(statement, 4, idempotencyKey, -1, SQLiteStorage.SQLITE_TRANSIENT) }
+        else { sqlite3_bind_null(statement, 4) }
+        sqlite3_bind_int(statement, 5, Int32(retryCount))
+        if let nextRetryAt { sqlite3_bind_text(statement, 6, nextRetryAt, -1, SQLiteStorage.SQLITE_TRANSIENT) }
+        else { sqlite3_bind_null(statement, 6) }
+        sqlite3_bind_text(statement, 7, createdAt, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        return stepChecked(statement, op: "insertQueueItem")
+    }
+
     func insertQueueItem(_ item: [String: Any]) {
         queue.async { [weak self] in
-            guard let self = self, let db = self.db else { return }
-
-            let id = item["id"] as? String ?? UUID().uuidString
-            let type = item["type"] as? String
-            let idempotencyKey = item["idempotencyKey"] as? String
-            let retryCount = item["retryCount"] as? Int ?? 0
-            let nextRetryAt = item["nextRetryAt"] as? String
-            let createdAt = item["created"] as? String ?? ISO8601DateFormatter().string(from: Date())
-
-            guard let payloadData = item["payload"] else {
-                NSLog("[locus.SQLiteStorage] insertQueueItem skipped: missing 'payload'")
-                return
-            }
-            guard let jsonString = self.serializeJSON(payloadData, op: "insertQueueItem") else { return }
-
-            let sql = """
-                INSERT OR REPLACE INTO queue
-                (id, payload, type, idempotency_key, retry_count, next_retry_at, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """
-            var statement: OpaquePointer?
-
-            if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_text(statement, 1, id, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                sqlite3_bind_text(statement, 2, jsonString, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                if let type = type {
-                    sqlite3_bind_text(statement, 3, type, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                } else {
-                    sqlite3_bind_null(statement, 3)
-                }
-                if let key = idempotencyKey {
-                    sqlite3_bind_text(statement, 4, key, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                } else {
-                    sqlite3_bind_null(statement, 4)
-                }
-                sqlite3_bind_int(statement, 5, Int32(retryCount))
-                if let retry = nextRetryAt {
-                    sqlite3_bind_text(statement, 6, retry, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                } else {
-                    sqlite3_bind_null(statement, 6)
-                }
-                sqlite3_bind_text(statement, 7, createdAt, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                self.stepChecked(statement, op: "insertQueueItem")
-            } else {
-                self.logSQLiteError("insertQueueItem prepare")
-            }
-            sqlite3_finalize(statement)
+            guard let self = self, self.insertQueueItemOnQueue(item) else { return }
             self.walCheckpointOnQueue()
         }
     }
@@ -756,27 +880,38 @@ class SQLiteStorage {
 
     // MARK: - Logs
 
+    private func insertLogOnQueue(
+        timestampMs: Int64,
+        level: String,
+        message: String,
+        tag: String?
+    ) -> Bool {
+        guard let db = db else { return false }
+        let sql = "INSERT INTO logs (timestamp, level, message, tag) VALUES (?, ?, ?, ?)"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            logSQLiteError("insertLog prepare")
+            sqlite3_finalize(statement)
+            return false
+        }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_int64(statement, 1, timestampMs)
+        sqlite3_bind_text(statement, 2, level, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 3, message, -1, SQLiteStorage.SQLITE_TRANSIENT)
+        if let tag { sqlite3_bind_text(statement, 4, tag, -1, SQLiteStorage.SQLITE_TRANSIENT) }
+        else { sqlite3_bind_null(statement, 4) }
+        return stepChecked(statement, op: "insertLog")
+    }
+
     func insertLog(timestampMs: Int64, level: String, message: String, tag: String? = nil) {
         queue.async { [weak self] in
-            guard let self = self, let db = self.db else { return }
-
-            let sql = "INSERT INTO logs (timestamp, level, message, tag) VALUES (?, ?, ?, ?)"
-            var statement: OpaquePointer?
-
-            if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_int64(statement, 1, timestampMs)
-                sqlite3_bind_text(statement, 2, level, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                sqlite3_bind_text(statement, 3, message, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                if let tag = tag {
-                    sqlite3_bind_text(statement, 4, tag, -1, SQLiteStorage.SQLITE_TRANSIENT)
-                } else {
-                    sqlite3_bind_null(statement, 4)
-                }
-                self.stepChecked(statement, op: "insertLog")
-            } else {
-                self.logSQLiteError("insertLog prepare")
-            }
-            sqlite3_finalize(statement)
+            guard let self = self else { return }
+            _ = self.insertLogOnQueue(
+                timestampMs: timestampMs,
+                level: level,
+                message: message,
+                tag: tag
+            )
         }
     }
 

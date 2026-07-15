@@ -6,7 +6,60 @@ import Network
 import BackgroundTasks
 import UserNotifications
 
-public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, LocationClientDelegate, SyncManagerDelegate, MotionManagerDelegate, SchedulerDelegate, GeofenceManagerDelegate {
+final class LocusEngineBinding: NSObject, FlutterPlugin, FlutterStreamHandler {
+  let runtime: SwiftLocusPlugin
+  let methodChannel: FlutterMethodChannel
+  private let eventChannel: FlutterEventChannel
+  var eventSink: FlutterEventSink?
+
+  init(runtime: SwiftLocusPlugin, registrar: FlutterPluginRegistrar) {
+    self.runtime = runtime
+    methodChannel = FlutterMethodChannel(
+      name: SwiftLocusPlugin.methodChannelName,
+      binaryMessenger: registrar.messenger()
+    )
+    eventChannel = FlutterEventChannel(
+      name: SwiftLocusPlugin.eventChannelName,
+      binaryMessenger: registrar.messenger()
+    )
+    super.init()
+    registrar.addMethodCallDelegate(self, channel: methodChannel)
+    eventChannel.setStreamHandler(self)
+  }
+
+  static func register(with registrar: FlutterPluginRegistrar) {
+    SwiftLocusPlugin.register(with: registrar)
+  }
+
+  func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    runtime.activateEngineForMethod(self)
+    runtime.handle(call, result: result, from: self)
+  }
+
+  func onListen(
+    withArguments arguments: Any?,
+    eventSink events: @escaping FlutterEventSink
+  ) -> FlutterError? {
+    eventSink = events
+    runtime.beginEngineListening(self)
+    return runtime.onEngineListen()
+  }
+
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    eventSink = nil
+    runtime.endEngineListening(self)
+    return nil
+  }
+
+  func detachFromEngine(for registrar: FlutterPluginRegistrar) {
+    eventSink = nil
+    eventChannel.setStreamHandler(nil)
+    methodChannel.setMethodCallHandler(nil)
+    runtime.detachEngine(self)
+  }
+}
+
+public class SwiftLocusPlugin: NSObject, FlutterPlugin, LocationClientDelegate, SyncManagerDelegate, MotionManagerDelegate, SchedulerDelegate, GeofenceManagerDelegate {
   static let methodChannelName = "locus/methods"
   static let eventChannelName = "locus/events"
   static let headlessChannelName = "locus/headless"
@@ -16,15 +69,18 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
   static let headlessCallbackKey = "bg_headless_callback"
   static let tripStateKey = "bg_trip_state"
 
-  /// Singleton guard for multi-engine environments.
-  ///
-  /// flutter_background_service and other plugins can create additional Flutter engines.
-  /// Each engine triggers GeneratedPluginRegistrant which creates a new LocusPlugin instance.
-  /// Only one instance should own native resources to prevent:
-  /// - Duplicate CLLocationManager / CMMotionManager instances
-  /// - Database access conflicts (SQLite contention)
-  /// - Resource cleanup on secondary engine dealloc killing primary tracking
-  private static var primaryInstance: SwiftLocusPlugin?
+  /// Native managers are process-owned; every Flutter engine gets a lightweight
+  /// binding to this runtime. This keeps background tracking singular while
+  /// allowing a replacement UI engine to regain control after engine teardown.
+  private static let sharedRuntime = SwiftLocusPlugin()
+  private let engineBindings = EngineBindingRegistry()
+  lazy var callbackBroker = EngineCallbackBroker(
+    bindings: engineBindings,
+    deadlineScheduler: mainQueueCallbackDeadlineScheduler
+  )
+  private var activeEngine: LocusEngineBinding? {
+    engineBindings.activeBinding as? LocusEngineBinding
+  }
 
   // Managers
   let configManager = ConfigManager()
@@ -39,8 +95,10 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
 
   // State
   let locationClient: LocationClient
-  var eventSink: FlutterEventSink?
+  var eventSink: FlutterEventSink? { activeEngine?.eventSink }
   var pendingLocationResult: FlutterResult?
+  let locationRequestGate = SingleFlightRequestGate()
+  private weak var currentCallEngine: LocusEngineBinding?
   var isEnabled = false
   private let lastLocationQueue = DispatchQueue(label: "dev.locus.lastLocation")
   private var _lastLocation: CLLocation?
@@ -59,31 +117,12 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
   var headlessCleanupTimer: Timer?
   var backgroundTaskCounter = 1
   var backgroundTasks: [Int: UIBackgroundTaskIdentifier] = [:]
-  var registeredBgTaskId: String?
-  var methodChannel: FlutterMethodChannel?
+  var registeredBgTaskIds: Set<String> = []
+  var methodChannel: FlutterMethodChannel? { activeEngine?.methodChannel }
 
   public static func register(with registrar: FlutterPluginRegistrar) {
-    // Singleton guard: only the first engine creates native resources.
-    // Secondary engines (from flutter_background_service, etc.) get
-    // a lightweight no-op channel handler.
-    if primaryInstance != nil {
-      NSLog("[locus] LocusPlugin: secondary engine registered - skipping native resource init")
-      let channel = FlutterMethodChannel(name: methodChannelName, binaryMessenger: registrar.messenger())
-      // Set up a no-op handler for the secondary engine's channel
-      channel.setMethodCallHandler { (call, result) in
-        NSLog("[locus] LocusPlugin: ignoring '\(call.method)' on secondary engine")
-        result(nil)
-      }
-      return
-    }
-
-    let instance = SwiftLocusPlugin()
-    primaryInstance = instance
-    let methodChannel = FlutterMethodChannel(name: methodChannelName, binaryMessenger: registrar.messenger())
-    let eventChannel = FlutterEventChannel(name: eventChannelName, binaryMessenger: registrar.messenger())
-    instance.methodChannel = methodChannel
-    registrar.addMethodCallDelegate(instance, channel: methodChannel)
-    eventChannel.setStreamHandler(instance)
+    let binding = LocusEngineBinding(runtime: sharedRuntime, registrar: registrar)
+    registrar.publish(binding)
   }
 
   override init() {
@@ -114,15 +153,8 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
       name: Notification.Name.NSProcessInfoPowerStateDidChange,
       object: nil
     )
-    if configManager.startOnBoot {
-      DispatchQueue.main.async { [weak self] in
-        self?.maybeStartOnBoot()
-      }
-    }
-    // Reconcile persisted tracking state AFTER startOnBoot handling. If tracking
-    // was active before the process died (swipe-away + OS reap, or force-stop),
-    // re-arm here so locations keep flowing on the new process. maybeStartOnBoot()
-    // is idempotent so it's safe to call both.
+    // iOS has no device-boot callback equivalent. Cold recovery is governed
+    // solely by persisted desired tracking state, never startOnBoot.
     DispatchQueue.main.async { [weak self] in
       self?.maybeResumePersistedTracking()
     }
@@ -130,10 +162,6 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
   }
 
   deinit {
-    // Clear singleton reference if this is the primary instance
-    if Self.primaryInstance === self {
-      Self.primaryInstance = nil
-    }
     stopConnectivityMonitor()
     NotificationCenter.default.removeObserver(self)
     releaseBackgroundTasks()
@@ -152,13 +180,38 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
     // defeat that. deinit is best-effort on iOS anyway — the OS may kill the process
     // without running destructors — but when it does run, this path matters.
     if configManager.stopOnTerminate {
+      UserDefaults.standard.set(false, forKey: ConfigManager.trackingActiveKey)
       motionDetector.stop()
       locationClient.stop()
     }
   }
 
-  public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
-    eventSink = events
+  fileprivate func activateEngineForMethod(_ engine: LocusEngineBinding) {
+    callbackBroker.bindingClaimed(engineBindings.activateForMethod(engine))
+  }
+
+  fileprivate func beginEngineListening(_ engine: LocusEngineBinding) {
+    callbackBroker.bindingClaimed(engineBindings.beginListening(engine))
+  }
+
+  fileprivate func endEngineListening(_ engine: LocusEngineBinding) {
+    engineBindings.endListening(engine)
+  }
+
+  fileprivate func detachEngine(_ engine: LocusEngineBinding) {
+    if locationRequestGate.detach(owner: engine), let pending = pendingLocationResult {
+      pendingLocationResult = nil
+      pending(FlutterError(
+        code: "ENGINE_DETACHED",
+        message: "The Flutter engine detached before getCurrentPosition completed",
+        details: nil
+      ))
+    }
+    engineBindings.detach(engine)
+    callbackBroker.ownerDetached(engine)
+  }
+
+  fileprivate func onEngineListen() -> FlutterError? {
     emitConnectivityChange(ProcessInfo.processInfo.isLowPowerModeEnabled, emitPowerSave: true)
     // Replay the current pause state so a freshly-attached Dart listener sees a
     // persisted 401/403 pause without having to poll getSyncPauseState.
@@ -166,16 +219,26 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
     return nil
   }
 
-  public func onCancel(withArguments arguments: Any?) -> FlutterError? {
-    eventSink = nil
-    return nil
+  fileprivate func handle(
+    _ call: FlutterMethodCall,
+    result: @escaping FlutterResult,
+    from engine: LocusEngineBinding
+  ) {
+    currentCallEngine = engine
+    defer { currentCallEngine = nil }
+    handle(call, result: result)
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
     case "ready":
       if let config = call.arguments as? [String: Any] {
-        applyConfig(config)
+        do {
+          try applyConfig(config)
+        } catch {
+          result(configFlutterError(error))
+          return
+        }
       }
       // Emit a warning if location permissions are denied or not determined
       let authStatus = locationClient.getAuthorizationStatus()
@@ -199,6 +262,15 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
     case "getState":
       result(buildState())
     case "getCurrentPosition":
+      guard let engine = currentCallEngine,
+            locationRequestGate.begin(owner: engine) else {
+        result(FlutterError(
+          code: "LOCATION_REQUEST_IN_PROGRESS",
+          message: "Another getCurrentPosition request is already in progress",
+          details: nil
+        ))
+        return
+      }
       pendingLocationResult = result
       locationClient.requestLocation()
     case "hasPreciseLocationPermission":
@@ -226,12 +298,22 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
       result(authorized && precise)
     case "setConfig":
       if let config = call.arguments as? [String: Any] {
-        applyConfig(config)
+        do {
+          try applyConfig(config)
+        } catch {
+          result(configFlutterError(error))
+          return
+        }
       }
       result(true)
     case "reset":
       if let config = call.arguments as? [String: Any] {
-        applyConfig(config)
+        do {
+          try applyConfig(config)
+        } catch {
+          result(configFlutterError(error))
+          return
+        }
       }
       result(true)
     case "changePace":
@@ -278,7 +360,12 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
       }
     case "setPrivacyMode":
       if let enabled = call.arguments as? Bool {
-        configManager.privacyModeEnabled = enabled
+        do {
+          try configManager.setPrivacyMode(enabled)
+        } catch {
+          result(configFlutterError(error))
+          return
+        }
       }
       result(true)
     case "startGeofences":
@@ -332,7 +419,7 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
       UserDefaults.standard.removeObject(forKey: SwiftLocusPlugin.tripStateKey)
       result(true)
     case "getConfig":
-      result(UserDefaults.standard.dictionary(forKey: "bg_last_config") ?? [:])
+      result(configManager.persistedConfig)
     case "getDiagnosticsMetadata":
       result(buildDiagnosticsMetadata())
     case "getManufacturer":
@@ -341,7 +428,7 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
       // Android-only, so returning nil lets the Dart caller short-circuit
       // without a platform check at the call site.
       result(nil)
-    case "startSchedule", "stopSchedule", "sync", "getLog", "emailLog", "playSound", "destroyLocations", "getLocations", "registerHeadlessTask":
+    case "startSchedule", "stopSchedule", "sync", "getLog", "emailLog", "playSound", "destroyLocations", "getLocations", "registerHeadlessTask", "setAdaptiveTracking":
       if call.method == "startSchedule" {
         configManager.scheduleEnabled = true
         emitScheduleEvent()
@@ -370,18 +457,47 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
         if let args = call.arguments as? [String: Any],
            let dispatcher = args["dispatcher"] as? Int64,
            let callback = args["callback"] as? Int64 {
-          // Use SecureStorage for sensitive callback handles
-          _ = SecureStorage.shared.setInt64(dispatcher, forKey: SecureStorage.headlessDispatcherKey)
-          _ = SecureStorage.shared.setInt64(callback, forKey: SecureStorage.headlessCallbackKey)
-          result(true)
+          let stored = SecureStorage.shared.setCallbackHandles(
+            dispatcher: dispatcher,
+            callback: callback,
+            forKey: SecureStorage.headlessHandlesKey
+          )
+          result(stored ? true : secureStorageFlutterError())
         } else if let handle = call.arguments as? Int64 {
-          _ = SecureStorage.shared.setInt64(handle, forKey: SecureStorage.headlessCallbackKey)
-          result(true)
+          // Backwards compatibility for the old callback-only channel shape.
+          // Prefer updating the atomic pair when a dispatcher already exists.
+          let existing = SecureStorage.shared.getCallbackHandles(
+            forKey: SecureStorage.headlessHandlesKey,
+            legacyDispatcherKey: SecureStorage.headlessDispatcherKey,
+            legacyCallbackKey: SecureStorage.headlessCallbackKey
+          )
+          let dispatcher = existing?.dispatcher
+            ?? SecureStorage.shared.getInt64(
+              forKey: SecureStorage.headlessDispatcherKey
+            )
+          let stored: Bool
+          if let dispatcher {
+            stored = SecureStorage.shared.setCallbackHandles(
+              dispatcher: dispatcher,
+              callback: handle,
+              forKey: SecureStorage.headlessHandlesKey
+            )
+          } else {
+            stored = SecureStorage.shared.setInt64(
+              handle,
+              forKey: SecureStorage.headlessCallbackKey
+            )
+          }
+          result(stored ? true : secureStorageFlutterError())
         } else {
           result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected headless callback handle", details: nil))
         }
       } else if call.method == "getLog" {
         result(readLog())
+      } else if call.method == "setAdaptiveTracking" {
+        // Adaptive profile calculation is Dart-owned; native receives the
+        // resulting setConfig calls. Keep this method as a parity no-op.
+        result(true)
       } else {
         result(FlutterError(code: "NOT_IMPLEMENTED", message: "Unknown headless method", details: nil))
       }
@@ -389,10 +505,12 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
       if let args = call.arguments as? [String: Any],
          let dispatcher = args["dispatcher"] as? Int64,
          let callback = args["callback"] as? Int64 {
-        // Use SecureStorage for sensitive callback handles
-        _ = SecureStorage.shared.setInt64(dispatcher, forKey: SecureStorage.headlessSyncBodyDispatcherKey)
-        _ = SecureStorage.shared.setInt64(callback, forKey: SecureStorage.headlessSyncBodyCallbackKey)
-        result(true)
+        let stored = SecureStorage.shared.setCallbackHandles(
+          dispatcher: dispatcher,
+          callback: callback,
+          forKey: SecureStorage.headlessSyncBodyHandlesKey
+        )
+        result(stored ? true : secureStorageFlutterError())
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected dispatcher and callback handles", details: nil))
       }
@@ -400,8 +518,11 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
       if let args = call.arguments as? [String: Any],
          let dispatcher = args["dispatcher"] as? Int64,
          let callback = args["callback"] as? Int64 {
-        HeadlessValidationDispatcher.registerCallback(dispatcher: dispatcher, callback: callback)
-        result(true)
+        let stored = HeadlessValidationDispatcher.registerCallback(
+          dispatcher: dispatcher,
+          callback: callback
+        )
+        result(stored ? true : secureStorageFlutterError())
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected dispatcher and callback handles", details: nil))
       }
@@ -409,8 +530,11 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
       if let args = call.arguments as? [String: Any],
          let dispatcher = args["dispatcher"] as? Int64,
          let callback = args["callback"] as? Int64 {
-        HeadlessHeadersDispatcher.registerCallback(dispatcher: dispatcher, callback: callback)
-        result(true)
+        let stored = HeadlessHeadersDispatcher.registerCallback(
+          dispatcher: dispatcher,
+          callback: callback
+        )
+        result(stored ? true : secureStorageFlutterError())
       } else {
         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expected dispatcher and callback handles", details: nil))
       }
@@ -488,8 +612,8 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
     }
   }
 
-  func applyConfig(_ config: [String: Any]) {
-    configManager.apply(config)
+  func applyConfig(_ config: [String: Any]) throws {
+    try configManager.apply(config)
     locationClient.applyConfig()
 
     locationClient.setDistanceFilter(motionDetector.isMoving ? configManager.distanceFilter : configManager.stationaryRadius)
@@ -500,6 +624,23 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
       motionDetector.start()
     }
     registerBackgroundTasks()
+    maybeResumePersistedTracking()
+  }
+
+  private func configFlutterError(_ error: Error) -> FlutterError {
+    FlutterError(
+      code: "CONFIG_PERSISTENCE_ERROR",
+      message: error.localizedDescription,
+      details: nil
+    )
+  }
+
+  private func secureStorageFlutterError() -> FlutterError {
+    FlutterError(
+      code: "SECURE_STORAGE_ERROR",
+      message: "Unable to store callback handles in iOS Keychain",
+      details: nil
+    )
   }
 
   // MARK: - Notification Support
@@ -567,17 +708,21 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
       return
     }
     let auth = locationClient.getAuthorizationStatus()
-      if auth == .notDetermined {
-        locationClient.requestPermissions()
-        emitProviderChange()
-        return
-      }
-      if auth == .authorizedWhenInUse {
-        locationClient.requestAlwaysAuthorization()
-        emitProviderChange()
-        return
-      }
-      if auth == .denied || auth == .restricted {
+    if !locationClient.isLocationServicesEnabled() {
+      emitProviderChange()
+      return
+    }
+    if auth == .notDetermined {
+      locationClient.requestPermissions()
+      emitProviderChange()
+      return
+    }
+    if auth == .authorizedWhenInUse {
+      locationClient.requestAlwaysAuthorization()
+      emitProviderChange()
+      return
+    }
+    if auth == .denied || auth == .restricted {
       emitProviderChange()
       return
     }
@@ -594,38 +739,53 @@ public class SwiftLocusPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, Lo
   }
 
   func stopTracking() {
-    if !isEnabled {
-      return
-    }
+    let wasEnabled = isEnabled
     isEnabled = false
     UserDefaults.standard.set(false, forKey: ConfigManager.trackingActiveKey)
-    trackingStats.onTrackingStop()
+    if wasEnabled {
+      trackingStats.onTrackingStop()
+    }
     locationClient.stop()
     motionDetector.stop()
     removeTrackingNotification()
-    emitEnabledChange(false)
+    if wasEnabled {
+      emitEnabledChange(false)
+    }
     stopHeartbeatTimer()
     stopBackgroundRefresh()
   }
 
-  /// Cold-start reconciliation: if the process was killed while tracking was active
-  /// (e.g. the user swiped the app away under `stopOnTerminate:false`, and
-  /// `startMonitoringSignificantLocationChanges` later relaunched us), the persisted
+  /// Cold-start reconciliation: if iOS terminated the process while tracking was
+  /// active and significant-change monitoring later relaunches it, the persisted
   /// flag is still `true`. Re-arm tracking so that `Locus.isTracking()` reports
-  /// accurately and locations keep flowing after the new process starts.
+  /// accurately and locations keep flowing after the new process starts. A user
+  /// force-quit remains an OS-enforced stop boundary until the app is opened again.
   /// Silent no-op when permissions were revoked or nothing was active.
   func maybeResumePersistedTracking() {
-    guard UserDefaults.standard.bool(forKey: ConfigManager.trackingActiveKey) else { return }
-    if isEnabled { return }
     let auth = locationClient.getAuthorizationStatus()
-    guard auth == .authorizedAlways || auth == .authorizedWhenInUse else {
-      // Permission was revoked while we were dead; clear stale flag to avoid retry loops.
-      NSLog("[locus] maybeResumePersistedTracking: tracking flag set but authorization is \(auth.rawValue) — clearing flag")
-      UserDefaults.standard.set(false, forKey: ConfigManager.trackingActiveKey)
+    let action = decideTrackingRecovery(
+      trackingDesired: UserDefaults.standard.bool(forKey: ConfigManager.trackingActiveKey),
+      runtimeEnabled: isEnabled,
+      configStatus: configManager.persistedConfigStatus,
+      hasAlwaysAuthorization: auth == .authorizedAlways,
+      locationServicesEnabled: locationClient.isLocationServicesEnabled(),
+      stopOnTerminate: configManager.stopOnTerminate
+    )
+
+    switch action {
+    case .none, .keepRunning:
       return
+    case .waitForConfig:
+      NSLog("[locus] Recovery deferred: persisted configuration is corrupt or temporarily unavailable")
+    case .clearDesiredState:
+      UserDefaults.standard.set(false, forKey: ConfigManager.trackingActiveKey)
+      if isEnabled { stopTracking() }
+    case .stopRuntime:
+      stopTracking()
+    case .start:
+      NSLog("[locus] Re-arming tracking from valid persisted intent and configuration")
+      startTracking()
     }
-    NSLog("[locus] maybeResumePersistedTracking: re-arming tracking after process restart (bg_tracking_active=true)")
-    startTracking()
   }
 
   func buildState() -> [String: Any] {

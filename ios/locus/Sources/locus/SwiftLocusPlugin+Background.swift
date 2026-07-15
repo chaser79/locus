@@ -48,13 +48,13 @@ extension SwiftLocusPlugin {
   }
 
   func stopBackgroundRefresh() {
-    let taskId = configManager.bgTaskId.trimmingCharacters(in: .whitespacesAndNewlines)
-    if taskId.isEmpty {
-      return
-    }
     if #available(iOS 13.0, *) {
-      BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: taskId)
-      BGTaskScheduler.shared.cancelAllTaskRequests()
+      for taskId in locusBackgroundTaskIdentifiers(
+        configured: configManager.bgTaskId,
+        registered: registeredBgTaskIds
+      ) {
+        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: taskId)
+      }
     } else {
       UIApplication.shared.setMinimumBackgroundFetchInterval(UIApplication.backgroundFetchIntervalNever)
     }
@@ -66,16 +66,20 @@ extension SwiftLocusPlugin {
       return
     }
     if #available(iOS 13.0, *) {
-      if registeredBgTaskId == taskId {
+      if registeredBgTaskIds.contains(taskId) {
         return
       }
-      registeredBgTaskId = taskId
-      BGTaskScheduler.shared.register(forTaskWithIdentifier: taskId, using: nil) { [weak self] task in
+      let registered = BGTaskScheduler.shared.register(forTaskWithIdentifier: taskId, using: nil) { [weak self] task in
         guard let refreshTask = task as? BGAppRefreshTask else {
           task.setTaskCompleted(success: false)
           return
         }
         self?.handleBackgroundRefresh(refreshTask)
+      }
+      if registered {
+        registeredBgTaskIds.insert(taskId)
+      } else {
+        appendLog("Failed to register background refresh task \(taskId)", level: "warning")
       }
     } else {
       UIApplication.shared.setMinimumBackgroundFetchInterval(UIApplication.backgroundFetchIntervalMinimum)
@@ -133,8 +137,13 @@ extension SwiftLocusPlugin {
   func dispatchHeadlessEvent(_ event: [String: Any]) {
     guard configManager.enableHeadless else { return }
 
-    let dispatcher = SecureStorage.shared.getInt64(forKey: SecureStorage.headlessDispatcherKey) ?? 0
-    let callback = SecureStorage.shared.getInt64(forKey: SecureStorage.headlessCallbackKey) ?? 0
+    let handles = SecureStorage.shared.getCallbackHandles(
+      forKey: SecureStorage.headlessHandlesKey,
+      legacyDispatcherKey: SecureStorage.headlessDispatcherKey,
+      legacyCallbackKey: SecureStorage.headlessCallbackKey
+    )
+    let dispatcher = handles?.dispatcher ?? 0
+    let callback = handles?.callback ?? 0
     guard dispatcher != 0, callback != 0 else { return }
 
     if headlessEngine == nil {
@@ -208,10 +217,4 @@ extension SwiftLocusPlugin {
     }
   }
 
-  func maybeStartOnBoot() {
-    let status = locationClient.getAuthorizationStatus()
-    if status == .authorizedAlways || status == .authorizedWhenInUse {
-      startTracking()
-    }
-  }
 }

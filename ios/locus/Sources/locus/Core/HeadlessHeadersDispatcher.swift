@@ -20,9 +20,8 @@ class HeadlessHeadersDispatcher {
 
     var isAvailable: Bool {
         guard config.enableHeadless else { return false }
-        let dispatcher = SecureStorage.shared.getInt64(forKey: SecureStorage.headersDispatcherKey) ?? 0
-        let callback = SecureStorage.shared.getInt64(forKey: SecureStorage.headersCallbackKey) ?? 0
-        return dispatcher != 0 && callback != 0
+        guard let handles = callbackHandles() else { return false }
+        return handles.dispatcher != 0 && handles.callback != 0
     }
 
     func refreshHeaders(
@@ -33,13 +32,14 @@ class HeadlessHeadersDispatcher {
             completion(nil)
             return
         }
-        guard let dispatcher = SecureStorage.shared.getInt64(forKey: SecureStorage.headersDispatcherKey),
-              let callback = SecureStorage.shared.getInt64(forKey: SecureStorage.headersCallbackKey),
-              dispatcher != 0,
-              callback != 0 else {
+        guard let handles = callbackHandles(),
+              handles.dispatcher != 0,
+              handles.callback != 0 else {
             completion(nil)
             return
         }
+        let dispatcher = handles.dispatcher
+        let callback = handles.callback
 
         if pendingCompletion != nil {
             completion(nil)
@@ -109,8 +109,19 @@ class HeadlessHeadersDispatcher {
         headersEngine = nil
     }
 
-    static func registerCallback(dispatcher: Int64, callback: Int64) {
-        _ = SecureStorage.shared.setInt64(dispatcher, forKey: SecureStorage.headersDispatcherKey)
-        _ = SecureStorage.shared.setInt64(callback, forKey: SecureStorage.headersCallbackKey)
+    static func registerCallback(dispatcher: Int64, callback: Int64) -> Bool {
+        SecureStorage.shared.setCallbackHandles(
+            dispatcher: dispatcher,
+            callback: callback,
+            forKey: SecureStorage.headersHandlesKey
+        )
+    }
+
+    private func callbackHandles() -> SecureStorage.CallbackHandles? {
+        SecureStorage.shared.getCallbackHandles(
+            forKey: SecureStorage.headersHandlesKey,
+            legacyDispatcherKey: SecureStorage.headersDispatcherKey,
+            legacyCallbackKey: SecureStorage.headersCallbackKey
+        )
     }
 }

@@ -2,6 +2,11 @@ import Foundation
 import CoreLocation
 
 class ConfigManager {
+    private let snapshotStore: ConfigSnapshotStoring
+    private let userDefaults: UserDefaults
+
+    private(set) var persistedConfig: [String: Any] = [:]
+    private(set) var persistedConfigStatus: PersistedConfigStatus = .absent
     
     // Location settings
     var desiredAccuracy: CLLocationAccuracy = kCLLocationAccuracyBest
@@ -108,21 +113,21 @@ class ConfigManager {
     // 415. A one-hour automatic suppression gives the caller a self-healing
     // path without paging the on-call; the operator can also override
     // `compressRequests` directly.
-    private let compressionFallback = CompressionFallbackState(
-        loadDeadline: {
-            let stored = UserDefaults.standard.double(
+    private lazy var compressionFallback = CompressionFallbackState(
+        loadDeadline: { [unowned self] in
+            let stored = userDefaults.double(
                 forKey: ConfigManager.compressionDisabledUntilKey
             )
             return stored > 0 ? Date(timeIntervalSince1970: stored) : nil
         },
-        saveDeadline: { deadline in
+        saveDeadline: { [unowned self] deadline in
             if let deadline = deadline {
-                UserDefaults.standard.set(
+                userDefaults.set(
                     deadline.timeIntervalSince1970,
                     forKey: ConfigManager.compressionDisabledUntilKey
                 )
             } else {
-                UserDefaults.standard.removeObject(
+                userDefaults.removeObject(
                     forKey: ConfigManager.compressionDisabledUntilKey
                 )
             }
@@ -169,6 +174,7 @@ class ConfigManager {
     static let startOnBootKey = "bg_start_on_boot"
     static let stopOnTerminateKey = "bg_stop_on_terminate"
     static let enableHeadlessKey = "bg_enable_headless"
+    static let privacyGuardKey = "bg_privacy_mode"
     static let lastConfigKey = "bg_last_config"
 
     /// UserDefaults key recording whether tracking is currently active. Matches the
@@ -196,42 +202,157 @@ class ConfigManager {
 
     func setSyncPauseReason(_ reason: String?) {
         if let reason = reason {
-            UserDefaults.standard.set(reason, forKey: ConfigManager.syncPauseReasonKey)
+            userDefaults.set(reason, forKey: ConfigManager.syncPauseReasonKey)
         } else {
-            UserDefaults.standard.removeObject(forKey: ConfigManager.syncPauseReasonKey)
+            userDefaults.removeObject(forKey: ConfigManager.syncPauseReasonKey)
         }
     }
 
     func getSyncPauseReason() -> String? {
-        return UserDefaults.standard.string(forKey: ConfigManager.syncPauseReasonKey)
+        return userDefaults.string(forKey: ConfigManager.syncPauseReasonKey)
     }
 
-    init() {
-        // Load persisted critical flags
-        if let config = UserDefaults.standard.dictionary(forKey: ConfigManager.lastConfigKey) {
-            apply(config)
-        }
-        startOnBoot = UserDefaults.standard.bool(forKey: ConfigManager.startOnBootKey)
-        stopOnTerminate = UserDefaults.standard.bool(forKey: ConfigManager.stopOnTerminateKey)
-        enableHeadless = UserDefaults.standard.bool(forKey: ConfigManager.enableHeadlessKey)
+    init(
+        snapshotStore: ConfigSnapshotStoring = SecureConfigSnapshotStore(),
+        userDefaults: UserDefaults = .standard
+    ) {
+        self.snapshotStore = snapshotStore
+        self.userDefaults = userDefaults
 
-        // IMPORTANT: Always reset privacy mode on init.
-        // Prevents stale persisted values from blocking location sync.
-        // Privacy mode should only be enabled explicitly via setPrivacyMode() API or config.
-        privacyModeEnabled = false
+        let snapshot = snapshotStore.read()
+        persistedConfigStatus = snapshot.status
+        if snapshot.status == .valid {
+            var values = snapshot.values
+
+            // A legacy plaintext snapshot may predate lifecycle flags stored in
+            // dedicated defaults. Fold only missing values into that migration.
+            // Once encrypted, the snapshot is authoritative so a crash between
+            // snapshot and compatibility writes cannot create split-brain state.
+            if snapshot.isLegacyPlaintext {
+                mergeMissingLegacyFlags(into: &values)
+            }
+            persistedConfig = values
+            applyValues(values)
+
+            if snapshot.isLegacyPlaintext {
+                do {
+                    try snapshotStore.write(values)
+                } catch {
+                    NSLog("[locus.ConfigManager] Legacy config migration deferred: %@", error.localizedDescription)
+                }
+            }
+        } else if let error = snapshot.error {
+            NSLog("[locus.ConfigManager] Persisted config is unavailable: %@", error.localizedDescription)
+        }
+
+        // Dedicated booleans existed before the full snapshot. Only an actual
+        // stored value may override defaults; bool(forKey:) turns absence into
+        // false and previously broke the documented stopOnTerminate=true default.
+        if snapshot.status == .absent {
+            var legacyOnly: [String: Any] = [:]
+            mergeMissingLegacyFlags(into: &legacyOnly)
+            applyValues(legacyOnly)
+        }
+        migrateDedicatedPrivacyGuard()
     }
     
-    func apply(_ config: [String: Any]) {
-        // Persist the merge of any prior bg_last_config with the incoming
-        // config so omitted keys (e.g. `extras` when Locus.ready does not
-        // re-stamp them) preserve the last-known-good value across cold
-        // starts. Without this, an incoming config that legitimately omits
-        // a field would silently erase that field from disk and the next
-        // cold-start would init it to its in-memory default.
-        var merged: [String: Any] =
-            UserDefaults.standard.dictionary(forKey: ConfigManager.lastConfigKey) ?? [:]
-        for (key, value) in config { merged[key] = value }
-        UserDefaults.standard.setValue(merged, forKey: ConfigManager.lastConfigKey)
+    func apply(_ config: [String: Any]) throws {
+        var current = persistedConfig
+        if current["privacyModeEnabled"] == nil,
+           let dedicatedGuard = userDefaults.object(
+               forKey: ConfigManager.privacyGuardKey
+           ) as? Bool {
+            current["privacyModeEnabled"] = dedicatedGuard
+        }
+        let merged = SecureConfigSnapshotStore.merge(
+            current: current,
+            incoming: config
+        )
+        try snapshotStore.write(merged)
+        persistedConfig = merged
+        persistedConfigStatus = .valid
+        applyValues(merged)
+
+        // Preserve these non-sensitive keys for backwards compatibility with
+        // older installs. TODO(locus-3.0): remove the duplicate legacy keys
+        // after supported releases read lifecycle flags from the snapshot only.
+        userDefaults.set(enableHeadless, forKey: ConfigManager.enableHeadlessKey)
+        userDefaults.set(stopOnTerminate, forKey: ConfigManager.stopOnTerminateKey)
+        userDefaults.set(startOnBoot, forKey: ConfigManager.startOnBootKey)
+        userDefaults.removeObject(forKey: ConfigManager.privacyGuardKey)
+    }
+
+    /// Persists the native privacy guard before changing runtime state. A guard
+    /// that cannot be durably disabled remains enabled (fail closed), preventing
+    /// cold recovery from storing or syncing raw locations before Dart restores
+    /// its privacy-zone service.
+    func setPrivacyMode(_ enabled: Bool) throws {
+        if persistedConfigStatus == .absent {
+            userDefaults.set(enabled, forKey: ConfigManager.privacyGuardKey)
+            privacyModeEnabled = enabled
+            return
+        }
+
+        if enabled {
+            // Establish a separate fail-closed receipt before updating the
+            // snapshot. A crash between these writes still suppresses raw data.
+            userDefaults.set(true, forKey: ConfigManager.privacyGuardKey)
+            privacyModeEnabled = true
+        }
+
+        guard persistedConfigStatus == .valid else {
+            throw ConfigSnapshotError.invalidRoot
+        }
+        var updated = persistedConfig
+        updated["privacyModeEnabled"] = enabled
+        do {
+            try snapshotStore.write(updated)
+            persistedConfig = updated
+            persistedConfigStatus = .valid
+            privacyModeEnabled = enabled
+            userDefaults.removeObject(forKey: ConfigManager.privacyGuardKey)
+        } catch {
+            if enabled {
+                privacyModeEnabled = true
+            }
+            throw error
+        }
+    }
+
+    private func migrateDedicatedPrivacyGuard() {
+        guard let legacy = userDefaults.object(forKey: ConfigManager.privacyGuardKey) as? Bool else {
+            return
+        }
+        privacyModeEnabled = legacy
+        guard persistedConfigStatus == .valid else { return }
+
+        var updated = persistedConfig
+        updated["privacyModeEnabled"] = legacy
+        do {
+            try snapshotStore.write(updated)
+            persistedConfig = updated
+            userDefaults.removeObject(forKey: ConfigManager.privacyGuardKey)
+        } catch {
+            // Retain the dedicated value. A true guard must survive until the
+            // encrypted snapshot can be updated successfully.
+            NSLog("[locus.ConfigManager] Privacy guard migration deferred: %@", error.localizedDescription)
+        }
+    }
+
+    private func mergeMissingLegacyFlags(into values: inout [String: Any]) {
+        let flags: [(String, String)] = [
+            ("startOnBoot", ConfigManager.startOnBootKey),
+            ("stopOnTerminate", ConfigManager.stopOnTerminateKey),
+            ("enableHeadless", ConfigManager.enableHeadlessKey),
+        ]
+        for (configKey, defaultsKey) in flags where values[configKey] == nil {
+            if let value = userDefaults.object(forKey: defaultsKey) as? Bool {
+                values[configKey] = value
+            }
+        }
+    }
+
+    private func applyValues(_ config: [String: Any]) {
         
         // Location settings
         if let desired = config["desiredAccuracy"] as? String {
@@ -270,15 +391,12 @@ class ConfigManager {
         
         if let val = config["enableHeadless"] as? Bool {
             enableHeadless = val
-            UserDefaults.standard.setValue(val, forKey: ConfigManager.enableHeadlessKey)
         }
         if let val = config["stopOnTerminate"] as? Bool {
             stopOnTerminate = val
-            UserDefaults.standard.setValue(val, forKey: ConfigManager.stopOnTerminateKey)
         }
         if let val = config["startOnBoot"] as? Bool {
             startOnBoot = val
-            UserDefaults.standard.setValue(val, forKey: ConfigManager.startOnBootKey)
         }
         
         // HTTP sync settings
