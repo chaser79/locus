@@ -1,17 +1,14 @@
 package dev.locus.core
 
-import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import dev.locus.service.HeadlessHeadersService
 
 class HeadlessHeadersDispatcher(
-    private val context: Context,
     private val config: ConfigManager,
     private val prefs: SharedPreferences?,
+    private val serviceGateway: HeadlessServiceGateway,
 ) {
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -32,13 +29,7 @@ class HeadlessHeadersDispatcher(
         }
 
         runCatching {
-            val intent = Intent(context, HeadlessHeadersService::class.java).apply {
-                putExtra("dispatcher", dispatcher)
-                putExtra("callback", headersCallback)
-                putExtra("timeoutMs", timeoutMs)
-            }
-
-            HeadlessHeadersService.enqueueWork(context, intent) { headers ->
+            serviceGateway.refreshHeaders(dispatcher, headersCallback, timeoutMs) { headers ->
                 mainHandler.post { callback(headers) }
             }
         }.onFailure { error ->

@@ -1,15 +1,12 @@
 package dev.locus.core
 
-import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
-import dev.locus.service.HeadlessService
 import org.json.JSONObject
 
 class HeadlessDispatcher(
-    private val context: Context,
     private val config: ConfigManager,
-    private val prefs: SharedPreferences?
+    private val prefs: SharedPreferences?,
+    private val serviceGateway: HeadlessServiceGateway,
 ) {
     fun dispatch(event: Map<String, Any>) {
         if (!config.enableHeadless || prefs == null) {
@@ -25,13 +22,7 @@ class HeadlessDispatcher(
         
         runCatching {
             val payload = JSONObject(event)
-            Intent(context, HeadlessService::class.java).apply {
-                putExtra("dispatcher", dispatcher)
-                putExtra("callback", callback)
-                putExtra("event", payload.toString())
-            }.also { intent ->
-                HeadlessService.enqueueWork(context, intent)
-            }
+            serviceGateway.dispatchEvent(dispatcher, callback, payload.toString())
         }
     }
 

@@ -41,12 +41,16 @@ class BootReceiver : BroadcastReceiver() {
         // Verify location permission before dispatching headless service.
         // On Android 14+ (SDK 34+), starting a foreground service with type
         // "location" without the runtime permission throws SecurityException.
-        val hasLocationPermission = ContextCompat.checkSelfPermission(
+        val hasFineLocation = ContextCompat.checkSelfPermission(
             context,
             android.Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
-        if (!hasLocationPermission) {
-            Log.w("BootReceiver", "Skipping headless dispatch: ACCESS_FINE_LOCATION not granted")
+        val hasCoarseLocation = ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!hasFineLocation && !hasCoarseLocation) {
+            Log.w("BootReceiver", "Skipping headless dispatch: location permission not granted")
             return
         }
 

@@ -2,17 +2,22 @@ package dev.locus.core
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import dev.locus.LocusPlugin
-import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 
 class ConfigManager(context: Context) {
 
     private val prefs: SharedPreferences =
         context.getSharedPreferences(LocusPlugin.PREFS_NAME, Context.MODE_PRIVATE)
+    private val configSnapshotStore = SecureConfigSnapshotStore(prefs, LAST_CONFIG_KEY)
+    @Volatile
+    private var explicitUserStopObserved = false
 
     companion object {
+        private const val TAG = "locus.ConfigManager"
+        internal const val LAST_CONFIG_KEY = "bg_last_config"
+
         /**
          * SharedPreferences key that records whether tracking is currently active.
          * Set to `true` inside [LocationTracker.startTracking] and `false` inside
@@ -21,6 +26,7 @@ class ConfigManager(context: Context) {
          * reports correctly after process relaunch.
          */
         const val KEY_TRACKING_ACTIVE = "bg_tracking_active"
+        internal const val KEY_EXPLICIT_USER_STOP_ACTIVE = "bg_explicit_user_stop_active_v1"
 
         /**
          * SharedPreferences key recording why sync is currently paused. Persists across
@@ -44,7 +50,11 @@ class ConfigManager(context: Context) {
     }
 
     init {
-        restorePersistedConfig()
+        explicitUserStopObserved = UserRequestedStopHistory(context, prefs)
+            .consumeExplicitStop(
+                trackingActiveKey = KEY_TRACKING_ACTIVE,
+                explicitStopActiveKey = KEY_EXPLICIT_USER_STOP_ACTIVE,
+            ) || prefs.getBoolean(KEY_EXPLICIT_USER_STOP_ACTIVE, false)
     }
 
     // Notification settings
@@ -177,8 +187,8 @@ class ConfigManager(context: Context) {
     var desiredAccuracy: String = "high"
     var privacyModeEnabled: Boolean = false
 
-    fun applyConfig(config: Map<String, Any>?) {
-        if (config == null) return
+    fun applyConfig(config: Map<String, Any>?): Boolean {
+        if (config == null) return false
 
         // Persist the merge of any prior bg_last_config with the incoming
         // config so omitted keys (e.g. `extras` when Locus.ready does not
@@ -186,9 +196,96 @@ class ConfigManager(context: Context) {
         // starts. Without this, an incoming config that legitimately omits
         // a field would silently erase that field from disk and the next
         // cold-start would init it to its in-memory default.
-        val merged = HashMap<String, Any>(buildConfigSnapshot())
-        for ((key, value) in config) merged[key] = value
-        prefs.edit().putString("bg_last_config", JSONObject(merged).toString()).apply()
+        val current = HashMap(buildConfigSnapshot())
+        if (!current.containsKey("privacyModeEnabled") && prefs.contains("bg_privacy_mode")) {
+            current["privacyModeEnabled"] = prefs.getBoolean("bg_privacy_mode", false)
+        }
+        val merged = mergeConfigSnapshot(current, config)
+        val nextEnableHeadless = merged["enableHeadless"] as? Boolean ?: enableHeadless
+        val nextStartOnBoot = merged["startOnBoot"] as? Boolean ?: startOnBoot
+        val nextStopOnTerminate = merged["stopOnTerminate"] as? Boolean ?: stopOnTerminate
+        val serialized = JSONObject(merged).toString()
+        val persistedSnapshot = configSnapshotStore.write(serialized) {
+            putBoolean("bg_enable_headless", nextEnableHeadless)
+            putBoolean("bg_start_on_boot", nextStartOnBoot)
+            putBoolean("bg_stop_on_terminate", nextStopOnTerminate)
+            if (merged["privacyModeEnabled"] == true) {
+                putBoolean("bg_privacy_mode", true)
+            } else {
+                remove("bg_privacy_mode")
+            }
+        }
+        if (!persistedSnapshot.success) {
+            Log.e(TAG, "Failed to persist encrypted configuration snapshot", persistedSnapshot.error)
+            return false
+        }
+        applyConfigValues(merged)
+        return true
+    }
+
+    /** Hydrates persisted values without writing the snapshot back to disk. */
+    internal fun restoreConfig(config: Map<String, Any>) {
+        applyConfigValues(config)
+    }
+
+    /** Persists successful in-place notification changes for process recovery. */
+    internal fun persistNotificationContent(title: String?, text: String?): Boolean {
+        if (title == null && text == null) return true
+
+        val decoded = readPersistedConfig()
+        if (decoded.status != PersistedConfigStatus.VALID) {
+            Log.e(TAG, "Cannot update notification without a valid persisted configuration")
+            return false
+        }
+        val patched = patchNotificationContent(decoded.values, title, text)
+        val writeResult = configSnapshotStore.write(JSONObject(patched).toString())
+        val persisted = writeResult.success
+
+        if (persisted) {
+            if (title != null) notificationTitle = title
+            if (text != null) notificationText = text
+        } else {
+            Log.e(TAG, "Failed to persist encrypted notification configuration", writeResult.error)
+        }
+        return persisted
+    }
+
+    /**
+     * Persists the native privacy guard before changing runtime state. A failed
+     * disable leaves the guard enabled so process recovery cannot store or sync
+     * raw locations before Dart restores its privacy-zone service.
+     */
+    internal fun persistPrivacyMode(enabled: Boolean): Boolean {
+        val decoded = readPersistedConfig()
+        if (decoded.status == PersistedConfigStatus.ABSENT) {
+            val stored = prefs.edit().putBoolean("bg_privacy_mode", enabled).commit()
+            if (stored) privacyModeEnabled = enabled
+            return stored
+        }
+        if (enabled) {
+            val receiptStored = prefs.edit().putBoolean("bg_privacy_mode", true).commit()
+            if (!receiptStored) return false
+            privacyModeEnabled = true
+        }
+        if (decoded.status == PersistedConfigStatus.CORRUPT) {
+            Log.e(TAG, "Cannot update privacy mode with a corrupt persisted configuration")
+            return false
+        }
+        val updated = HashMap(decoded.values)
+        updated["privacyModeEnabled"] = enabled
+        val writeResult = configSnapshotStore.write(JSONObject(updated).toString()) {
+            if (enabled) putBoolean("bg_privacy_mode", true) else remove("bg_privacy_mode")
+        }
+        if (writeResult.success) {
+            privacyModeEnabled = enabled
+            return true
+        }
+        if (enabled) privacyModeEnabled = true
+        Log.e(TAG, "Failed to persist encrypted privacy guard", writeResult.error)
+        return false
+    }
+
+    private fun applyConfigValues(config: Map<String, Any>) {
 
         // Notification settings
         (config["foregroundService"] as? Boolean)?.let { foregroundService = it }
@@ -197,6 +294,9 @@ class ConfigManager(context: Context) {
         notificationTitle = (notification?.get("title") ?: config["notificationTitle"]) as? String ?: notificationTitle
         notificationText = (notification?.get("text") ?: config["notificationText"]) as? String ?: notificationText
         notificationIcon = (notification?.get("smallIcon") ?: config["notificationSmallIcon"]) as? String ?: notificationIcon
+        (notification?.get("importance") as? Number)?.let {
+            notificationImportance = it.toInt()
+        }
 
         (notification?.get("actions") as? List<*>)?.let { actions ->
             notificationActions.clear()
@@ -264,24 +364,9 @@ class ConfigManager(context: Context) {
         (config["stopDetectionDelay"] as? Number)?.let { stopDetectionDelay = it.toLong() }
         (config["desiredAccuracy"] as? String)?.let { desiredAccuracy = it }
         
-        // Privacy mode: Reset to false unless explicitly enabled in config.
-        // This ensures that stale persisted privacy mode values don't block location sync.
-        // Use setPrivacyMode() API to explicitly enable privacy mode if needed.
-        val configPrivacyMode = config["privacyModeEnabled"] as? Boolean
-        privacyModeEnabled = configPrivacyMode ?: false
-        // Clear persisted privacy mode when config is applied (unless explicitly set to true)
-        if (configPrivacyMode != true) {
-            prefs.edit().remove("bg_privacy_mode").apply()
-        }
-
+        (config["privacyModeEnabled"] as? Boolean)?.let { privacyModeEnabled = it }
         // Apply sync policy if present
         applySyncPolicy(config["syncPolicy"] as? Map<*, *>)
-
-        prefs.edit()
-            .putBoolean("bg_enable_headless", enableHeadless)
-            .putBoolean("bg_start_on_boot", startOnBoot)
-            .putBoolean("bg_stop_on_terminate", stopOnTerminate)
-            .apply()
     }
 
     fun applySyncPolicy(policy: Map<*, *>?) {
@@ -295,12 +380,38 @@ class ConfigManager(context: Context) {
     }
 
     fun buildConfigSnapshot(): Map<String, Any> {
-        val configJson = prefs.getString("bg_last_config", null) ?: return emptyMap()
-        return try {
-            JSONObject(configJson).toMap()
-        } catch (e: JSONException) {
-            emptyMap()
+        return readPersistedConfig().values
+    }
+
+    internal fun persistedConfigStatus(): PersistedConfigStatus {
+        return readPersistedConfig().status
+    }
+
+    private fun readPersistedConfig(): DecodedPersistedConfig {
+        val stored = configSnapshotStore.read()
+        stored.error?.let { error ->
+            Log.e(TAG, "Failed to decrypt persisted configuration", error)
+            return DecodedPersistedConfig(
+                status = PersistedConfigStatus.CORRUPT,
+                error = error,
+            )
         }
+        val decoded = decodePersistedConfig(stored.serialized) {
+            parseConfigSnapshot(it)
+        }
+        decoded.error?.let { error ->
+            Log.e(TAG, "Failed to decode persisted configuration", error)
+        }
+        if (stored.isLegacyPlaintext && decoded.status == PersistedConfigStatus.VALID) {
+            // TODO(locus-major): remove plaintext snapshot compatibility after hosts have
+            // had a full major-version migration window. Until then, successful reads
+            // immediately rewrite the legacy value as an AndroidKeyStore envelope.
+            val migration = configSnapshotStore.write(stored.serialized.orEmpty())
+            if (!migration.success) {
+                Log.e(TAG, "Failed to migrate legacy configuration snapshot", migration.error)
+            }
+        }
+        return decoded
     }
 
     /**
@@ -310,14 +421,26 @@ class ConfigManager(context: Context) {
      * app away and the OS later reaped the process), the flag stays `true` and
      * `onAttachedToEngine` re-arms tracking.
      */
-    fun setTrackingActive(active: Boolean) {
-        prefs.edit().putBoolean(KEY_TRACKING_ACTIVE, active).apply()
+    fun setTrackingActive(active: Boolean): Boolean {
+        // This flag is the durable desired state used by process recovery.
+        // Commit synchronously so start/stop cannot return before recovery intent
+        // is ordered relative to foreground-service teardown.
+        val persisted = prefs.edit().apply {
+            putBoolean(KEY_TRACKING_ACTIVE, active)
+            if (active) remove(KEY_EXPLICIT_USER_STOP_ACTIVE)
+        }.commit()
+        if (!persisted) Log.e(TAG, "Failed to persist tracking desired state: $active")
+        if (persisted && active) explicitUserStopObserved = false
+        return persisted
     }
 
     /** @see setTrackingActive */
     fun isTrackingActivePersisted(): Boolean {
-        return prefs.getBoolean(KEY_TRACKING_ACTIVE, false)
+        return !explicitUserStopObserved && prefs.getBoolean(KEY_TRACKING_ACTIVE, false)
     }
+
+    internal fun isExplicitUserStopActive(): Boolean =
+        explicitUserStopObserved || prefs.getBoolean(KEY_EXPLICIT_USER_STOP_ACTIVE, false)
 
     /**
      * Persists the sync pause reason. Pass `null` to clear (sync active again).
@@ -336,12 +459,6 @@ class ConfigManager(context: Context) {
         return prefs.getString(KEY_SYNC_PAUSE_REASON, null)
     }
 
-    private fun restorePersistedConfig() {
-        val persistedConfig = buildConfigSnapshot()
-        if (persistedConfig.isEmpty()) return
-        applyConfig(persistedConfig)
-    }
-
     private fun Map<*, *>.toStringKeyMap(): MutableMap<String, Any> =
         java.util.concurrent.ConcurrentHashMap<String, Any>().also { map ->
             entries.forEach { (k, v) ->
@@ -351,16 +468,4 @@ class ConfigManager(context: Context) {
             }
         }
 
-    private fun JSONObject.toMap(): Map<String, Any> {
-        val map = mutableMapOf<String, Any>()
-        keys().forEach { key ->
-            val value = get(key)
-            map[key] = when (value) {
-                is JSONArray -> value.toString()
-                is JSONObject -> value.toMap()
-                else -> value
-            }
-        }
-        return map
-    }
 }

@@ -1,12 +1,9 @@
 package dev.locus.core
 
-import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import dev.locus.service.HeadlessValidationService
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -19,9 +16,9 @@ import org.json.JSONObject
  * even when the app UI is not running.
  */
 class HeadlessValidationDispatcher(
-    private val context: Context,
     private val config: ConfigManager,
-    private val prefs: SharedPreferences?
+    private val prefs: SharedPreferences?,
+    private val serviceGateway: HeadlessServiceGateway,
 ) {
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -70,14 +67,12 @@ class HeadlessValidationDispatcher(
                 put("extras", extrasJson)
             }
 
-            val intent = Intent(context, HeadlessValidationService::class.java).apply {
-                putExtra("dispatcher", dispatcher)
-                putExtra("callback", validationCallback)
-                putExtra("payload", payload.toString())
-                putExtra("timeoutMs", timeoutMs)
-            }
-
-            HeadlessValidationService.enqueueWork(context, intent) { result ->
+            serviceGateway.validate(
+                dispatcher,
+                validationCallback,
+                payload.toString(),
+                timeoutMs,
+            ) { result ->
                 mainHandler.post { callback(result) }
             }
         }.onFailure { e ->

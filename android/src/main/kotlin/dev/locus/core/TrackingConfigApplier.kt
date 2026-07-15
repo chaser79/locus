@@ -11,11 +11,11 @@ class TrackingConfigApplier(
     private val locationClient: LocationClient,
     private val restartHeartbeat: () -> Unit
 ) {
-    fun apply(configMap: Map<String, Any>?, isEnabled: Boolean) {
-        configMap ?: return
+    fun apply(configMap: Map<String, Any>?, isEnabled: Boolean): Boolean {
+        configMap ?: return false
 
         val previousHeartbeatInterval = config.heartbeatIntervalSeconds
-        config.applyConfig(configMap)
+        if (!config.applyConfig(configMap)) return false
 
         if (configMap.containsKey("maxMonitoredGeofences")) {
             geofenceManager.setMaxMonitoredGeofences(config.maxMonitoredGeofences)
@@ -35,5 +35,6 @@ class TrackingConfigApplier(
                 restartHeartbeat()
             }
         }
+        return true
     }
 }

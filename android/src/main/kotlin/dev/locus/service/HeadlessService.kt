@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.JobIntentService
+import dev.locus.core.ConfigManager
 import io.flutter.FlutterInjector
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
@@ -56,6 +57,11 @@ class HeadlessService : JobIntentService() {
     }
 
     private fun startBackgroundIsolate() {
+        if (ConfigManager(applicationContext).isExplicitUserStopActive()) {
+            Log.i(TAG, "Headless startup suppressed after an explicit Android app stop")
+            dispatcherReady.countDown()
+            return
+        }
         val prefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val headlessEnabled = prefs.getBoolean(KEY_ENABLE_HEADLESS, false)
         if (!headlessEnabled) {
@@ -137,6 +143,7 @@ class HeadlessService : JobIntentService() {
     }
 
     override fun onHandleWork(intent: Intent) {
+        if (ConfigManager(applicationContext).isExplicitUserStopActive()) return
         val callbackHandle = intent.getLongExtra("callback", 0L)
         if (callbackHandle == 0L) return
 

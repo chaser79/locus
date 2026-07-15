@@ -39,7 +39,10 @@ extensions.configure<LibraryExtension>("android") {
     defaultConfig {
         minSdk = 26
         targetSdk = 34
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // This dependency-free instrumentation executes the production parser
+        // against Android's real org.json implementation. TODO: migrate it to
+        // AndroidJUnitRunner if a broader Android test suite is introduced.
+        testInstrumentationRunner = "dev.locus.core.ConfigSnapshotInstrumentation"
     }
 
     sourceSets {
@@ -48,6 +51,9 @@ extensions.configure<LibraryExtension>("android") {
         }
         getByName("test") {
             java.srcDirs("src/test/kotlin")
+        }
+        getByName("androidTest") {
+            java.srcDirs("src/androidTest/kotlin")
         }
     }
 
@@ -75,7 +81,6 @@ tasks.withType<KotlinCompile>().configureEach {
 dependencies {
     add("implementation", "com.google.android.gms:play-services-location:21.3.0")
     add("implementation", "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    add("implementation", "androidx.security:security-crypto:1.1.0-alpha06")
 
     // JVM unit tests under src/test/kotlin. State helpers
     // (`CompressionFallbackState`, future drainExhaustedContexts) are

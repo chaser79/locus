@@ -36,19 +36,16 @@ class GeofenceManager(
         fun onGeofencesChanged(addedIds: List<String>, removedIds: List<String>)
     }
 
-    private fun hasLocationPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context,
-            android.Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
     fun setMaxMonitoredGeofences(max: Int) {
         maxMonitoredGeofences = max
     }
 
     fun addGeofence(geofenceMap: Map<String, Any>, result: MethodChannel.Result) {
-        if (!hasLocationPermission()) {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             result.error("PERMISSION_DENIED", "ACCESS_FINE_LOCATION permission not granted", null)
             return
         }
@@ -85,7 +82,11 @@ class GeofenceManager(
     }
 
     fun addGeofences(geofences: List<Any>, result: MethodChannel.Result) {
-        if (!hasLocationPermission()) {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             result.error("PERMISSION_DENIED", "ACCESS_FINE_LOCATION permission not granted", null)
             return
         }
@@ -276,7 +277,11 @@ class GeofenceManager(
     }
 
     fun startGeofencesInternal() {
-        if (!hasLocationPermission()) {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             Log.w("GeofenceManager", "Skipping geofence registration: ACCESS_FINE_LOCATION not granted")
             return
         }

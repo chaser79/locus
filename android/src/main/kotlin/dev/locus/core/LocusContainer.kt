@@ -18,11 +18,8 @@ import dev.locus.LocusPlugin
 import dev.locus.activity.MotionManager
 import dev.locus.geofence.GeofenceManager
 import dev.locus.location.LocationClient
-import dev.locus.service.ForegroundService
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 import java.util.UUID
 
@@ -54,7 +51,11 @@ import java.util.UUID
  * persisted through `ConfigManager.setTrackingActive(...)`, so on cold
  * restart, [reconcilePersistedTrackingState] re-arms tracking if needed.
  */
-internal class LocusContainer private constructor(private val context: Context) {
+internal class LocusContainer private constructor(
+    private val context: Context,
+    private val foregroundServiceGateway: ForegroundServiceGateway,
+    private val headlessServiceGateway: HeadlessServiceGateway,
+) {
 
     /**
      * Optional bridge back to a live FlutterEngine's Dart side. Set by a
@@ -79,22 +80,38 @@ internal class LocusContainer private constructor(private val context: Context) 
         fun invokeRefreshHeaders(callback: (Map<String, String>?) -> Unit)
     }
 
-    @Volatile
-    private var bridge: DartBridge? = null
+    private val bridgeRegistry = EngineBindingRegistry<DartBridge>()
 
     /**
-     * Install a bridge to the active UI engine. Last-writer-wins; safe to
-     * call from the main thread only. Passing `null` detaches the bridge so
-     * subsequent events route to headless dispatchers.
+     * Install a bridge to the active UI engine. Last-writer-wins. Releasing
+     * requires the same owner token, so a stale engine cannot detach the
+     * bridge installed by a newer engine.
      */
-    fun setBridge(b: DartBridge?) {
-        bridge = b
+    fun setBridge(owner: Any, bridge: DartBridge) {
+        callbackBroker.bindingClaimed(bridgeRegistry.claimAndSnapshot(owner, bridge))
+    }
+
+    fun clearBridge(owner: Any) {
+        bridgeRegistry.release(owner)
+        callbackBroker.ownerDetached(owner)
     }
 
     // Process-lifetime managers. Each is initialized exactly once in `init`.
     private val prefs: SharedPreferences =
         context.getSharedPreferences(LocusPlugin.PREFS_NAME, Context.MODE_PRIVATE)
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val callbackBroker by lazy {
+        EngineCallbackBroker(
+            bindings = bridgeRegistry,
+            deadlineScheduler = CallbackDeadlineScheduler { delayMs, callback ->
+                val runnable = Runnable(callback)
+                mainHandler.postDelayed(runnable, delayMs)
+                CallbackDeadlineCancellation {
+                    mainHandler.removeCallbacks(runnable)
+                }
+            },
+        )
+    }
 
     val configManager: ConfigManager
     val stateManager: StateManager
@@ -106,7 +123,6 @@ internal class LocusContainer private constructor(private val context: Context) 
     val eventDispatcher: EventDispatcher
     val systemMonitor: SystemMonitor
     val backgroundTaskManager: BackgroundTaskManager
-    val foregroundServiceController: ForegroundServiceController
     val geofenceManager: GeofenceManager
     val locationClient: LocationClient
     val motionManager: MotionManager
@@ -116,21 +132,37 @@ internal class LocusContainer private constructor(private val context: Context) 
     val preferenceEventHandler: PreferenceEventHandler
 
     init {
-        // Privacy mode: always start disabled on fresh container construction.
-        // Stale persisted values could otherwise block location sync before
-        // Locus.ready() is called.
-        prefs.edit().remove("bg_privacy_mode").apply()
-
-        configManager = ConfigManager(context).also { it.privacyModeEnabled = false }
-        Log.d(TAG, "LocusContainer initialized - privacyModeEnabled=false")
+        configManager = ConfigManager(context)
+        configManager.buildConfigSnapshot().takeIf { it.isNotEmpty() }?.let { stored ->
+            configManager.restoreConfig(stored)
+        }
+        if (prefs.contains("bg_privacy_mode")) {
+            // The dedicated true receipt is intentionally retained alongside
+            // the encrypted snapshot because broadcast receivers must fail
+            // closed without constructing the full runtime graph.
+            configManager.persistPrivacyMode(prefs.getBoolean("bg_privacy_mode", false))
+        }
+        Log.d(TAG, "LocusContainer initialized - privacyModeEnabled=${configManager.privacyModeEnabled}")
 
         stateManager = StateManager(context)
         trackingStats = TrackingStats(context)
         logManager = LogManager(configManager, stateManager.logStore)
 
-        headlessDispatcher = HeadlessDispatcher(context, configManager, prefs)
-        headlessHeadersDispatcher = HeadlessHeadersDispatcher(context, configManager, prefs)
-        headlessValidationDispatcher = HeadlessValidationDispatcher(context, configManager, prefs)
+        headlessDispatcher = HeadlessDispatcher(
+            configManager,
+            prefs,
+            headlessServiceGateway,
+        )
+        headlessHeadersDispatcher = HeadlessHeadersDispatcher(
+            configManager,
+            prefs,
+            headlessServiceGateway,
+        )
+        headlessValidationDispatcher = HeadlessValidationDispatcher(
+            configManager,
+            prefs,
+            headlessServiceGateway,
+        )
 
         eventDispatcher = EventDispatcher(headlessDispatcher)
 
@@ -145,11 +177,10 @@ internal class LocusContainer private constructor(private val context: Context) 
         })
 
         backgroundTaskManager = BackgroundTaskManager(context)
-        foregroundServiceController = ForegroundServiceController(context)
-
         geofenceManager = GeofenceManager(context) { added, removed ->
             emitEvent("geofenceschange", mapOf("on" to added, "off" to removed))
         }
+        geofenceManager.setMaxMonitoredGeofences(configManager.maxMonitoredGeofences)
 
         locationClient = LocationClient(context, configManager)
         motionManager = MotionManager(context, configManager)
@@ -177,12 +208,14 @@ internal class LocusContainer private constructor(private val context: Context) 
                     extras: Map<String, Any>,
                     callback: (JSONObject?) -> Unit,
                 ) {
-                    val b = bridge
-                    if (b == null) {
-                        callback(null)
-                    } else {
-                        b.invokeBuildSyncBody(locations, extras, callback)
-                    }
+                    callbackBroker.request<JSONObject?>(
+                        invoke = { bridge, complete ->
+                            bridge.invokeBuildSyncBody(locations, extras, complete)
+                        },
+                        fallback = { complete -> complete(null) },
+                        terminalDefault = { null },
+                        completion = callback,
+                    )
                 }
 
                 override fun onPreSyncValidation(
@@ -190,33 +223,41 @@ internal class LocusContainer private constructor(private val context: Context) 
                     extras: Map<String, Any>,
                     callback: (Boolean) -> Unit,
                 ) {
-                    val b = bridge
-                    if (b != null) {
-                        b.invokeValidatePreSync(locations, extras, callback)
-                        return
-                    }
-                    // Bridge not attached (UI engine gone). Fall back to
-                    // headless validation if registered; otherwise proceed
-                    // rather than stalling sync indefinitely.
-                    if (headlessValidationDispatcher.isAvailable()) {
-                        Log.d(TAG, "Using headless validation for pre-sync check")
-                        headlessValidationDispatcher.validate(locations, extras, callback)
-                    } else {
-                        callback(true)
-                    }
+                    callbackBroker.request(
+                        invoke = { bridge, complete ->
+                            bridge.invokeValidatePreSync(locations, extras, complete)
+                        },
+                        fallback = { complete ->
+                            // Bridge not attached (UI engine gone). Fall back
+                            // to headless validation if registered; otherwise
+                            // proceed rather than stalling sync indefinitely.
+                            if (headlessValidationDispatcher.isAvailable()) {
+                                Log.d(TAG, "Using headless validation for pre-sync check")
+                                headlessValidationDispatcher.validate(locations, extras, complete)
+                            } else {
+                                complete(true)
+                            }
+                        },
+                        terminalDefault = { true },
+                        completion = callback,
+                    )
                 }
 
                 override fun onHeadersRefresh(callback: (Map<String, String>?) -> Unit) {
-                    val b = bridge
-                    if (b != null) {
-                        b.invokeRefreshHeaders(callback)
-                        return
-                    }
-                    if (headlessHeadersDispatcher.isAvailable()) {
-                        headlessHeadersDispatcher.refreshHeaders(callback)
-                    } else {
-                        callback(null)
-                    }
+                    callbackBroker.request<Map<String, String>?>(
+                        invoke = { bridge, complete ->
+                            bridge.invokeRefreshHeaders(complete)
+                        },
+                        fallback = { complete ->
+                            if (headlessHeadersDispatcher.isAvailable()) {
+                                headlessHeadersDispatcher.refreshHeaders(complete)
+                            } else {
+                                complete(null)
+                            }
+                        },
+                        terminalDefault = { null },
+                        completion = callback,
+                    )
                 }
             },
         )
@@ -248,7 +289,7 @@ internal class LocusContainer private constructor(private val context: Context) 
             locationClient,
             motionManager,
             geofenceManager,
-            foregroundServiceController,
+            foregroundServiceGateway,
             trackingEventEmitter,
             logManager,
             trackingStats,
@@ -291,8 +332,9 @@ internal class LocusContainer private constructor(private val context: Context) 
         scheduler = Scheduler(configManager) { shouldBeEnabled ->
             when {
                 shouldBeEnabled && !locationTracker.isEnabled() -> {
-                    locationTracker.startTracking()
-                    locationTracker.emitScheduleEvent()
+                    locationTracker.startTracking { started ->
+                        if (started) locationTracker.emitScheduleEvent()
+                    }
                     true
                 }
                 !shouldBeEnabled && locationTracker.isEnabled() -> {
@@ -303,13 +345,8 @@ internal class LocusContainer private constructor(private val context: Context) 
             }
         }
 
-        applyStoredConfig()
         systemMonitor.registerConnectivity()
         systemMonitor.registerPowerSave()
-
-        // Cold-start reconciliation: if tracking was active before the process
-        // died, re-arm now. No-op on first install or after an explicit stop.
-        reconcilePersistedTrackingState()
     }
 
     // -------------------------------------------------------------------------
@@ -332,16 +369,35 @@ internal class LocusContainer private constructor(private val context: Context) 
                         mapOf("permissions" to missing),
                     )
                 }
-                locationTracker.applyConfig(call.arguments.asMap())
-                result.success(locationTracker.buildState())
+                if (!locationTracker.applyConfig(call.arguments.asMap())) {
+                    result.error(
+                        "CONFIG_PERSISTENCE_FAILED",
+                        "Failed to persist tracking configuration",
+                        null,
+                    )
+                    return
+                }
+                reconcilePersistedTrackingState(TrackingRecoveryOrigin.FLUTTER_ENGINE) {
+                    result.success(locationTracker.buildState())
+                }
             }
             "start" -> {
-                locationTracker.startTracking()
-                result.success(locationTracker.buildState())
+                locationTracker.startTracking {
+                    result.success(locationTracker.buildState())
+                }
             }
             "stop" -> {
-                locationTracker.stopTracking()
-                result.success(locationTracker.buildState())
+                val persisted = locationTracker.stopTracking()
+                val state = locationTracker.buildState().toMutableMap().apply {
+                    put("extras", mapOf("trackingIntentPersisted" to persisted))
+                }
+                if (!persisted) {
+                    emitPermissionError(
+                        "TRACKING_STOP_PERSISTENCE_FAILED",
+                        "Tracking stopped, but its durable desired state could not be cleared",
+                    )
+                }
+                result.success(state)
             }
             "getState" -> result.success(locationTracker.buildState())
             "updateNotification" -> {
@@ -350,13 +406,31 @@ internal class LocusContainer private constructor(private val context: Context) 
                     return
                 }
                 val args = call.arguments.asMap()
-                result.success(
-                    ForegroundService.updateNotification(
-                        context,
-                        args?.get("title") as? String,
-                        args?.get("text") as? String,
-                    ),
-                )
+                val title = args?.get("title") as? String
+                val text = args?.get("text") as? String
+                if (!foregroundServiceGateway.canUpdateNotification()) {
+                    result.success(false)
+                    return
+                }
+                val previousTitle = configManager.notificationTitle
+                val previousText = configManager.notificationText
+                if (!configManager.persistNotificationContent(title, text)) {
+                    result.success(false)
+                    return
+                }
+                if (foregroundServiceGateway.updateNotification(title, text)) {
+                    result.success(true)
+                    return
+                }
+                if (!configManager.persistNotificationContent(previousTitle, previousText)) {
+                    result.error(
+                        "NOTIFICATION_ROLLBACK_FAILED",
+                        "Notification update failed and its persisted state could not be restored",
+                        null,
+                    )
+                    return
+                }
+                result.success(false)
             }
             "getCurrentPosition" -> getCurrentPosition(result)
             "hasPreciseLocationPermission" -> {
@@ -367,8 +441,15 @@ internal class LocusContainer private constructor(private val context: Context) 
                 result.success(granted)
             }
             "setConfig", "reset" -> {
-                locationTracker.applyConfig(call.arguments.asMap())
-                result.success(true)
+                if (locationTracker.applyConfig(call.arguments.asMap())) {
+                    result.success(true)
+                } else {
+                    result.error(
+                        "CONFIG_PERSISTENCE_FAILED",
+                        "Failed to persist tracking configuration",
+                        null,
+                    )
+                }
             }
             "setOdometer" -> {
                 (call.arguments as? Number)?.let { num ->
@@ -404,11 +485,14 @@ internal class LocusContainer private constructor(private val context: Context) 
                 result.success(stateManager.getQueue(limit))
             }
             "setPrivacyMode" -> {
-                (call.arguments as? Boolean)?.let { enabled ->
-                    configManager.privacyModeEnabled = enabled
-                    prefs.edit().putBoolean("bg_privacy_mode", enabled).apply()
+                val enabled = call.arguments as? Boolean
+                if (enabled == null) {
+                    result.error("INVALID_ARGUMENT", "Expected privacy mode boolean", null)
+                } else if (configManager.persistPrivacyMode(enabled)) {
+                    result.success(true)
+                } else {
+                    result.error("CONFIG_PERSISTENCE_ERROR", "Unable to persist privacy mode", null)
                 }
-                result.success(true)
             }
             "clearQueue" -> {
                 stateManager.clearQueue()
@@ -432,7 +516,7 @@ internal class LocusContainer private constructor(private val context: Context) 
                 stateManager.clearTripState()
                 result.success(true)
             }
-            "getConfig" -> result.success(buildConfigSnapshot())
+            "getConfig" -> result.success(configManager.buildConfigSnapshot())
             "getDiagnosticsMetadata" -> result.success(buildDiagnosticsMetadata())
             // Lean, single-purpose channel used by DeviceOptimizationService to
             // map the device to a "Don't Kill My App" URL. Build.MANUFACTURER
@@ -483,6 +567,7 @@ internal class LocusContainer private constructor(private val context: Context) 
                 result.success(true)
             }
             "isInActiveGeofence" -> result.success(isInActiveGeofence())
+            "setAdaptiveTracking",
             "setSpoofDetection",
             "startSignificantChangeMonitoring",
             "stopSignificantChangeMonitoring" -> result.success(true) // Handled on Dart side
@@ -562,40 +647,75 @@ internal class LocusContainer private constructor(private val context: Context) 
     //  Startup + persistence
     // -------------------------------------------------------------------------
 
-    private fun applyStoredConfig() {
-        val configJson = prefs.getString("bg_last_config", null) ?: return
-        try {
-            locationTracker.applyConfig(JSONObject(configJson).toMap())
-        } catch (e: JSONException) {
-            Log.e(TAG, "Failed to restore config - clearing corrupted data: ${e.message}")
-            prefs.edit().remove("bg_last_config").apply()
-            emitEvent(
-                "error",
-                mapOf(
-                    "type" to "configError",
-                    "message" to "Failed to restore stored config: ${e.message}",
-                    "action" to "cleared",
-                ),
-            )
-        }
-    }
-
     /**
      * If [ConfigManager.isTrackingActivePersisted] returns true (set on the
      * last successful [LocationTracker.startTracking] and cleared only by
      * explicit stop), re-arm tracking now. Used after a process cold start
      * so [Locus.isTracking] reflects reality and location events keep flowing.
      */
-    private fun reconcilePersistedTrackingState() {
-        if (!configManager.isTrackingActivePersisted()) return
-        if (locationTracker.isEnabled()) return
-        if (!locationClient.hasPermission()) {
-            Log.w(TAG, "reconcilePersistedTrackingState: flag set but location permission missing — clearing")
-            configManager.setTrackingActive(false)
-            return
+    @Synchronized
+    internal fun reconcilePersistedTrackingState(
+        origin: TrackingRecoveryOrigin,
+        onComplete: (TrackingRecoveryAction) -> Unit,
+    ) {
+        val configStatus = configManager.persistedConfigStatus()
+        val action = decideTrackingRecovery(
+            trackingDesired = configManager.isTrackingActivePersisted(),
+            runtimeEnabled = locationTracker.isEnabled(),
+            configStatus = configStatus,
+            hasPermission = locationClient.hasPermission(),
+        )
+
+        when (action) {
+            TrackingRecoveryAction.NONE,
+            TrackingRecoveryAction.KEEP_RUNNING -> {
+                onComplete(action)
+                return
+            }
+
+            TrackingRecoveryAction.WAIT_FOR_CONFIG -> {
+                Log.e(TAG, "Tracking recovery deferred: persisted config is corrupt")
+                onComplete(action)
+                return
+            }
+
+            TrackingRecoveryAction.STOP_RUNTIME -> {
+                Log.w(TAG, "Tracking recovery stopping runtime with no durable intent")
+                locationTracker.stopTracking()
+                onComplete(action)
+                return
+            }
+
+            TrackingRecoveryAction.CLEAR_DESIRED_STATE -> {
+                val reason = if (configStatus == PersistedConfigStatus.ABSENT) {
+                    "persisted config unavailable"
+                } else {
+                    "location permission missing"
+                }
+                Log.w(TAG, "Tracking recovery blocked: $reason; clearing desired state")
+                locationTracker.stopTracking()
+                onComplete(action)
+                return
+            }
+
+            TrackingRecoveryAction.START -> {
+                Log.i(TAG, "Re-arming persisted tracking from $origin")
+                val startOrigin = when (origin) {
+                    TrackingRecoveryOrigin.FLUTTER_ENGINE -> TrackingStartOrigin.STANDARD
+                    TrackingRecoveryOrigin.FOREGROUND_SERVICE ->
+                        TrackingStartOrigin.FOREGROUND_SERVICE_RECOVERY
+                }
+                locationTracker.startTracking(startOrigin) { started ->
+                    if (started) {
+                        onComplete(TrackingRecoveryAction.KEEP_RUNNING)
+                    } else {
+                        configManager.setTrackingActive(false)
+                        onComplete(TrackingRecoveryAction.CLEAR_DESIRED_STATE)
+                    }
+                }
+                return
+            }
         }
-        Log.i(TAG, "reconcilePersistedTrackingState: re-arming tracking after process restart (bg_tracking_active=true)")
-        locationTracker.startTracking()
     }
 
     // -------------------------------------------------------------------------
@@ -685,15 +805,6 @@ internal class LocusContainer private constructor(private val context: Context) 
                 result.error(code, message, null)
             }
         })
-    }
-
-    private fun buildConfigSnapshot(): Map<String, Any> {
-        val configJson = prefs.getString("bg_last_config", null) ?: return emptyMap()
-        return try {
-            JSONObject(configJson).toMap()
-        } catch (e: JSONException) {
-            emptyMap()
-        }
     }
 
     private fun buildDiagnosticsMetadata(): Map<String, Any> = mapOf(
@@ -859,9 +970,17 @@ internal class LocusContainer private constructor(private val context: Context) 
          * Idempotent and thread-safe — all LocusPlugin instances in the
          * process share a single container.
          */
-        fun acquire(context: Context): LocusContainer {
+        fun acquire(
+            context: Context,
+            foregroundServiceGateway: ForegroundServiceGateway,
+            headlessServiceGateway: HeadlessServiceGateway,
+        ): LocusContainer {
             return instance ?: synchronized(LocusContainer::class.java) {
-                instance ?: LocusContainer(context.applicationContext).also { instance = it }
+                instance ?: LocusContainer(
+                    context.applicationContext,
+                    foregroundServiceGateway,
+                    headlessServiceGateway,
+                ).also { instance = it }
             }
         }
 
@@ -888,34 +1007,4 @@ private fun Any?.toDoubleOrNull(): Double? = when (this) {
     is Number -> this.toDouble()
     is String -> this.toDoubleOrNull()
     else -> null
-}
-
-@Throws(JSONException::class)
-private fun JSONObject.toMap(): Map<String, Any> {
-    val map = mutableMapOf<String, Any>()
-    val names = this.names() ?: return map
-    for (i in 0 until names.length()) {
-        val key = names.optString(i)
-        when (val value = this.opt(key)) {
-            is JSONObject -> map[key] = value.toMap()
-            is JSONArray -> map[key] = value.toList()
-            JSONObject.NULL -> Unit
-            else -> value?.let { map[key] = it }
-        }
-    }
-    return map
-}
-
-@Throws(JSONException::class)
-private fun JSONArray.toList(): List<Any> {
-    val list = mutableListOf<Any>()
-    for (i in 0 until this.length()) {
-        when (val value = this.opt(i)) {
-            is JSONObject -> list.add(value.toMap())
-            is JSONArray -> list.add(value.toList())
-            JSONObject.NULL -> Unit
-            else -> value?.let { list.add(it) }
-        }
-    }
-    return list
 }
