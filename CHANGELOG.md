@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Android: release-gating runtime recovery matrix** — CI now exercises API 26, 29, 34, and 36 with the production config parser plus process-death, fresh-location, Task Manager Stop, and explicit-stop contracts.
+- **iOS: Flutter Swift Package Manager support** — The native source tree now has a Flutter-compatible nested Swift package while preserving the existing CocoaPods integration. CI builds a real consumer through each path and compiles the native tests under both module identities.
+
+### Changed
+
+- **Android/iOS: recovery state is process-owned and persisted securely** — Flutter engine bindings are now replaceable views over a single native runtime. Persisted configuration migrates forward without exposing credentials, and recovery policy remains isolated from service orchestration so eligible OS relaunches can re-arm tracking without duplicating services.
+- **CLI: platform setup is conservative and activity-aware** — `setup` and `doctor` now align `--activity` / `--no-activity` across Android and iOS, and edit only Podfile permission blocks whose Ruby scope can be proven safe.
+
+### Fixed
+
+- **Android: eligible process recovery now restores actual location collection** — A sticky foreground-service restart reconstructs the process-owned tracking runtime from persisted intent and configuration instead of restoring only the notification. Start/stop convergence, stale commands, revoked permissions, and task-removal behavior are covered by native policies and tests.
+- **Android: Task Manager Stop could be mistaken for recoverable process death** — Android 13+ does not force-stop the package when the user taps Stop, so a later job or broadcast can launch it again. Where Android exposes process-exit history (API 30+), Locus now consumes it before recovery, clears tracking intent for recognized Task Manager/force-stop records, preserves normal recents-swipe behavior, and suppresses headless startup until the host explicitly starts tracking again.
+- **Android/iOS: Privacy guard now covers headless and geofence location delivery** — A live UI engine still receives raw native locations so Dart can apply zone-specific exclusion or obfuscation. Without a UI engine, guarded location-bearing events are now suppressed instead of exposing raw coordinates to a headless callback; nested geofence locations are filtered before host delivery and are never persisted or synced while guarded.
+- **Android/iOS: Flutter engine detach no longer strands native-to-Dart callbacks** — Owner-aware callback brokers bind each request to an engine generation, retry once on a newer live engine, then use the existing headless/default path. Every attempt is deadline-bounded and late replies are ignored so body, validation, and header callbacks complete exactly once.
+- **iOS: relaunch ownership and migration paths are deterministic** — Background-task registration/cancellation, concurrent location requests, encrypted config snapshots, callback-handle storage, and legacy SQLite migration now fail closed or complete transactionally under their documented lifecycle boundaries.
+
 ## [2.3.1] - 2026-05-02
 
 ### Fixed

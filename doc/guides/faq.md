@@ -36,8 +36,8 @@ There are no organization size or revenue restrictions. See [LICENSING.md](../..
 
 ### Which platforms are supported?
 
-- **Android**: API 21+ (Android 5.0 Lollipop)
-- **iOS**: 11.0+
+- **Android**: API 26+ (Android 8.0 Oreo)
+- **iOS**: 14.0+
 
 Desktop platforms (macOS, Windows, Linux) and web are not supported.
 
@@ -69,14 +69,32 @@ No, Locus can work standalone. However, it provides optional HTTP sync for sendi
 
 ### Can Locus track location when the app is killed?
 
-**Android**: Yes, when configured with `stopOnTerminate: false` and `startOnBoot: true`. Tracking continues via foreground service.
+**Android**: "Killed" can mean several different things. With
+`stopOnTerminate: false` and `foregroundService: true`, tracking can continue
+after UI detach and a recents swipe. Locus can reconcile persisted tracking after
+ordinary OS process death, but restart timing remains subject to Android and OEM
+policy. Android Task Manager stop and system-settings force-stop are explicit
+user actions: Locus clears their durable intent on the next eligible process
+launch and requires the host to call `Locus.start()` again. Reboot recovery additionally requires
+`startOnBoot: true`, headless registration, and valid background location access.
 
-**iOS**: Partially. iOS allows limited background processing after app termination, but cannot guarantee continuous tracking without the app running.
+See the [Android lifecycle matrix](headless-execution.md#android-lifecycle-matrix)
+for the exact recovery boundary of each state.
+
+**iOS**: Conditionally. With Always authorization, the Location updates
+background mode, and `stopOnTerminate: false`, Locus registers significant-change
+monitoring and can reconcile a valid persisted tracking configuration after an
+eligible OS relaunch. iOS does not guarantee timing or continuous execution. A
+user force-quit suppresses background relaunch until the app is opened again;
+`startOnBoot` has no iOS effect.
 
 ```dart
+await Locus.registerHeadlessTask(headlessCallback);
+
 await Locus.ready(ConfigPresets.balanced.copyWith(
   stopOnTerminate: false,
-  startOnBoot: true,
+  foregroundService: true,
+  startOnBoot: true, // Android-only
   enableHeadless: true,
 ));
 ```
@@ -241,11 +259,15 @@ await Locus.ready(ConfigPresets.balanced.copyWith(
 
 ### What is headless mode?
 
-Headless mode allows your Dart code to execute when the app is terminated. Useful for:
+Headless mode allows eligible native events to invoke Dart while the Flutter UI
+engine is absent and the OS still permits background execution. Useful for:
 
-- Processing location updates when app is killed
+- Processing eligible location updates after UI detach or ordinary process death
 - Handling geofence events in background
 - Custom sync logic
+
+It does not execute while Android has placed the package in the force-stopped
+state or after an iOS user force-quit. Those states require a manual app open.
 
 ```dart
 @pragma('vm:entry-point')
@@ -287,7 +309,7 @@ For testing without a backend, use [webhook.site](https://webhook.site) to get a
 | Feature                        | Android                       | iOS                |
 | ------------------------------ | ----------------------------- | ------------------ |
 | Max geofences                  | 100                           | 20                 |
-| Background tracking after kill | Yes (with foreground service) | Limited            |
+| Background tracking after termination | Conditional; see [lifecycle matrix](headless-execution.md#android-lifecycle-matrix) | Limited |
 | Headless execution             | Yes                           | Limited            |
 | Motion activity                | Google Play Services          | Core Motion        |
 | Battery optimization           | Aggressive (Doze mode)        | Moderate           |
@@ -296,11 +318,14 @@ For testing without a backend, use [webhook.site](https://webhook.site) to get a
 
 ### How do background permissions differ?
 
-**Android 10+**: Three-step process
+**Android 10+**: Foreground and background location are separate grants.
 
-1. Grant "While using app"
-2. Grant "Allow all the time" (separate dialog)
-3. Disable battery optimization (optional but recommended)
+1. Grant "While using app" with approximate or precise accuracy.
+2. Grant "Allow all the time" through the OS-supported background flow.
+
+Approximate location is sufficient for Locus tracking unless your product
+requires precise accuracy. Battery-optimization exemption is not a permission
+step and remains a separate, optional, user-controlled OEM setting.
 
 **iOS 13+**: Two-step process
 
@@ -315,6 +340,10 @@ await PermissionAssistant.requestBackgroundWorkflow(
   delegate: MyPermissionDelegate(),
 );
 ```
+
+`PermissionAssistant` requests runtime permissions only. Use
+`DeviceOptimizationService` to inspect battery-optimization state and obtain
+manufacturer-specific guidance; the host app owns any rationale and navigation.
 
 ### Why does iOS show a blue location indicator?
 
@@ -483,6 +512,12 @@ await Locus.ready(ConfigPresets.balanced.copyWith(
 ### Can I encrypt location data?
 
 Locus stores data in plain SQLite. For encryption:
+
+On Android, this is separate from the process-recovery configuration snapshot:
+that snapshot (including HTTP headers, params, and extras) is encrypted at rest
+with an AndroidKeyStore-backed AES-GCM key. Legacy plaintext snapshots from older
+Locus versions are migrated after their first valid read. Location and queue rows
+in SQLite are still plaintext unless the host app adds database-level protection.
 
 1. Use Flutter's `sqflite_cipher` or similar
 2. Encrypt location payload before sending to server
@@ -719,13 +754,14 @@ Locus.location.stream.listen((location) {
 
 ### When should I use headless mode?
 
-Use headless mode when:
+Use headless mode when the platform still permits background execution and:
 
-- You need background processing after app termination
-- You handle geofence events while app is killed
+- You need background processing while the UI engine is absent
+- You handle eligible geofence events in the background
 - You implement custom sync logic in background
 
-**Note**: iOS has limited headless capabilities.
+**Note**: iOS has limited headless capabilities, and user force-quit suppresses
+background relaunch until the app is opened again.
 
 ### How do I handle permission denials?
 
@@ -784,7 +820,7 @@ Locus.location.stream.listen((location) {
 
 ## Still Have Questions?
 
-- **Check the documentation**: [Full Documentation Index](../DOCUMENTATION_INDEX.md)
+- **Check the documentation**: [Project documentation](../../README.md)
 - **Search existing issues**: [GitHub Issues](https://github.com/weorbis/locus/issues)
 - **Create a new issue**: Provide details, logs, and reproduction steps
 - **Review examples**: Check `example/` directory in the repository

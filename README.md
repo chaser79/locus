@@ -29,7 +29,7 @@
 - **Battery Optimization**: Adaptive profiles based on speed, activity, and battery level.
 - **Automated Sync**: HTTP synchronization with retry logic and batching.
 - **Offline Reliability**: SQLite persistence to prevent data loss.
-- **Headless Execution**: Execute background logic even when the app is terminated.
+- **Headless Execution**: Process eligible background events while the Flutter UI engine is absent.
 
 ## Documentation
 
@@ -46,7 +46,7 @@ For full documentation, visit the [Locus GitHub repository](https://github.com/w
 - **[Platform Setup](https://github.com/weorbis/locus/blob/main/doc/setup/platform-configuration.md)** - iOS & Android permissions.
 - **[Troubleshooting](https://github.com/weorbis/locus/blob/main/doc/guides/troubleshooting.md)** - Common issues and fixes.
 - **[FAQ](https://github.com/weorbis/locus/blob/main/doc/guides/faq.md)** - Frequently asked questions.
-- **[Headless Execution](https://github.com/weorbis/locus/blob/main/doc/guides/headless-execution.md)** - Running logic when the app is terminated.
+- **[Headless Execution](https://github.com/weorbis/locus/blob/main/doc/guides/headless-execution.md)** - Platform-specific background execution and explicit stop boundaries.
 - **[Platform Behaviors](https://github.com/weorbis/locus/blob/main/doc/guides/platform-specific-behaviors.md)** - Android/iOS runtime differences.
 - **[HTTP Synchronization](https://github.com/weorbis/locus/blob/main/doc/guides/http-synchronization.md)** - Request formats, retry, and batching.
 - **[Performance Optimization](https://github.com/weorbis/locus/blob/main/doc/guides/performance-optimization.md)** - Tuning for battery and accuracy.

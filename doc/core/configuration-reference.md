@@ -433,7 +433,7 @@ Config(disableLocationAuthorizationAlert: true)
 
 **Requirements**: Must call `Locus.registerHeadlessTask()`.
 
-**See**: [Headless Execution Guide](../advanced/headless-execution.md)
+**See**: [Headless Execution Guide](../guides/headless-execution.md)
 
 **Example**:
 ```dart
@@ -446,17 +446,29 @@ Config(enableHeadless: true)
 
 **Type**: `bool`
 
-**Description**: Automatically restart tracking after device reboot.
+**Platform**: Android only. The field is accepted but ignored by iOS for
+backwards-compatible shared configuration objects.
+
+**Description**: Allow Android boot handling to dispatch the registered
+headless callback and reconcile previously active tracking after device reboot.
 
 **Default**: `false`
 
-**Requirements**: `stopOnTerminate: false`
+**Requirements**: Boot callback delivery requires `enableHeadless: true`, a
+successfully registered top-level `Locus.registerHeadlessTask()` callback, and
+boot permission in the host manifest. Tracking recovery additionally requires
+previously active tracking, `foregroundService: true`, the corresponding
+location/foreground-service manifest permissions, and location access valid for
+background use. Use `stopOnTerminate: false` when a recents swipe must preserve
+the active tracking intent through the next reboot.
 
 **Example**:
 ```dart
 Config(
   startOnBoot: true,
   stopOnTerminate: false,
+  enableHeadless: true,
+  foregroundService: true,
 )
 ```
 
@@ -466,7 +478,13 @@ Config(
 
 **Type**: `bool`
 
-**Description**: Stop tracking when app is terminated.
+**Description**: Controls whether tracking intent survives ordinary app/process
+termination. On Android, `true` stops when the task is removed from recents.
+On iOS, `false` enables eligible significant-change recovery when Always
+authorization is available. Explicit Android Task Manager stop, Android
+force-stop, and iOS user force-quit remain OS-owned stop boundaries. After an
+Android explicit stop, Locus clears durable intent on the next eligible launch;
+the host must call `Locus.start()` to resume.
 
 **Default**: `true`
 
@@ -476,6 +494,8 @@ Config(
 ```dart
 Config(stopOnTerminate: false) // Continue in background
 ```
+
+**See**: [Android Lifecycle Matrix](../guides/headless-execution.md#android-lifecycle-matrix)
 
 ---
 
@@ -1469,7 +1489,7 @@ await Locus.ready(
     enableHeadless: true,
     foregroundService: true,
     stopOnTerminate: false,
-    startOnBoot: true,
+    startOnBoot: true, // Android-only reboot recovery
     preventSuspend: true,
     
     // Geofencing

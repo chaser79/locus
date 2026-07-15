@@ -57,7 +57,7 @@ locus/
 │   ├── receiver/                 # Boot, notification action, geofence, activity broadcast receivers
 │   ├── service/                  # ForegroundService, HeadlessService, HeadlessValidationService
 │   └── storage/                  # Persistent queue, SharedPreferences wrappers
-├── ios/Classes/                  # Swift + ObjC plugin (CLLocationManager, CMMotionActivityManager)
+├── ios/locus/Sources/locus/      # Swift + ObjC plugin (CocoaPods and SwiftPM)
 ├── bin/                          # Dart CLI executables — setup, doctor, migrate, locus
 ├── test/                         # unit/ integration/ benchmark/ fixtures/ helpers/ mocks/
 ├── doc/                          # guides/ core/ reference/ advanced/ setup/ api/ testing/
