@@ -18,6 +18,7 @@ library;
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:locus/src/cli/ios_permission_macros.dart';
 
 const _version = '2.3.1';
 
@@ -299,6 +300,39 @@ Future<bool> setupIos({
 
   if (modified) {
     plistFile.writeAsStringSync(content);
+  }
+
+  const podfilePath = 'ios/Podfile';
+  final podfile = File(podfilePath);
+  if (!podfile.existsSync()) {
+    _printStatus('Podfile not found - cannot enable iOS permission handlers',
+        isWarning: true);
+    return false;
+  }
+  final podfileContent = podfile.readAsStringSync();
+  final configuredPodfile = addIosPermissionMacros(
+    podfileContent,
+    includeSensors: includeActivity,
+  );
+  if (configuredPodfile == null) {
+    _printStatus('Custom Podfile needs permission_handler macros',
+        isWarning: true);
+    return false;
+  }
+  if (configuredPodfile != podfileContent) {
+    podfile.writeAsStringSync(configuredPodfile);
+    _printStatus('Enabled iOS location permission handler');
+    if (includeActivity) {
+      _printStatus('Enabled iOS motion permission handler');
+    }
+  } else {
+    _printStatus('iOS permission handlers (already enabled)', isNew: false);
+  }
+  if (!includeActivity) {
+    _printStatus(
+      'Motion setup skipped; use granular location permission APIs on iOS',
+      isWarning: true,
+    );
   }
 
   // Check iOS deployment target
