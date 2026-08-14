@@ -1,149 +1,99 @@
 # locus
 
-## Tech Stack
-
-- **Framework**: Flutter
-- **Language**: Dart
-- **Package Manager**: flutter pub
+Locus is a **Flutter plugin, not an application**: a background geolocation SDK with native
+Android (Kotlin) and iOS (Swift) implementations behind a thin Dart facade. Host apps import only
+`package:locus/locus.dart` — everything under `lib/src/` is an implementation detail and outside
+the semver contract. Dependencies, executables, and the SDK version live in `pubspec.yaml`.
 
 ## Commands
 
 ```bash
-# Get dependencies
 flutter pub get
+flutter analyze --fatal-infos --fatal-warnings    # CI treats infos and warnings as errors
+dart format --set-exit-if-changed --output=none .
+flutter test --coverage
+dart run tool/sync_version.dart --check           # version pins in sync with pubspec
 
-# Build
-flutter build
+# Native lanes run from the example app, not from the plugin root
+cd example/android && ./gradlew :locus:testDebugUnitTest :locus:lintDebug
+cd example/android && ./gradlew :locus:connectedDebugAndroidTest   # needs a running emulator
+swift test --package-path ios
+bash tool/android_process_recovery_smoke.sh       # process-death recovery smoke
 
-# Test
-flutter test
-
-# Run
-flutter run
-
-# Analyze
-flutter analyze
+cd example && flutter run                         # the plugin has no runnable entry point
 ```
 
-## Project Structure
+`.github/workflows/pipeline.yml` is the real gate: code quality, `pana` score threshold 130,
+Android unit/lint/instrumentation on API 26/29/34/36, and iOS built under **both** CocoaPods and
+SwiftPM. Release is tag-only; publishing to pub.dev is manual.
 
-Locus is a **Flutter plugin** (not an application) — a background geolocation SDK with native Android/iOS implementations and a minimal Dart facade.
+## Structure
 
 ```
-locus/
-├── lib/                          # Dart SDK (public API)
-│   ├── locus.dart                # Single entry point — barrel re-exports only
-│   └── src/
-│       ├── core/                 # Platform channels, abstract interface, event streams, lifecycle
-│       ├── config/               # Config, presets, validators, enums, constants
-│       ├── features/             # Feature-first modules, each with models/ + services/
-│       │   ├── location/         # Core tracking, quality analysis, spoof/anomaly detection
-│       │   ├── geofencing/       # Circular + polygon geofences, workflow engine
-│       │   ├── battery/          # Adaptive tracking, runway estimation, power state
-│       │   ├── privacy/          # Privacy zones (exclude / obfuscate / reduce)
-│       │   ├── trips/            # Trip detection, route recording, persistent trip store
-│       │   ├── sync/             # HTTP queue, batch sync, retry, connectivity handling
-│       │   ├── tracking/         # Tracking profiles, rule-based profile switching
-│       │   └── diagnostics/      # Logging, debug overlay widget, error recovery
-│       ├── services/             # Service interfaces + default implementations
-│       ├── shared/               # Cross-cutting models (Coords, Activity, Battery, …)
-│       └── testing/              # MockLocus — for host-app tests
-├── android/src/main/kotlin/dev/locus/
-│   ├── LocusPlugin.kt            # FlutterPlugin entry; wires method + event channels
-│   ├── core/                     # ConfigManager, LocationTracker, StateManager, TrackingLifecycleController
-│   ├── location/                 # FusedLocationProvider client wrapper
-│   ├── activity/                 # MotionManager (ActivityRecognitionClient)
-│   ├── geofence/                 # GeofencingClient bindings
-│   ├── receiver/                 # Boot, notification action, geofence, activity broadcast receivers
-│   ├── service/                  # ForegroundService, HeadlessService, HeadlessValidationService
-│   └── storage/                  # Persistent queue, SharedPreferences wrappers
-├── ios/locus/Sources/locus/      # Swift + ObjC plugin (CocoaPods and SwiftPM)
-├── bin/                          # Dart CLI executables — setup, doctor, migrate, locus
-├── test/                         # unit/ integration/ benchmark/ fixtures/ helpers/ mocks/
-├── doc/                          # guides/ core/ reference/ advanced/ setup/ api/ testing/
-└── example/                      # Example Flutter app consuming the plugin
+lib/
+├── locus.dart                # Single public entry point — barrel re-exports only
+└── src/
+    ├── core/                 # Platform boundary: channels, LocusInterface, streams, lifecycle
+    ├── config/               # Config, presets, validators, enums, constants
+    ├── features/             # Feature-first modules, each with models/ + services/
+    │                         #   location, geofencing, battery, privacy, trips, sync,
+    │                         #   tracking, diagnostics
+    ├── services/             # Service interfaces + default implementations
+    ├── shared/               # Cross-cutting data types (Coords, Activity, Battery, events)
+    └── testing/              # MockLocus — for host-app tests
+android/src/main/kotlin/dev/locus/   # LocusPlugin + core/ location/ activity/ geofence/
+                                     # receiver/ service/ storage/
+ios/locus/Sources/locus/             # Swift + ObjC plugin (CocoaPods and SwiftPM)
+bin/                                 # Pure-Dart CLIs: locus, setup, doctor, migrate
+test/                                # unit/ integration/ benchmark/ fixtures/ helpers/ mocks/
+doc/                                 # Published guides; doc/core/architecture.md is canonical
+example/                             # Example app — also the host for every native test lane
 ```
 
-Host apps import **only** `package:locus/locus.dart`. Everything under `lib/src/` is an implementation detail and not part of the semver contract. The `bin/` tools (`setup`, `doctor`) are declared as `executables:` in `pubspec.yaml` and run via `dart run locus:<tool>`.
-
-## Code Style & Conventions
-
-- Follow Dart style guide and effective Dart
-- Use `dart format` for code formatting
-- Prefer Riverpod for state management (if applicable)
-- Use freezed for immutable models (if applicable)
-- Separate presentation, domain, and data layers
-
-## Key Dependencies
-
-**Runtime** (see `pubspec.yaml`):
-
-- `permission_handler` — Runtime prompts for location (fine, coarse, background), notifications, activity recognition, and battery-optimization exemption.
-- `logging` — Structured `Logger` tree exposed through `LocusDiagnostics` and the debug overlay.
-- `args` — Argument parsing for CLI executables (`bin/setup.dart`, `bin/doctor.dart`, `bin/migrate.dart`). CLI-only; reachable from `bin/` only, so Flutter tree-shakes it from host app bundles.
-
-Anything previously delegated to a Dart-side helper now lives in native code: HTTP sync, queue/UUID generation, and OEM/manufacturer detection all run on the platform side and are exposed to Dart through `LocusChannels.methods` (e.g., `sync`, `getDiagnosticsMetadata`).
-
-**Dev / test**:
-
-- `flutter_test` — Widget + unit test harness.
-- `flutter_lints` — Baseline lint set referenced by `analysis_options.yaml`.
-
-**Native dependencies** (declared in `android/build.gradle` and the iOS podspec — relevant when changing platform code):
-
-- Android: `play-services-location`, `play-services-activity-recognition`, `androidx.work`, `androidx.core`.
-- iOS: `CoreLocation`, `CoreMotion`, `UserNotifications`.
-
-The SDK deliberately keeps its Dart dependency surface **minimal** — no Riverpod, no freezed, no code-gen. All models are hand-written immutable data classes. This keeps plugin install size small, compile times fast, and avoids dragging host-app state-management opinions into an SDK. **Do not add runtime Dart dependencies without explicit approval** — every one becomes a transitive dependency for every consuming app.
-
-## Quality Standards
-
-- Quality over speed — always
-- Spec before code for non-trivial changes (use the design-spec skill)
-- Write or update tests alongside every change
-- Evidence-based debugging: reproduce → trace → fix → verify
-- Follow existing patterns in this codebase — consistency over preference
+`bin/` tools are declared as `executables:` in `pubspec.yaml` and run via `dart run locus:<tool>`.
 
 ## Architecture
 
-Locus is a **feature-first plugin** with a thin Dart facade over native implementations. Dependencies point inward: outer layers may depend on inner layers, never the reverse.
+Feature-first, dependencies point inward, outer layers never imported by inner ones:
+host app → public barrel (`lib/locus.dart`) → feature modules → core → shared → native.
 
-**Layers** (outer → inner):
+Native owns the long-lived process (Android `ForegroundService` + `HeadlessService`, iOS
+background location delegates, persistent queue, geofence registration, activity recognition) and
+emits typed events that `lib/src/core/event_mapper.dart` translates for Dart.
 
-1. **Host app** — consumes `package:locus/locus.dart` only. Never imports `lib/src/*`.
-2. **Public API** (`lib/locus.dart`) — barrel exposing the `Locus` singleton, configs, models, events, and services.
-3. **Feature modules** (`lib/src/features/<name>/`) — self-contained; each ships `models/` (pure data) and `services/` (behavior). Features depend on `shared/` and `core/`, **never on each other**.
-4. **Core** (`lib/src/core/`) — the platform boundary:
-   - `LocusInterface` — abstract contract.
-   - `MethodChannelLocus` — default platform-channel implementation.
-   - `locus_streams.dart` — typed event streams.
-   - `locus_channels.dart` — channel names (single source of truth).
-   - `locus_lifecycle.dart`, `locus_headless.dart` — lifecycle + headless entry points.
-5. **Shared** (`lib/src/shared/`) — cross-cutting data types (`Coords`, `Activity`, `Battery`, event types). Zero behavior.
-6. **Native** (`android/`, `ios/`) — owns the long-lived process: Android `ForegroundService` + `HeadlessService`, iOS background location delegates, persistent queue, geofence registration, activity recognition. Native emits typed events; Dart translates via `lib/src/core/event_mapper.dart`.
+- **Platform Interface pattern** — `LocusInterface` + `MethodChannelLocus` let host apps swap in
+  `MockLocus` via `Locus.setInstance(...)` for their own tests.
+- **Event-sourced state** — native is the source of truth. `Locus.isTracking()` calls the
+  platform; Dart never caches tracking state.
+- **Headless execution** — callbacks registered via `Locus.registerHeadlessTask` run in a second
+  engine after the UI is killed, and every headless entry point needs `@pragma('vm:entry-point')`.
+  See `doc/guides/headless-execution.md`.
+- **Barrel exports per feature** — each feature exposes its surface through `<feature>.dart`.
 
-**Patterns**:
+Non-negotiables:
 
-- **Platform Interface pattern** — `LocusInterface` + `MethodChannelLocus` lets `MockLocus` (`lib/src/testing/`) be swapped in via `Locus.setInstance(...)` for host-app tests.
-- **Barrel exports per feature** — each feature exposes its public surface through `<feature>.dart`; everything else is package-private.
-- **Event-sourced state** — native is the source of truth. `Locus.isTracking()` calls the platform; Dart never caches tracking state.
-- **Headless execution** — Dart callbacks registered via `Locus.registerHeadlessTask` run in a second engine after the UI is killed. All headless entry points require `@pragma('vm:entry-point')`. See `doc/guides/headless-execution.md`.
-- **CLI isolation** — `bin/` programs are pure Dart; they must not import `package:flutter/*`.
-
-**Non-negotiables**:
-
-- A feature must **never** import another feature's `models/` or `services/` — route through `shared/` or an event stream.
+- A feature must **never** import another feature's `models/` or `services/` — route through
+  `shared/` or an event stream.
 - `lib/src/` must **never** use `dart:io` for platform detection — go through `LocusInterface`.
-- Native code must survive `onDetachedFromEngine` — the Flutter engine detaches whenever the UI is swiped away, and the background service must keep running.
-- `stopOnTerminate: false` + `enableHeadless: true` + `foregroundService: true` is the canonical "always-on tracking" configuration; any change in lifecycle handling must be validated against it (see issue #34).
+- `bin/` programs are pure Dart and must not import `package:flutter/*`.
+- Native code must survive `onDetachedFromEngine`: the engine detaches whenever the UI is swiped
+  away, and the background service has to keep running.
+- `stopOnTerminate: false` + `enableHeadless: true` + `foregroundService: true` is the canonical
+  always-on tracking configuration. Validate any lifecycle change against it (see issue #34).
 
-Reference: [`doc/core/architecture.md`](doc/core/architecture.md).
+## Gotchas
 
-## Investigation & Research Rules
-
-- All findings must cite concrete evidence (file:line, test output, logs)
-- Use confidence labels: CONFIRMED, LIKELY, POSSIBLE
-- Never guess at behavior — trace the actual code path
-- When researching unfamiliar APIs or packages, search the web for current documentation
-- Use the investigate, bug-hunt, or arch-audit skills for structured analysis
-- Every fix must be verified — run tests, check build, confirm behavior
+- **Minimal dependency surface is deliberate.** No Riverpod, no freezed, no code generation — all
+  models are hand-written immutable data classes, which keeps install size and compile times down
+  and keeps SDK opinions out of host apps. Do not add a runtime Dart dependency without explicit
+  approval; each one becomes transitive for every consuming app.
+- **`args` must stay in `dependencies:`,** not `dev_dependencies:`. Pub's `executables:` contract
+  requires it so `dart run locus:setup` works for consumers.
+- **`pubspec.yaml` is the single source of the version.** After bumping, run
+  `dart run tool/sync_version.dart` to propagate into the Dart constants; Gradle and the podspec
+  read the line directly at build time.
+- **HTTP sync, queue/UUID generation, and OEM detection live in native code,** not Dart — reach
+  them through `LocusChannels.methods` (`sync`, `getDiagnosticsMetadata`, …).
+- **iOS ships under two module names** (`locus` and `Locus`); native tests run against both.
+- `dart format` run directly may print package-resolution warnings; they are expected and the
+  lints resolve correctly under `flutter analyze`.
