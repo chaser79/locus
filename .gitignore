@@ -41,17 +41,11 @@ android/local.properties
 android/gradle-app.setting
 android/.idea/
 android/captures/
-android/gradlew
-android/gradlew.bat
-android/gradle/wrapper/gradle-wrapper.jar
 android/gradle/wrapper/gradle-wrapper.properties
 *.jks
 key.properties
-**/android/**/gradle-wrapper.jar
 **/android/.gradle
 **/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
 
