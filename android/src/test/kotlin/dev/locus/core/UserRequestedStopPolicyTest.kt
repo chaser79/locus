@@ -39,6 +39,19 @@ class UserRequestedStopPolicyTest {
     }
 
     @Test
+    fun `prefixed Task Manager stop clears tracking intent`() {
+        val observation = observeProcessExit(
+            latest = exit(200, "[STOP APP] fully stop $packageName/0 by user request"),
+            historyInitialized = true,
+            handledTimestampMillis = 100,
+            packageName = packageName,
+            userRequestedReason = userRequestedReason,
+        )
+
+        assertTrue(observation.clearsTrackingIntent)
+    }
+
+    @Test
     fun `force stop clears tracking intent after the user opens the app`() {
         val observation = observeProcessExit(
             latest = exit(200, "stop $packageName due to from pid 1234"),
@@ -69,6 +82,19 @@ class UserRequestedStopPolicyTest {
     fun `package update and unknown user requested exits do not clear intent`() {
         val observation = observeProcessExit(
             latest = exit(200, "package update"),
+            historyInitialized = true,
+            handledTimestampMillis = 100,
+            packageName = packageName,
+            userRequestedReason = userRequestedReason,
+        )
+
+        assertFalse(observation.clearsTrackingIntent)
+    }
+
+    @Test
+    fun `package update description does not look like a force stop`() {
+        val observation = observeProcessExit(
+            latest = exit(200, "stop $packageName due to installPackageLI"),
             historyInitialized = true,
             handledTimestampMillis = 100,
             packageName = packageName,

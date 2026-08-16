@@ -48,7 +48,9 @@ internal fun observeProcessExit(
     val normalizedPackage = packageName.lowercase(Locale.ROOT)
     val isExplicitStop = latest.reason == userRequestedReason && (
         description.startsWith("fully stop $normalizedPackage/") ||
-            description.startsWith("stop $normalizedPackage due to")
+            description.contains("[stop app] fully stop $normalizedPackage/") ||
+            description.startsWith("stop $normalizedPackage due to from pid") ||
+            description.contains("[force stop] stop $normalizedPackage due to")
         )
     return ProcessExitObservation(
         timestampToPersist = latest.timestampMillis,
