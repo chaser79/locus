@@ -29,7 +29,8 @@ class Coords {
 
     if (strict && (lat == null || lng == null)) {
       throw InvalidCoordsException(
-          'Missing required coordinates: latitude=${lat != null}, longitude=${lng != null}');
+        'Missing required coordinates: latitude=${lat != null}, longitude=${lng != null}',
+      );
     }
 
     final latitude = (lat as num?)?.toDouble() ?? 0.0;
@@ -38,11 +39,13 @@ class Coords {
     // Validate ranges
     if (latitude < -90 || latitude > 90) {
       throw InvalidCoordsException(
-          'Latitude must be between -90 and 90, got: $latitude');
+        'Latitude must be between -90 and 90, got: $latitude',
+      );
     }
     if (longitude < -180 || longitude > 180) {
       throw InvalidCoordsException(
-          'Longitude must be between -180 and 180, got: $longitude');
+        'Longitude must be between -180 and 180, got: $longitude',
+      );
     }
 
     return Coords(
@@ -77,22 +80,24 @@ class Coords {
   void validateRange() {
     if (latitude < -90 || latitude > 90) {
       throw InvalidCoordsException(
-          'Latitude must be between -90 and 90, got: $latitude');
+        'Latitude must be between -90 and 90, got: $latitude',
+      );
     }
     if (longitude < -180 || longitude > 180) {
       throw InvalidCoordsException(
-          'Longitude must be between -180 and 180, got: $longitude');
+        'Longitude must be between -180 and 180, got: $longitude',
+      );
     }
   }
 
   JsonMap toMap() => {
-        'latitude': latitude,
-        'longitude': longitude,
-        'accuracy': accuracy,
-        if (speed != null) 'speed': speed,
-        if (heading != null) 'heading': heading,
-        if (altitude != null) 'altitude': altitude,
-      };
+    'latitude': latitude,
+    'longitude': longitude,
+    'accuracy': accuracy,
+    if (speed != null) 'speed': speed,
+    if (heading != null) 'heading': heading,
+    if (altitude != null) 'altitude': altitude,
+  };
 
   /// Creates Coords from a map, returning null if data is invalid.
   /// Use this when you want to gracefully handle invalid data.
@@ -117,14 +122,8 @@ class Coords {
           altitude == other.altitude;
 
   @override
-  int get hashCode => Object.hash(
-        latitude,
-        longitude,
-        accuracy,
-        speed,
-        heading,
-        altitude,
-      );
+  int get hashCode =>
+      Object.hash(latitude, longitude, accuracy, speed, heading, altitude);
 
   @override
   String toString() =>

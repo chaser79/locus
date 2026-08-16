@@ -43,20 +43,22 @@ void main() {
       expect(events, isEmpty);
     });
 
-    test('emits QuarantinePurged when the purger reports a positive count',
-        () async {
-      final janitor = QuarantineJanitor(
-        purger: (ttl) async => 4,
-        ttl: const Duration(days: 7),
-      );
-      final discarded = await janitor.sweepNow();
-      await Future<void>.delayed(Duration.zero);
-      expect(discarded, 4);
-      expect(events, hasLength(1));
-      final event = events.single as QuarantinePurged;
-      expect(event.count, 4);
-      expect(event.olderThan, const Duration(days: 7));
-    });
+    test(
+      'emits QuarantinePurged when the purger reports a positive count',
+      () async {
+        final janitor = QuarantineJanitor(
+          purger: (ttl) async => 4,
+          ttl: const Duration(days: 7),
+        );
+        final discarded = await janitor.sweepNow();
+        await Future<void>.delayed(Duration.zero);
+        expect(discarded, 4);
+        expect(events, hasLength(1));
+        final event = events.single as QuarantinePurged;
+        expect(event.count, 4);
+        expect(event.olderThan, const Duration(days: 7));
+      },
+    );
 
     test('does not emit when purger reports zero', () async {
       final janitor = QuarantineJanitor(purger: (ttl) async => 0);

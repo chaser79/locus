@@ -50,10 +50,12 @@ class MethodChannelLocus implements LocusInterface {
     // makes an explicit zone mutation. The new in-memory service is empty only
     // because host-owned zones have not been restored yet.
     LocusStreams.setPolygonGeofenceService(_polygonGeofenceService);
-    unawaited(LocusStreams.setPrivacyZoneService(
-      _privacyZoneService,
-      synchronizeInitialState: false,
-    ));
+    unawaited(
+      LocusStreams.setPrivacyZoneService(
+        _privacyZoneService,
+        synchronizeInitialState: false,
+      ),
+    );
 
     // Auto-install a SyncHealthMonitor that watches HTTP sync events and
     // emits SyncStalled/SyncUnrecoverable to LocusReliabilityRegistry. The
@@ -64,7 +66,8 @@ class MethodChannelLocus implements LocusInterface {
     );
     monitor.attachTo(httpStream);
     unawaited(
-        LocusReliabilityRegistry.instance.installSyncHealthMonitor(monitor));
+      LocusReliabilityRegistry.instance.installSyncHealthMonitor(monitor),
+    );
 
     // Auto-install a SyncMetricsRecorder so Locus.metrics.snapshot() reflects
     // real sync activity. It listens to the same httpStream as the health
@@ -74,7 +77,8 @@ class MethodChannelLocus implements LocusInterface {
     // subscription stays alive.
     final recorder = SyncMetricsRecorder()..attachTo(httpStream);
     unawaited(
-        LocusReliabilityRegistry.instance.installSyncMetricsRecorder(recorder));
+      LocusReliabilityRegistry.instance.installSyncMetricsRecorder(recorder),
+    );
 
     // Construct the silent-stop heartbeat but do NOT start it here.
     // Lifecycle ownership lives with `LocusLifecycle.ready` /
@@ -153,8 +157,10 @@ class MethodChannelLocus implements LocusInterface {
     final args = <String, dynamic>{};
     if (title != null) args['title'] = title;
     if (text != null) args['text'] = text;
-    final result = await LocusChannels.methods
-        .invokeMethod<bool>('updateNotification', args);
+    final result = await LocusChannels.methods.invokeMethod<bool>(
+      'updateNotification',
+      args,
+    );
     return result == true;
   }
 
@@ -370,8 +376,10 @@ class MethodChannelLocus implements LocusInterface {
     if (enabled) {
       await LocusStreams.setNativePrivacyMode(true);
     }
-    final updated =
-        await _privacyZoneService.setZoneEnabled(identifier, enabled);
+    final updated = await _privacyZoneService.setZoneEnabled(
+      identifier,
+      enabled,
+    );
     if (updated && !enabled) {
       await _synchronizeNativePrivacyMode();
     }
@@ -1016,17 +1024,15 @@ class MethodChannelLocus implements LocusInterface {
   SpoofDetectionEvent? analyzeForSpoofing(
     Location location, {
     bool? isMockProvider,
-  }) =>
-      LocusFeatures.analyzeForSpoofing(
-        location,
-        isMockProvider: isMockProvider,
-      );
+  }) => LocusFeatures.analyzeForSpoofing(
+    location,
+    isMockProvider: isMockProvider,
+  );
 
   @override
   Future<void> startSignificantChangeMonitoring([
     SignificantChangeConfig config = const SignificantChangeConfig(),
-  ]) =>
-      LocusFeatures.startSignificantChangeMonitoring(config);
+  ]) => LocusFeatures.startSignificantChangeMonitoring(config);
 
   @override
   Future<void> stopSignificantChangeMonitoring() =>

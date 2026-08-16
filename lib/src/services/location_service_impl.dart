@@ -55,10 +55,7 @@ class LocationServiceImpl implements LocationService {
   }
 
   @override
-  Future<LocationSummary> getSummary({
-    DateTime? date,
-    LocationQuery? query,
-  }) {
+  Future<LocationSummary> getSummary({DateTime? date, LocationQuery? query}) {
     return _instance.getLocationSummary(date: date, query: query);
   }
 

@@ -69,13 +69,11 @@ class BatteryServiceImpl implements BatteryService {
   StreamSubscription<PowerStateChangeEvent> onPowerStateChange(
     void Function(PowerStateChangeEvent event) callback, {
     Function? onError,
-  }) =>
-      _instance.onPowerStateChangeWithObj(callback, onError: onError);
+  }) => _instance.onPowerStateChangeWithObj(callback, onError: onError);
 
   @override
   StreamSubscription<bool> onPowerSaveChange(
     void Function(bool) callback, {
     Function? onError,
-  }) =>
-      _instance.onPowerSaveChange(callback, onError: onError);
+  }) => _instance.onPowerSaveChange(callback, onError: onError);
 }

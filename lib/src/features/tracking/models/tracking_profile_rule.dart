@@ -1,12 +1,7 @@
 import 'package:locus/src/shared/models/enums.dart';
 import 'package:locus/src/features/tracking/models/tracking_profile.dart';
 
-enum TrackingProfileRuleType {
-  activity,
-  geofence,
-  speedAbove,
-  speedBelow,
-}
+enum TrackingProfileRuleType { activity, geofence, speedAbove, speedBelow }
 
 class TrackingProfileRule {
   const TrackingProfileRule({

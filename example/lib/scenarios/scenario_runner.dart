@@ -35,10 +35,10 @@ class _PhaseOutcome {
   });
 
   const _PhaseOutcome.ok()
-      : cancelled = false,
-        errored = false,
-        errorPhase = null,
-        errorMessage = null;
+    : cancelled = false,
+      errored = false,
+      errorPhase = null,
+      errorMessage = null;
 
   final bool cancelled;
   final bool errored;
@@ -121,8 +121,10 @@ class ScenarioRunner {
     );
 
     // Phase 1: setup.
-    final _PhaseOutcome setupOutcome =
-        await _runPhase(_Phase.setup, () => scenario.setup(ctx));
+    final _PhaseOutcome setupOutcome = await _runPhase(
+      _Phase.setup,
+      () => scenario.setup(ctx),
+    );
     if (setupOutcome.failedHard) {
       await _safeTeardown(scenario, ctx);
       return _finalize(
@@ -138,8 +140,10 @@ class ScenarioRunner {
     }
 
     // Phase 2: execute.
-    final _PhaseOutcome executeOutcome =
-        await _runPhase(_Phase.execute, () => scenario.execute(ctx));
+    final _PhaseOutcome executeOutcome = await _runPhase(
+      _Phase.execute,
+      () => scenario.execute(ctx),
+    );
     if (executeOutcome.failedHard) {
       await _safeTeardown(scenario, ctx);
       return _finalize(
@@ -195,10 +199,12 @@ class ScenarioRunner {
     // pass/fail decision but are surfaced as scenario events.
     await _safeTeardown(scenario, ctx);
 
-    final bool anyFailed =
-        assertions.any((AssertionResult a) => a.status == AssertionStatus.fail);
-    final ScenarioRunStatus status =
-        anyFailed ? ScenarioRunStatus.failed : ScenarioRunStatus.passed;
+    final bool anyFailed = assertions.any(
+      (AssertionResult a) => a.status == AssertionStatus.fail,
+    );
+    final ScenarioRunStatus status = anyFailed
+        ? ScenarioRunStatus.failed
+        : ScenarioRunStatus.passed;
 
     return _finalize(
       scenario: scenario,
@@ -223,10 +229,7 @@ class ScenarioRunner {
       recorder.log(
         EventCategory.scenario,
         'scenario_cancelled',
-        payload: <String, Object?>{
-          'phase': phase,
-          'reason': e.reason,
-        },
+        payload: <String, Object?>{'phase': phase, 'reason': e.reason},
       );
       return _PhaseOutcome(
         cancelled: true,
@@ -298,7 +301,7 @@ class ScenarioRunner {
       payload: <String, Object?>{
         'id': scenario.id,
         'status': status.name,
-        if (errorPhase != null) 'errorPhase': errorPhase,
+        'errorPhase': ?errorPhase,
       },
       sourceId: scenario.id,
     );

@@ -71,22 +71,28 @@ void main(List<String> args) {
 
   if (checkOnly) {
     if (stale > 0) {
-      stderr.writeln('$stale file(s) out of sync with pubspec ($version). '
-          'Run `dart run tool/sync_version.dart` to fix.');
+      stderr.writeln(
+        '$stale file(s) out of sync with pubspec ($version). '
+        'Run `dart run tool/sync_version.dart` to fix.',
+      );
       exit(1);
     }
     stdout.writeln('all version pins in sync at $version');
     return;
   }
 
-  stdout.writeln(written == 0
-      ? 'all version pins already at $version'
-      : 'synced $written file(s) to $version');
+  stdout.writeln(
+    written == 0
+        ? 'all version pins already at $version'
+        : 'synced $written file(s) to $version',
+  );
 }
 
 String? _parseVersion(String pubspecContent) {
-  final match =
-      RegExp(r'^version:\s*(.+)$', multiLine: true).firstMatch(pubspecContent);
+  final match = RegExp(
+    r'^version:\s*(.+)$',
+    multiLine: true,
+  ).firstMatch(pubspecContent);
   return match?.group(1)?.trim();
 }
 

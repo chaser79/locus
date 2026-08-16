@@ -7,10 +7,7 @@ import 'package:locus/src/core/permission_service.dart';
 
 /// Delegate for permission workflow UI steps.
 class PermissionFlowDelegate {
-  const PermissionFlowDelegate({
-    this.onShowRationale,
-    this.onOpenSettings,
-  });
+  const PermissionFlowDelegate({this.onShowRationale, this.onOpenSettings});
   final Future<bool> Function(PermissionRationale rationale)? onShowRationale;
   final Future<void> Function()? onOpenSettings;
 }

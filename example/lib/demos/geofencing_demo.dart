@@ -36,10 +36,7 @@ class GeofencingDemoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SectionHeader(
-              icon: Icons.map_outlined,
-              title: 'Geofencing',
-            ),
+            const SectionHeader(icon: Icons.map_outlined, title: 'Geofencing'),
             const SizedBox(height: 16),
             Row(
               children: [

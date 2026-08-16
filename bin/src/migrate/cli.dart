@@ -6,8 +6,8 @@ import 'patterns.dart';
 
 class MigrationCLI {
   MigrationCLI({bool verbose = false, bool noColor = false})
-      : _verbose = verbose,
-        _noColor = noColor;
+    : _verbose = verbose,
+      _noColor = noColor;
   final bool _verbose;
   final bool _noColor;
 
@@ -38,26 +38,32 @@ class MigrationCLI {
     _printNextSteps(false);
   }
 
-  void printAnalysisReport(MigrationAnalysisResult analysis,
-      {bool json = false}) {
+  void printAnalysisReport(
+    MigrationAnalysisResult analysis, {
+    bool json = false,
+  }) {
     final generator = MigrationReportGenerator(verbose: _verbose);
 
     if (json) {
-      stdout.writeln(generator.generateJsonSummary(
-        MigrationResult(
-          analysis: analysis,
-          appliedChanges: [],
-          timestamp: DateTime.now(),
+      stdout.writeln(
+        generator.generateJsonSummary(
+          MigrationResult(
+            analysis: analysis,
+            appliedChanges: [],
+            timestamp: DateTime.now(),
+          ),
         ),
-      ));
+      );
     } else {
-      stdout.writeln(generator.generateSummaryReport(
-        MigrationResult(
-          analysis: analysis,
-          appliedChanges: [],
-          timestamp: DateTime.now(),
+      stdout.writeln(
+        generator.generateSummaryReport(
+          MigrationResult(
+            analysis: analysis,
+            appliedChanges: [],
+            timestamp: DateTime.now(),
+          ),
         ),
-      ));
+      );
     }
   }
 
@@ -71,8 +77,9 @@ class MigrationCLI {
     stdout.writeln('');
     stdout.writeln('${_bold}Next Steps$_reset');
     stdout.writeln('$_gray${'─' * 40}$_reset');
-    stdout
-        .writeln('Run ${_cyan}dart run locus:migrate$_reset to apply changes.');
+    stdout.writeln(
+      'Run ${_cyan}dart run locus:migrate$_reset to apply changes.',
+    );
     stdout.writeln('Add $_cyan--dry-run$_reset to preview changes first.');
     stdout.writeln('');
   }
@@ -86,40 +93,42 @@ class MigrationCLI {
     // Check for removed features
     if (analysis.removedFeaturesCount > 0) {
       stdout.writeln(
-          '$_red⚠$_reset  ${analysis.removedFeaturesCount} removed feature(s) detected:');
+        '$_red⚠$_reset  ${analysis.removedFeaturesCount} removed feature(s) detected:',
+      );
       stdout.writeln(
-          '   These methods no longer exist in v2.0 and require manual replacement.');
+        '   These methods no longer exist in v2.0 and require manual replacement.',
+      );
     }
 
     // Check for headless patterns
     final headlessMatches = analysis.matches
-        .where(
-          (m) => m.patternId.contains('headless'),
-        )
+        .where((m) => m.patternId.contains('headless'))
         .length;
     if (headlessMatches > 0) {
       stdout.writeln(
-          '$_yellow⚠$_reset  $headlessMatches headless callback(s) found:');
+        '$_yellow⚠$_reset  $headlessMatches headless callback(s) found:',
+      );
       stdout.writeln(
-          '   Add @pragma(\'vm:entry-point\') annotation above these functions.');
+        '   Add @pragma(\'vm:entry-point\') annotation above these functions.',
+      );
     }
 
     // Check for config patterns
     final configMatches = analysis.matches
-        .where(
-          (m) => m.patternId.contains('config'),
-        )
+        .where((m) => m.patternId.contains('config'))
         .length;
     if (configMatches > 0) {
       stdout.writeln('$_cyanℹ$_reset  $configMatches config pattern(s) found:');
       stdout.writeln(
-          '   Review LocusConfig for renamed parameters (url→syncUrl, httpTimeout→syncTimeout).');
+        '   Review LocusConfig for renamed parameters (url→syncUrl, httpTimeout→syncTimeout).',
+      );
     }
 
     // Suggest testing
     if (analysis.autoMigratableCount > 0) {
       stdout.writeln(
-          '$_green✓$_reset  ${analysis.autoMigratableCount} pattern(s) can be auto-migrated.');
+        '$_green✓$_reset  ${analysis.autoMigratableCount} pattern(s) can be auto-migrated.',
+      );
       stdout.writeln('   Run tests after migration to verify behavior.');
     }
 
@@ -129,7 +138,8 @@ class MigrationCLI {
   void _printHeader(String title) {
     stdout.writeln('\n$_cyan╔${'═' * 58}╗$_reset');
     stdout.writeln(
-        '$_cyan║$_reset $_bold$title$_reset${' ' * (56 - title.length)}$_cyan║$_reset');
+      '$_cyan║$_reset $_bold$title$_reset${' ' * (56 - title.length)}$_cyan║$_reset',
+    );
     stdout.writeln('$_cyan╚${'═' * 58}╝$_reset\n');
   }
 
@@ -144,9 +154,11 @@ class MigrationCLI {
     stdout.writeln('$_gray${'─' * 40}$_reset');
     stdout.writeln('Files analyzed: $_bold${analysis.totalFiles}$_reset');
     stdout.writeln(
-        'Files with Locus SDK: $_bold${analysis.filesWithLocus}$_reset');
-    stdout
-        .writeln('Total patterns found: $_bold${analysis.totalMatches}$_reset');
+      'Files with Locus SDK: $_bold${analysis.filesWithLocus}$_reset',
+    );
+    stdout.writeln(
+      'Total patterns found: $_bold${analysis.totalMatches}$_reset',
+    );
     _printLine();
   }
 
@@ -157,18 +169,22 @@ class MigrationCLI {
     stdout.writeln('Files with Locus SDK: ${result.analysis.filesWithLocus}');
     stdout.writeln('Total patterns found: ${result.analysis.totalMatches}');
     stdout.writeln(
-        'Auto-migratable: $_green${result.analysis.autoMigratableCount}$_reset');
+      'Auto-migratable: $_green${result.analysis.autoMigratableCount}$_reset',
+    );
     stdout.writeln(
-        'Manual review required: $_yellow${result.analysis.manualReviewCount}$_reset');
+      'Manual review required: $_yellow${result.analysis.manualReviewCount}$_reset',
+    );
     stdout.writeln(
-        'Removed features: $_red${result.analysis.removedFeaturesCount}$_reset');
+      'Removed features: $_red${result.analysis.removedFeaturesCount}$_reset',
+    );
     _printLine();
   }
 
   void _printBackupInfo(MigrationResult result) {
     if (result.backupPath != null) {
       stdout.writeln(
-          '$_green📦 Backup created: ${result.backupPath}/backup.tar.gz$_reset');
+        '$_green📦 Backup created: ${result.backupPath}/backup.tar.gz$_reset',
+      );
       _printLine();
     }
   }
@@ -176,7 +192,8 @@ class MigrationCLI {
   void _printChangesByCategory(MigrationAnalysisResult analysis) {
     if (analysis.matches.isEmpty) {
       stdout.writeln(
-          '$_green✅ No Locus SDK v1.x patterns found - already migrated!$_reset');
+        '$_green✅ No Locus SDK v1.x patterns found - already migrated!$_reset',
+      );
       _printLine();
       return;
     }
@@ -186,8 +203,9 @@ class MigrationCLI {
 
     final byCategory = <MigrationCategory, List<PatternMatch>>{};
     for (final match in analysis.matches) {
-      final pattern = MigrationPatternDatabase.allPatterns
-          .firstWhere((p) => p.id == match.patternId);
+      final pattern = MigrationPatternDatabase.allPatterns.firstWhere(
+        (p) => p.id == match.patternId,
+      );
       byCategory.putIfAbsent(pattern.category, () => []).add(match);
     }
 
@@ -197,14 +215,16 @@ class MigrationCLI {
         final icon = _getCategoryIcon(category);
         final color = _getCategoryColor(category);
         stdout.writeln(
-            '$icon $color${_getCategoryName(category)}$_reset: ${matches.length}');
+          '$icon $color${_getCategoryName(category)}$_reset: ${matches.length}',
+        );
 
         for (final match in matches.take(3)) {
           final shortOriginal = _truncate(match.original, 25);
           final shortReplacement = _truncate(match.replacement, 25);
           stdout.writeln('    $_gray${match.filePath}:${match.line}$_reset');
           stdout.writeln(
-              '    $_red$shortOriginal$_reset → $_green$shortReplacement$_reset');
+            '    $_red$shortOriginal$_reset → $_green$shortReplacement$_reset',
+          );
         }
 
         if (matches.length > 3) {
@@ -221,7 +241,8 @@ class MigrationCLI {
     stdout.writeln('Files modified: $_bold${result.filesModified}$_reset');
     stdout.writeln('Successful: $_green${result.successfulChanges}$_reset');
     stdout.writeln(
-        'Failed: ${result.failedChanges > 0 ? _red : _green}${result.failedChanges}$_reset');
+      'Failed: ${result.failedChanges > 0 ? _red : _green}${result.failedChanges}$_reset',
+    );
     _printLine();
 
     if (result.successfulChanges > 0 && _verbose) {
@@ -263,7 +284,8 @@ class MigrationCLI {
 
     if (analysis.warnings.length > 10) {
       stdout.writeln(
-          '  $_gray... and ${analysis.warnings.length - 10} more$_reset');
+        '  $_gray... and ${analysis.warnings.length - 10} more$_reset',
+      );
     }
     _printLine();
   }
@@ -288,16 +310,20 @@ class MigrationCLI {
     if (isDryRun) {
       stdout.writeln('1. Review the changes above');
       stdout.writeln(
-          '2. Run ${_green}dart run locus:migrate$_reset to apply changes');
+        '2. Run ${_green}dart run locus:migrate$_reset to apply changes',
+      );
       stdout.writeln(
-          '3. Or run ${_green}dart run locus:migrate --backup$_reset to create a backup first');
+        '3. Or run ${_green}dart run locus:migrate --backup$_reset to create a backup first',
+      );
     } else {
       stdout.writeln('1. Run your tests to verify migration');
       stdout.writeln(
-          '2. Build your app: ${_green}flutter build apk$_reset or ${_green}flutter build ios$_reset');
+        '2. Build your app: ${_green}flutter build apk$_reset or ${_green}flutter build ios$_reset',
+      );
       stdout.writeln('3. If issues arise, restore from backup:');
-      stdout
-          .writeln('   ${_gray}tar -xzf .locus/backup/*/backup.tar.gz$_reset');
+      stdout.writeln(
+        '   ${_gray}tar -xzf .locus/backup/*/backup.tar.gz$_reset',
+      );
     }
 
     _printLine();
@@ -412,7 +438,8 @@ class MigrationCLI {
     stdout.writeln('$_gray${'─' * 40}$_reset');
     stdout.writeln('Root: ${result.analysis.rootPath}');
     stdout.writeln(
-        'Type: ${result.analysis.isMonorepo ? 'Monorepo' : 'Single Package'}');
+      'Type: ${result.analysis.isMonorepo ? 'Monorepo' : 'Single Package'}',
+    );
     stdout.writeln('Total packages: ${result.analysis.packages.length}');
     _printLine();
 
@@ -433,21 +460,26 @@ class MigrationCLI {
         if (analysis.totalMatches > 0) {
           stdout.writeln('   Patterns found: ${analysis.totalMatches}');
           stdout.writeln(
-              '   Auto-migratable: $_green${analysis.autoMigratableCount}$_reset');
+            '   Auto-migratable: $_green${analysis.autoMigratableCount}$_reset',
+          );
           if (analysis.manualReviewCount > 0) {
             stdout.writeln(
-                '   Manual review: $_yellow${analysis.manualReviewCount}$_reset');
+              '   Manual review: $_yellow${analysis.manualReviewCount}$_reset',
+            );
           }
           if (analysis.removedFeaturesCount > 0) {
             stdout.writeln(
-                '   Removed features: $_red${analysis.removedFeaturesCount}$_reset');
+              '   Removed features: $_red${analysis.removedFeaturesCount}$_reset',
+            );
           }
           if (!result.dryRun) {
             stdout.writeln(
-                '   Changes applied: $_green${packageResult.successfulChanges}$_reset');
+              '   Changes applied: $_green${packageResult.successfulChanges}$_reset',
+            );
             if (packageResult.failedChanges > 0) {
               stdout.writeln(
-                  '   ${_red}Failed: ${packageResult.failedChanges}$_reset');
+                '   ${_red}Failed: ${packageResult.failedChanges}$_reset',
+              );
             }
           }
         } else {
@@ -467,14 +499,17 @@ class MigrationCLI {
     stdout.writeln('Files with Locus SDK: ${aggregated.filesWithLocus}');
     stdout.writeln('Total patterns found: ${aggregated.totalMatches}');
     stdout.writeln(
-        'Auto-migratable: $_green${aggregated.autoMigratableCount}$_reset');
+      'Auto-migratable: $_green${aggregated.autoMigratableCount}$_reset',
+    );
     if (aggregated.manualReviewCount > 0) {
       stdout.writeln(
-          'Manual review required: $_yellow${aggregated.manualReviewCount}$_reset');
+        'Manual review required: $_yellow${aggregated.manualReviewCount}$_reset',
+      );
     }
     if (aggregated.removedFeaturesCount > 0) {
       stdout.writeln(
-          'Removed features: $_red${aggregated.removedFeaturesCount}$_reset');
+        'Removed features: $_red${aggregated.removedFeaturesCount}$_reset',
+      );
     }
 
     if (!result.dryRun) {
@@ -483,7 +518,8 @@ class MigrationCLI {
       stdout.writeln('$_gray${'─' * 40}$_reset');
       stdout.writeln('Files modified: ${result.filesModified}');
       stdout.writeln(
-          'Successful changes: $_green${result.successfulChanges}$_reset');
+        'Successful changes: $_green${result.successfulChanges}$_reset',
+      );
       if (result.failedChanges > 0) {
         stdout.writeln('Failed changes: $_red${result.failedChanges}$_reset');
       }

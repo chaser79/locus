@@ -10,11 +10,7 @@ Location _locationAt({
   return Location(
     uuid: timestamp.microsecondsSinceEpoch.toString(),
     timestamp: timestamp,
-    coords: Coords(
-      latitude: lat,
-      longitude: lng,
-      accuracy: accuracy,
-    ),
+    coords: Coords(latitude: lat, longitude: lng, accuracy: accuracy),
   );
 }
 

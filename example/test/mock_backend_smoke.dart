@@ -140,8 +140,9 @@ void main() {
 
     test('captures method, path, headers, and body bytes', () async {
       await backend.setMode(MockMode.normal);
-      final HttpClientRequest req =
-          await client.postUrl(backend.baseUrl.replace(path: '/sync'));
+      final HttpClientRequest req = await client.postUrl(
+        backend.baseUrl.replace(path: '/sync'),
+      );
       req.headers.set('x-test', 'hello');
       const String body = '{"a":1}';
       req.add(utf8.encode(body));
@@ -165,18 +166,20 @@ void main() {
     });
   });
 
-  test('a second HttpMockBackend.start succeeds after dispose (no port leak)',
-      () async {
-    final HttpMockBackend a = await HttpMockBackend.start();
-    final int portA = a.baseUrl.port;
-    await a.dispose();
+  test(
+    'a second HttpMockBackend.start succeeds after dispose (no port leak)',
+    () async {
+      final HttpMockBackend a = await HttpMockBackend.start();
+      final int portA = a.baseUrl.port;
+      await a.dispose();
 
-    final HttpMockBackend b = await HttpMockBackend.start();
-    expect(b.baseUrl.port, isNonZero);
-    await b.dispose();
+      final HttpMockBackend b = await HttpMockBackend.start();
+      expect(b.baseUrl.port, isNonZero);
+      await b.dispose();
 
-    // Ports may or may not be reused by the OS — what matters is that the
-    // second start() succeeded at all. Asserting equality would be flaky.
-    expect(portA, isNonZero);
-  });
+      // Ports may or may not be reused by the OS — what matters is that the
+      // second start() succeeded at all. Asserting equality would be flaky.
+      expect(portA, isNonZero);
+    },
+  );
 }

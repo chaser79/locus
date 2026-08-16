@@ -98,10 +98,7 @@ class _LocusExampleAppState extends State<LocusExampleApp> {
               recorder: _recorder,
               backend: _backend,
               backendError: _backendError,
-              scenarios: <Scenario>[
-                ...phase1Scenarios(),
-                ...phase2Scenarios(),
-              ],
+              scenarios: <Scenario>[...phase1Scenarios(), ...phase2Scenarios()],
             )
           : const _BootSplash(),
     );
@@ -162,11 +159,7 @@ class _RootScaffold extends StatelessWidget {
         appBar: AppBar(
           title: Row(
             children: <Widget>[
-              SvgPicture.asset(
-                'assets/locus_logo.svg',
-                width: 32,
-                height: 32,
-              ),
+              SvgPicture.asset('assets/locus_logo.svg', width: 32, height: 32),
               const SizedBox(width: 10),
               const Text(
                 'Locus',

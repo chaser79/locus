@@ -89,8 +89,9 @@ class Locus {
   /// await Locus.geofencing.add(Geofence(...));
   /// Locus.geofencing.events.listen((event) => print(event));
   /// ```
-  static final GeofenceService geofencing =
-      GeofenceServiceImpl(() => _instance);
+  static final GeofenceService geofencing = GeofenceServiceImpl(
+    () => _instance,
+  );
 
   /// Privacy service for managing privacy zones.
   ///
@@ -135,8 +136,9 @@ class Locus {
   /// final logs = await Locus.diagnostics.getLog();
   /// Locus.diagnostics.locationAnomalies().listen((a) => print(a));
   /// ```
-  static final DiagnosticsService diagnostics =
-      DiagnosticsServiceImpl(() => _instance);
+  static final DiagnosticsService diagnostics = DiagnosticsServiceImpl(
+    () => _instance,
+  );
 
   // ============================================================
   // Event Stream
@@ -433,13 +435,12 @@ class Locus {
     TrackingProfile? initialProfile,
     List<TrackingProfileRule> rules = const [],
     bool enableAutomation = false,
-  }) =>
-      _instance.setTrackingProfiles(
-        profiles,
-        initialProfile: initialProfile,
-        rules: rules,
-        enableAutomation: enableAutomation,
-      );
+  }) => _instance.setTrackingProfiles(
+    profiles,
+    initialProfile: initialProfile,
+    rules: rules,
+    enableAutomation: enableAutomation,
+  );
 
   static Future<void> setTrackingProfile(TrackingProfile profile) =>
       _instance.setTrackingProfile(profile);
@@ -463,13 +464,11 @@ class Locus {
   static SpoofDetectionEvent? analyzeForSpoofing(
     Location location, {
     bool? isMockProvider,
-  }) =>
-      _instance.analyzeForSpoofing(location, isMockProvider: isMockProvider);
+  }) => _instance.analyzeForSpoofing(location, isMockProvider: isMockProvider);
 
   static Future<void> startSignificantChangeMonitoring([
     SignificantChangeConfig config = const SignificantChangeConfig(),
-  ]) =>
-      _instance.startSignificantChangeMonitoring(config);
+  ]) => _instance.startSignificantChangeMonitoring(config);
 
   static Future<void> stopSignificantChangeMonitoring() =>
       _instance.stopSignificantChangeMonitoring();
@@ -523,8 +522,11 @@ class Locus {
     LocationAnomalyConfig config = const LocationAnomalyConfig(),
     Function? onError,
   }) {
-    return _instance.onLocationAnomaly(callback,
-        config: config, onError: onError);
+    return _instance.onLocationAnomaly(
+      callback,
+      config: config,
+      onError: onError,
+    );
   }
 
   /// Stream of location quality assessments.
@@ -539,8 +541,11 @@ class Locus {
     LocationQualityConfig config = const LocationQualityConfig(),
     Function? onError,
   }) {
-    return _instance.onLocationQuality(callback,
-        config: config, onError: onError);
+    return _instance.onLocationQuality(
+      callback,
+      config: config,
+      onError: onError,
+    );
   }
 
   // ============================================================

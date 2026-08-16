@@ -33,9 +33,9 @@ class PermissionRationale {
   final String? negativeAction;
 
   JsonMap toMap() => {
-        'title': title,
-        'message': message,
-        if (positiveAction != null) 'positiveAction': positiveAction,
-        if (negativeAction != null) 'negativeAction': negativeAction,
-      };
+    'title': title,
+    'message': message,
+    if (positiveAction != null) 'positiveAction': positiveAction,
+    if (negativeAction != null) 'negativeAction': negativeAction,
+  };
 }

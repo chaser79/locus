@@ -1,10 +1,7 @@
 import 'package:locus/src/shared/models/json_map.dart';
 
 class HeadlessEvent {
-  const HeadlessEvent({
-    required this.name,
-    this.data,
-  });
+  const HeadlessEvent({required this.name, this.data});
 
   factory HeadlessEvent.fromMap(JsonMap map) {
     return HeadlessEvent(

@@ -119,7 +119,11 @@ class LocusStreams {
       await setNativePrivacyMode(hasEnabledPrivacyZones);
     } catch (error, stack) {
       _log.eventWarning(
-          'native_privacy_mode_sync_failed', const {}, error, stack);
+        'native_privacy_mode_sync_failed',
+        const {},
+        error,
+        stack,
+      );
     }
   }
 
@@ -131,24 +135,29 @@ class LocusStreams {
   /// notification from overtaking a newer explicit mutation.
   static Future<void> setNativePrivacyMode(bool enabled) {
     final operation = _privacyModeWriteTail.then(
-      (_) => LocusChannels.methods.invokeMethod<void>(
-        'setPrivacyMode',
-        enabled,
-      ),
+      (_) =>
+          LocusChannels.methods.invokeMethod<void>('setPrivacyMode', enabled),
     );
 
-    _privacyModeWriteTail = operation.catchError(
-      (Object error, StackTrace stack) {
-        _log.eventWarning(
-            'native_privacy_mode_write_failed', const {}, error, stack);
-      },
-    );
+    _privacyModeWriteTail = operation.catchError((
+      Object error,
+      StackTrace stack,
+    ) {
+      _log.eventWarning(
+        'native_privacy_mode_write_failed',
+        const {},
+        error,
+        stack,
+      );
+    });
     return operation;
   }
 
   static Future<void> _onListen() async {
-    await _ensureNativeStreamStarted()
-        .catchError((Object error, StackTrace stack) {
+    await _ensureNativeStreamStarted().catchError((
+      Object error,
+      StackTrace stack,
+    ) {
       _log.eventSevere('native_stream_start_failed', const {}, error, stack);
     });
   }
@@ -197,22 +206,23 @@ class LocusStreams {
       _isStarting = true;
 
       try {
-        _nativeSubscription =
-            LocusChannels.events.receiveBroadcastStream().listen(
-          (event) async {
-            try {
-              final mapped = EventMapper.mapToEvent(event);
-              _processEvent(mapped);
-            } catch (e, stack) {
-              _log.eventSevere('event_mapping_failed', const {}, e, stack);
-              await _handleStreamError(e, stack, 'event_mapping');
-            }
-          },
-          onError: (Object error, StackTrace stackTrace) async {
-            _log.eventSevere('stream_error', const {}, error, stackTrace);
-            await _handleStreamError(error, stackTrace, 'stream');
-          },
-        );
+        _nativeSubscription = LocusChannels.events
+            .receiveBroadcastStream()
+            .listen(
+              (event) async {
+                try {
+                  final mapped = EventMapper.mapToEvent(event);
+                  _processEvent(mapped);
+                } catch (e, stack) {
+                  _log.eventSevere('event_mapping_failed', const {}, e, stack);
+                  await _handleStreamError(e, stack, 'event_mapping');
+                }
+              },
+              onError: (Object error, StackTrace stackTrace) async {
+                _log.eventSevere('stream_error', const {}, error, stackTrace);
+                await _handleStreamError(error, stackTrace, 'stream');
+              },
+            );
       } catch (e, stack) {
         // Cancel any partially-created subscription to prevent leaks
         await _nativeSubscription?.cancel();
@@ -230,7 +240,8 @@ class LocusStreams {
   /// and polygon geofence detection if enabled.
   static void _processEvent(GeolocationEvent<dynamic> event) {
     // Apply location processing to all events that carry Location data
-    final isLocationEvent = event.type == EventType.location ||
+    final isLocationEvent =
+        event.type == EventType.location ||
         event.type == EventType.motionChange ||
         event.type == EventType.heartbeat ||
         event.type == EventType.schedule;
@@ -284,10 +295,9 @@ class LocusStreams {
 
       // Emit the (possibly modified) location event
       if (processedLocation != location) {
-        _eventController?.add(GeolocationEvent<Location>(
-          type: event.type,
-          data: processedLocation,
-        ));
+        _eventController?.add(
+          GeolocationEvent<Location>(type: event.type, data: processedLocation),
+        );
       } else {
         _eventController?.add(event);
       }
@@ -309,7 +319,10 @@ class LocusStreams {
 
   /// Handles stream errors through the error recovery system.
   static Future<void> _handleStreamError(
-      Object error, StackTrace stackTrace, String operation) async {
+    Object error,
+    StackTrace stackTrace,
+    String operation,
+  ) async {
     // Import and use error recovery if configured
     final errorManager = _errorRecoveryManager;
 
@@ -324,23 +337,26 @@ class LocusStreams {
       );
 
       // Handle error with proper async chain for immediate recovery
-      await errorManager.handleError(locusError).then((action) {
-        _log.eventInfo('error_recovery_action', {'action': action.name});
+      await errorManager
+          .handleError(locusError)
+          .then((action) {
+            _log.eventInfo('error_recovery_action', {'action': action.name});
 
-        // If action is not 'ignore', propagate to listeners
-        if (action != RecoveryAction.ignore) {
-          _eventController?.addError(error, stackTrace);
-        }
-      }).catchError((Object recoveryError, StackTrace recoveryStack) {
-        _log.eventSevere(
-          'error_recovery_failed',
-          const {},
-          recoveryError,
-          recoveryStack,
-        );
-        // Propagate original error if recovery fails
-        _eventController?.addError(error, stackTrace);
-      });
+            // If action is not 'ignore', propagate to listeners
+            if (action != RecoveryAction.ignore) {
+              _eventController?.addError(error, stackTrace);
+            }
+          })
+          .catchError((Object recoveryError, StackTrace recoveryStack) {
+            _log.eventSevere(
+              'error_recovery_failed',
+              const {},
+              recoveryError,
+              recoveryStack,
+            );
+            // Propagate original error if recovery fails
+            _eventController?.addError(error, stackTrace);
+          });
     } else {
       // No error recovery configured, just propagate
       _eventController?.addError(error, stackTrace);

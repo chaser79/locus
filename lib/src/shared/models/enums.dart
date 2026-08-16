@@ -9,12 +9,7 @@ enum ActivityType {
   unknown,
 }
 
-enum GeofenceAction {
-  enter,
-  exit,
-  dwell,
-  unknown,
-}
+enum GeofenceAction { enter, exit, dwell, unknown }
 
 enum ProviderAvailability {
   available,
@@ -33,8 +28,4 @@ enum AuthorizationStatus {
   unknown,
 }
 
-enum LocationAccuracyAuthorization {
-  full,
-  reduced,
-  unknown,
-}
+enum LocationAccuracyAuthorization { full, reduced, unknown }

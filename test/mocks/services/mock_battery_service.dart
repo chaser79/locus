@@ -27,9 +27,9 @@ class MockBatteryService implements BatteryService {
     int initialLevel = 100,
     bool initialCharging = false,
     bool initialPowerSave = false,
-  })  : _level = initialLevel,
-        _isCharging = initialCharging,
-        _isPowerSaveMode = initialPowerSave;
+  }) : _level = initialLevel,
+       _isCharging = initialCharging,
+       _isPowerSaveMode = initialPowerSave;
 
   int _level;
   bool _isCharging;
@@ -157,8 +157,8 @@ class MockBatteryService implements BatteryService {
     final accuracy = _level > 50
         ? DesiredAccuracy.high
         : _level > 20
-            ? DesiredAccuracy.medium
-            : DesiredAccuracy.low;
+        ? DesiredAccuracy.medium
+        : DesiredAccuracy.low;
 
     return AdaptiveSettings(
       desiredAccuracy: accuracy,
@@ -220,10 +220,7 @@ class MockBatteryService implements BatteryService {
     void Function(PowerStateChangeEvent event) callback, {
     Function? onError,
   }) {
-    return _powerStateController.stream.listen(
-      callback,
-      onError: onError,
-    );
+    return _powerStateController.stream.listen(callback, onError: onError);
   }
 
   @override
@@ -231,10 +228,7 @@ class MockBatteryService implements BatteryService {
     void Function(bool) callback, {
     Function? onError,
   }) {
-    return _powerSaveController.stream.listen(
-      callback,
-      onError: onError,
-    );
+    return _powerSaveController.stream.listen(callback, onError: onError);
   }
 
   /// Disposes of resources.

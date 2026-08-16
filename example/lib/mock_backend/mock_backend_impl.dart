@@ -33,12 +33,12 @@ class HttpMockBackend implements MockBackend {
     required MockMode initialMode,
     required Duration slowResponseDelay,
     required int outageRequestCount,
-  })  : _mode = initialMode,
-        _slowResponseDelay = slowResponseDelay,
-        _outageRequestCount = outageRequestCount {
+  }) : _mode = initialMode,
+       _slowResponseDelay = slowResponseDelay,
+       _outageRequestCount = outageRequestCount {
     _subscription = _server.listen(
       _handle,
-      onError: (Object _, StackTrace __) {
+      onError: (Object _, StackTrace _) {
         // Swallow listener errors — a single misbehaving connection must not
         // tear the whole mock down. Individual handler failures are logged via
         // [_safeRespond500].
@@ -237,11 +237,7 @@ class HttpMockBackend implements MockBackend {
     }
   }
 
-  Future<void> _respond(
-    HttpRequest request,
-    MockMode mode,
-    int status,
-  ) async {
+  Future<void> _respond(HttpRequest request, MockMode mode, int status) async {
     switch (mode) {
       case MockMode.normal:
         await _writeJson(request, HttpStatus.ok, const <String, Object?>{});
@@ -255,11 +251,9 @@ class HttpMockBackend implements MockBackend {
         );
         return;
       case MockMode.auth403:
-        await _writeJson(
-          request,
-          HttpStatus.forbidden,
-          const <String, Object?>{'error': 'forbidden'},
-        );
+        await _writeJson(request, HttpStatus.forbidden, const <String, Object?>{
+          'error': 'forbidden',
+        });
         return;
       case MockMode.http415Once:
         if (status == HttpStatus.unsupportedMediaType) {
@@ -322,8 +316,9 @@ class HttpMockBackend implements MockBackend {
   /// reproduces the "connection dropped mid-flight" path the SDK must tolerate.
   Future<void> _drop(HttpRequest request) async {
     try {
-      final Socket socket =
-          await request.response.detachSocket(writeHeaders: false);
+      final Socket socket = await request.response.detachSocket(
+        writeHeaders: false,
+      );
       socket.destroy();
     } catch (_) {
       // The peer may have already closed the connection or the response may
@@ -342,10 +337,12 @@ class HttpMockBackend implements MockBackend {
       request.response
         ..statusCode = HttpStatus.internalServerError
         ..headers.contentType = ContentType.json
-        ..write(jsonEncode(<String, Object?>{
-          'error': 'mock_handler_threw',
-          'message': error.toString(),
-        }));
+        ..write(
+          jsonEncode(<String, Object?>{
+            'error': 'mock_handler_threw',
+            'message': error.toString(),
+          }),
+        );
       // Fire-and-forget close: we're already in the error path.
       unawaited(request.response.close());
     } catch (_) {

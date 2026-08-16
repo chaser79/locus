@@ -34,7 +34,7 @@ class DefaultEventRecorder implements EventRecorder {
   /// [capacity] must be positive. Older entries are evicted in FIFO order
   /// once the buffer fills.
   DefaultEventRecorder({this.capacity = 5000})
-      : assert(capacity > 0, 'capacity must be positive');
+    : assert(capacity > 0, 'capacity must be positive');
 
   @override
   final int capacity;
@@ -385,21 +385,21 @@ class DefaultEventRecorder implements EventRecorder {
         base['count'] = count;
         base['olderThanSeconds'] = olderThan.inSeconds;
       case SyncStalled(
-          :final sinceLastSuccess,
-          :final consecutiveFailures,
-          :final lastHttpStatus,
-          :final lastErrorClass,
-        ):
+        :final sinceLastSuccess,
+        :final consecutiveFailures,
+        :final lastHttpStatus,
+        :final lastErrorClass,
+      ):
         base['sinceLastSuccessSeconds'] = sinceLastSuccess.inSeconds;
         base['consecutiveFailures'] = consecutiveFailures;
         if (lastHttpStatus != null) base['lastHttpStatus'] = lastHttpStatus;
         base['lastErrorClass'] = lastErrorClass.name;
       case SyncUnrecoverable(
-          :final sinceLastSuccess,
-          :final consecutiveFailures,
-          :final lastHttpStatus,
-          :final lastErrorClass,
-        ):
+        :final sinceLastSuccess,
+        :final consecutiveFailures,
+        :final lastHttpStatus,
+        :final lastErrorClass,
+      ):
         base['sinceLastSuccessSeconds'] = sinceLastSuccess.inSeconds;
         base['consecutiveFailures'] = consecutiveFailures;
         if (lastHttpStatus != null) base['lastHttpStatus'] = lastHttpStatus;
@@ -423,9 +423,7 @@ class DefaultEventRecorder implements EventRecorder {
         for (final entry in raw.entries) entry.key: entry.value as Object?,
       };
     } on Object catch (error) {
-      return <String, Object?>{
-        'serializationError': error.toString(),
-      };
+      return <String, Object?>{'serializationError': error.toString()};
     }
   }
 }

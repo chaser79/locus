@@ -60,13 +60,13 @@ class NotificationConfig {
   final int? importance;
 
   JsonMap toMap() => {
-        if (title != null) 'title': title,
-        if (text != null) 'text': text,
-        if (smallIcon != null) 'smallIcon': smallIcon,
-        if (largeIcon != null) 'largeIcon': largeIcon,
-        if (layout != null) 'layout': layout,
-        if (actions != null) 'actions': actions,
-        if (strings != null) 'strings': strings,
-        if (importance != null) 'importance': importance,
-      };
+    if (title != null) 'title': title,
+    if (text != null) 'text': text,
+    if (smallIcon != null) 'smallIcon': smallIcon,
+    if (largeIcon != null) 'largeIcon': largeIcon,
+    if (layout != null) 'layout': layout,
+    if (actions != null) 'actions': actions,
+    if (strings != null) 'strings': strings,
+    if (importance != null) 'importance': importance,
+  };
 }

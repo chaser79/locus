@@ -17,27 +17,18 @@ class DiagnosticsSnapshot {
   final JsonMap? metadata;
 
   JsonMap toMap() => {
-        'capturedAt': capturedAt.toIso8601String(),
-        if (state != null) 'state': state!.toMap(),
-        if (config != null) 'config': config,
-        'queue': queue.map((item) => item.toMap()).toList(),
-        if (metadata != null) 'metadata': metadata,
-      };
+    'capturedAt': capturedAt.toIso8601String(),
+    if (state != null) 'state': state!.toMap(),
+    if (config != null) 'config': config,
+    'queue': queue.map((item) => item.toMap()).toList(),
+    if (metadata != null) 'metadata': metadata,
+  };
 }
 
-enum RemoteCommandType {
-  setConfig,
-  syncQueue,
-  setOdometer,
-  resetOdometer,
-}
+enum RemoteCommandType { setConfig, syncQueue, setOdometer, resetOdometer }
 
 class RemoteCommand {
-  const RemoteCommand({
-    required this.id,
-    required this.type,
-    this.payload,
-  });
+  const RemoteCommand({required this.id, required this.type, this.payload});
 
   factory RemoteCommand.fromMap(JsonMap map) {
     return RemoteCommand(

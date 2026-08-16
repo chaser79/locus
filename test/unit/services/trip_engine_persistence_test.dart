@@ -28,11 +28,7 @@ Location _locationAt({
   return Location(
     uuid: timestamp.microsecondsSinceEpoch.toString(),
     timestamp: timestamp,
-    coords: Coords(
-      latitude: lat,
-      longitude: lng,
-      accuracy: 5,
-    ),
+    coords: Coords(latitude: lat, longitude: lng, accuracy: 5),
   );
 }
 
@@ -43,7 +39,9 @@ void main() {
     final controller = StreamController<Location>();
 
     await engine.start(
-        const TripConfig(startOnMoving: false), controller.stream);
+      const TripConfig(startOnMoving: false),
+      controller.stream,
+    );
 
     final now = DateTime.utc(2025, 1, 1, 0, 0, 0);
     controller.add(_locationAt(timestamp: now, lat: 0, lng: 0));
@@ -56,7 +54,9 @@ void main() {
     final restoredEngine = TripEngine(store: store);
     final secondController = StreamController<Location>();
     await restoredEngine.start(
-        const TripConfig(startOnMoving: false), secondController.stream);
+      const TripConfig(startOnMoving: false),
+      secondController.stream,
+    );
 
     expect(restoredEngine.state?.tripId, saved.tripId);
 

@@ -15,11 +15,7 @@ void main() {
   final rawLocation = Location(
     uuid: 'raw-location',
     timestamp: timestamp,
-    coords: const Coords(
-      latitude: 52.2215,
-      longitude: 6.8937,
-      accuracy: 5,
-    ),
+    coords: const Coords(latitude: 52.2215, longitude: 6.8937, accuracy: 5),
   );
   final transition = GeolocationEvent<GeofenceEvent>(
     type: EventType.geofence,
@@ -35,36 +31,42 @@ void main() {
     ),
   );
 
-  test('excluded geofence location is removed without dropping transition',
-      () async {
-    final service = PrivacyZoneService();
-    await service.addZone(PrivacyZone(
-      identifier: 'private',
-      latitude: 52.2215,
-      longitude: 6.8937,
-      radius: 100,
-      action: PrivacyZoneAction.exclude,
-      createdAt: timestamp,
-    ));
+  test(
+    'excluded geofence location is removed without dropping transition',
+    () async {
+      final service = PrivacyZoneService();
+      await service.addZone(
+        PrivacyZone(
+          identifier: 'private',
+          latitude: 52.2215,
+          longitude: 6.8937,
+          radius: 100,
+          action: PrivacyZoneAction.exclude,
+          createdAt: timestamp,
+        ),
+      );
 
-    final filtered = applyPrivacyToGeofenceEvent(transition, service);
+      final filtered = applyPrivacyToGeofenceEvent(transition, service);
 
-    expect(filtered.type, EventType.geofence);
-    expect((filtered.data as GeofenceEvent).action, GeofenceAction.enter);
-    expect((filtered.data as GeofenceEvent).location, isNull);
-  });
+      expect(filtered.type, EventType.geofence);
+      expect((filtered.data as GeofenceEvent).action, GeofenceAction.enter);
+      expect((filtered.data as GeofenceEvent).location, isNull);
+    },
+  );
 
   test('obfuscated geofence location replaces raw coordinates', () async {
     final service = PrivacyZoneService(seed: 42);
-    await service.addZone(PrivacyZone(
-      identifier: 'private',
-      latitude: 52.2215,
-      longitude: 6.8937,
-      radius: 100,
-      action: PrivacyZoneAction.obfuscate,
-      obfuscationRadius: 250,
-      createdAt: timestamp,
-    ));
+    await service.addZone(
+      PrivacyZone(
+        identifier: 'private',
+        latitude: 52.2215,
+        longitude: 6.8937,
+        radius: 100,
+        action: PrivacyZoneAction.obfuscate,
+        obfuscationRadius: 250,
+        createdAt: timestamp,
+      ),
+    );
 
     final filtered = applyPrivacyToGeofenceEvent(transition, service);
     final location = (filtered.data as GeofenceEvent).location!;

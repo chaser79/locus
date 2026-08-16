@@ -85,7 +85,7 @@ class TrackingProfileManager {
     if (_isDisposed) {
       _log.eventWarning('set_profile_after_dispose', {
         'profile': profile.name,
-        if (reason != null) 'reason': reason,
+        'reason': ?reason,
       });
       return;
     }
@@ -101,11 +101,13 @@ class TrackingProfileManager {
 
     // Emit profile change event (check disposed again after await)
     if (!_isDisposed) {
-      _profileChangeController.add(ProfileChangeEvent(
-        previousProfile: previousProfile,
-        newProfile: profile,
-        reason: reason,
-      ));
+      _profileChangeController.add(
+        ProfileChangeEvent(
+          previousProfile: previousProfile,
+          newProfile: profile,
+          reason: reason,
+        ),
+      );
     }
   }
 
@@ -274,11 +276,13 @@ class TrackingProfileManager {
       );
       // Emit error to stream for observability (if not disposed)
       if (!_isDisposed) {
-        _errorController.add(ProfileSwitchError(
-          targetProfile: rule.profile,
-          error: e,
-          stackTrace: stack,
-        ));
+        _errorController.add(
+          ProfileSwitchError(
+            targetProfile: rule.profile,
+            error: e,
+            stackTrace: stack,
+          ),
+        );
       }
     });
   }

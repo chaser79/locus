@@ -324,10 +324,7 @@ void main() {
     });
 
     test('addPolygonGeofence throws for invalid polygon', () async {
-      final invalidPolygon = PolygonGeofence(
-        identifier: '',
-        vertices: [],
-      );
+      final invalidPolygon = PolygonGeofence(identifier: '', vertices: []);
 
       expect(
         () => service.addPolygonGeofence(invalidPolygon),
@@ -360,10 +357,12 @@ void main() {
 
     test('removeAllPolygonGeofences clears all', () async {
       await service.addPolygonGeofence(testPolygon);
-      await service.addPolygonGeofence(PolygonGeofence(
-        identifier: 'polygon-2',
-        vertices: testPolygon.vertices,
-      ));
+      await service.addPolygonGeofence(
+        PolygonGeofence(
+          identifier: 'polygon-2',
+          vertices: testPolygon.vertices,
+        ),
+      );
 
       await service.removeAllPolygonGeofences();
       expect(service.count, 0);
@@ -541,7 +540,9 @@ void main() {
 
       expect(result, true);
       expect(
-          mockLocus.methodCalls, contains('removePolygonGeofence:to-remove'));
+        mockLocus.methodCalls,
+        contains('removePolygonGeofence:to-remove'),
+      );
     });
 
     test('getPolygonGeofences returns all polygons', () async {

@@ -317,50 +317,32 @@ class ConfigFixtures {
 class ActivityFixtures {
   /// Still/stationary activity
   static Activity still({int confidence = 100}) {
-    return Activity(
-      type: ActivityType.still,
-      confidence: confidence,
-    );
+    return Activity(type: ActivityType.still, confidence: confidence);
   }
 
   /// Walking activity
   static Activity walking({int confidence = 85}) {
-    return Activity(
-      type: ActivityType.walking,
-      confidence: confidence,
-    );
+    return Activity(type: ActivityType.walking, confidence: confidence);
   }
 
   /// Running activity
   static Activity running({int confidence = 80}) {
-    return Activity(
-      type: ActivityType.running,
-      confidence: confidence,
-    );
+    return Activity(type: ActivityType.running, confidence: confidence);
   }
 
   /// Cycling activity
   static Activity cycling({int confidence = 75}) {
-    return Activity(
-      type: ActivityType.onBicycle,
-      confidence: confidence,
-    );
+    return Activity(type: ActivityType.onBicycle, confidence: confidence);
   }
 
   /// In vehicle activity
   static Activity inVehicle({int confidence = 90}) {
-    return Activity(
-      type: ActivityType.inVehicle,
-      confidence: confidence,
-    );
+    return Activity(type: ActivityType.inVehicle, confidence: confidence);
   }
 
   /// Unknown activity (low confidence)
   static Activity unknown() {
-    return const Activity(
-      type: ActivityType.unknown,
-      confidence: 0,
-    );
+    return const Activity(type: ActivityType.unknown, confidence: 0);
   }
 }
 
@@ -368,41 +350,26 @@ class ActivityFixtures {
 class BatteryFixtures {
   /// Full battery
   static Battery full({bool charging = false}) {
-    return Battery(
-      level: 100,
-      isCharging: charging,
-    );
+    return Battery(level: 100, isCharging: charging);
   }
 
   /// High battery
   static Battery high({bool charging = false}) {
-    return Battery(
-      level: 85,
-      isCharging: charging,
-    );
+    return Battery(level: 85, isCharging: charging);
   }
 
   /// Medium battery
   static Battery medium({bool charging = false}) {
-    return Battery(
-      level: 50,
-      isCharging: charging,
-    );
+    return Battery(level: 50, isCharging: charging);
   }
 
   /// Low battery
   static Battery low({bool charging = false}) {
-    return Battery(
-      level: 15,
-      isCharging: charging,
-    );
+    return Battery(level: 15, isCharging: charging);
   }
 
   /// Critical battery
   static Battery critical({bool charging = false}) {
-    return Battery(
-      level: 5,
-      isCharging: charging,
-    );
+    return Battery(level: 5, isCharging: charging);
   }
 }

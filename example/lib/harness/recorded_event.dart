@@ -73,14 +73,15 @@ class RecordedEvent {
 
   /// Stable JSON shape for export and comparison (used in scenario verify).
   Map<String, Object?> toJson() => <String, Object?>{
-        'at': at.toUtc().toIso8601String(),
-        'category': category.name,
-        'type': type,
-        if (sourceId != null) 'sourceId': sourceId,
-        'payload': payload,
-      };
+    'at': at.toUtc().toIso8601String(),
+    'category': category.name,
+    'type': type,
+    if (sourceId != null) 'sourceId': sourceId,
+    'payload': payload,
+  };
 
   @override
-  String toString() => 'RecordedEvent(${at.toIso8601String()} '
+  String toString() =>
+      'RecordedEvent(${at.toIso8601String()} '
       '${category.name}/$type ${payload.isEmpty ? "" : payload})';
 }

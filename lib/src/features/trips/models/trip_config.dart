@@ -31,27 +31,35 @@ class TripConfig {
       stopTimeoutMinutes: (map['stopTimeoutMinutes'] as num?)?.toInt() ?? 5,
       stationarySpeedKph:
           (map['stationarySpeedKph'] as num?)?.toDouble() ?? 1.5,
-      updateIntervalSeconds: (map['updateIntervalSeconds'] as num?)?.toInt() ??
+      updateIntervalSeconds:
+          (map['updateIntervalSeconds'] as num?)?.toInt() ??
           kDefaultUpdateIntervalSeconds,
       dwellMinutes: (map['dwellMinutes'] as num?)?.toInt() ?? 5,
-      route: (map['route'] as List?)
-              ?.map((item) =>
-                  RoutePoint.fromMap(Map<String, dynamic>.from(item as Map)))
+      route:
+          (map['route'] as List?)
+              ?.map(
+                (item) =>
+                    RoutePoint.fromMap(Map<String, dynamic>.from(item as Map)),
+              )
               .toList() ??
           const [],
       routeDeviationThresholdMeters:
           (map['routeDeviationThresholdMeters'] as num?)?.toDouble() ??
-              kDefaultRouteDeviationThresholdMeters,
+          kDefaultRouteDeviationThresholdMeters,
       routeDeviationCooldownSeconds:
           (map['routeDeviationCooldownSeconds'] as num?)?.toInt() ??
-              kDefaultUpdateIntervalSeconds,
+          kDefaultUpdateIntervalSeconds,
       destination: map['destination'] != null
           ? RoutePoint.fromMap(
-              Map<String, dynamic>.from(map['destination'] as Map))
+              Map<String, dynamic>.from(map['destination'] as Map),
+            )
           : null,
-      waypoints: (map['waypoints'] as List?)
-              ?.map((item) =>
-                  RoutePoint.fromMap(Map<String, dynamic>.from(item as Map)))
+      waypoints:
+          (map['waypoints'] as List?)
+              ?.map(
+                (item) =>
+                    RoutePoint.fromMap(Map<String, dynamic>.from(item as Map)),
+              )
               .toList() ??
           const [],
     );
@@ -114,19 +122,19 @@ class TripConfig {
   }
 
   JsonMap toMap() => {
-        if (tripId != null) 'tripId': tripId,
-        'startOnMoving': startOnMoving,
-        'startDistanceMeters': startDistanceMeters,
-        'startSpeedKph': startSpeedKph,
-        'stopOnStationary': stopOnStationary,
-        'stopTimeoutMinutes': stopTimeoutMinutes,
-        'stationarySpeedKph': stationarySpeedKph,
-        'updateIntervalSeconds': updateIntervalSeconds,
-        'dwellMinutes': dwellMinutes,
-        'route': route.map((point) => point.toMap()).toList(),
-        'routeDeviationThresholdMeters': routeDeviationThresholdMeters,
-        'routeDeviationCooldownSeconds': routeDeviationCooldownSeconds,
-        if (destination != null) 'destination': destination!.toMap(),
-        'waypoints': waypoints.map((point) => point.toMap()).toList(),
-      };
+    if (tripId != null) 'tripId': tripId,
+    'startOnMoving': startOnMoving,
+    'startDistanceMeters': startDistanceMeters,
+    'startSpeedKph': startSpeedKph,
+    'stopOnStationary': stopOnStationary,
+    'stopTimeoutMinutes': stopTimeoutMinutes,
+    'stationarySpeedKph': stationarySpeedKph,
+    'updateIntervalSeconds': updateIntervalSeconds,
+    'dwellMinutes': dwellMinutes,
+    'route': route.map((point) => point.toMap()).toList(),
+    'routeDeviationThresholdMeters': routeDeviationThresholdMeters,
+    'routeDeviationCooldownSeconds': routeDeviationCooldownSeconds,
+    if (destination != null) 'destination': destination!.toMap(),
+    'waypoints': waypoints.map((point) => point.toMap()).toList(),
+  };
 }

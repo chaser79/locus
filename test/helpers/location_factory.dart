@@ -69,10 +69,7 @@ class LocationFactory {
   /// Marks location as moving.
   LocationFactory moving() {
     _isMoving = true;
-    _activity ??= const Activity(
-      type: ActivityType.walking,
-      confidence: 80,
-    );
+    _activity ??= const Activity(type: ActivityType.walking, confidence: 80);
     return this;
   }
 
@@ -80,10 +77,7 @@ class LocationFactory {
   LocationFactory stationary() {
     _isMoving = false;
     _speed = 0.0;
-    _activity ??= const Activity(
-      type: ActivityType.still,
-      confidence: 100,
-    );
+    _activity ??= const Activity(type: ActivityType.still, confidence: 100);
     return this;
   }
 

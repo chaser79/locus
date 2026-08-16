@@ -91,25 +91,32 @@ void main(List<String> args) async {
 
   // Summary
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '║  ────────────────────────────────────────────────────────────║');
+    '║  ────────────────────────────────────────────────────────────║',
+  );
 
   if (issueCount == 0) {
     stdout.writeln(
-        '║  ✅ All checks passed! Your project is ready.                 ║');
+      '║  ✅ All checks passed! Your project is ready.                 ║',
+    );
   } else if (shouldFix && fixedCount > 0) {
     stdout.writeln(
-        '║  🔧 Fixed $fixedCount issue(s). ${issueCount - fixedCount} remaining.                          ║');
+      '║  🔧 Fixed $fixedCount issue(s). ${issueCount - fixedCount} remaining.                          ║',
+    );
   } else {
     stdout.writeln(
-        '║  ⚠️  Found $issueCount issue(s). Run with --fix to auto-repair.      ║');
+      '║  ⚠️  Found $issueCount issue(s). Run with --fix to auto-repair.      ║',
+    );
   }
 
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '╚══════════════════════════════════════════════════════════════╝');
+    '╚══════════════════════════════════════════════════════════════╝',
+  );
 
   exit(issueCount > fixedCount ? 1 : 0);
 }
@@ -119,9 +126,11 @@ Future<(int, int)> _checkAndroid(
   required bool includeActivity,
 }) async {
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '║  Checking Android configuration...                            ║');
+    '║  Checking Android configuration...                            ║',
+  );
 
   var issues = 0;
   var fixed = 0;
@@ -145,18 +154,19 @@ Future<(int, int)> _checkAndroid(
     ('ACCESS_COARSE_LOCATION', 'android.permission.ACCESS_COARSE_LOCATION'),
     (
       'ACCESS_BACKGROUND_LOCATION',
-      'android.permission.ACCESS_BACKGROUND_LOCATION'
+      'android.permission.ACCESS_BACKGROUND_LOCATION',
     ),
     ('FOREGROUND_SERVICE', 'android.permission.FOREGROUND_SERVICE'),
     (
       'FOREGROUND_SERVICE_LOCATION',
-      'android.permission.FOREGROUND_SERVICE_LOCATION'
+      'android.permission.FOREGROUND_SERVICE_LOCATION',
     ),
   ];
   if (includeActivity) {
-    requiredPermissions.add(
-      ('ACTIVITY_RECOGNITION', 'android.permission.ACTIVITY_RECOGNITION'),
-    );
+    requiredPermissions.add((
+      'ACTIVITY_RECOGNITION',
+      'android.permission.ACTIVITY_RECOGNITION',
+    ));
   }
 
   for (final (name, permission) in requiredPermissions) {
@@ -171,7 +181,8 @@ Future<(int, int)> _checkAndroid(
         if (insertPoint != -1) {
           final permissionTag =
               '    <uses-permission android:name="$permission" />\n';
-          content = content.substring(0, insertPoint) +
+          content =
+              content.substring(0, insertPoint) +
               permissionTag +
               content.substring(insertPoint);
           modified = true;
@@ -249,9 +260,11 @@ Future<(int, int)> _checkIos(
   required bool includeActivity,
 }) async {
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '║  Checking iOS configuration...                                ║');
+    '║  Checking iOS configuration...                                ║',
+  );
 
   var issues = 0;
   var fixed = 0;
@@ -274,13 +287,14 @@ Future<(int, int)> _checkIos(
     ('NSLocationWhenInUseUsageDescription', 'This app needs location access.'),
     (
       'NSLocationAlwaysAndWhenInUseUsageDescription',
-      'This app needs background location.'
+      'This app needs background location.',
     ),
   ];
   if (includeActivity) {
-    requiredKeys.add(
-      ('NSMotionUsageDescription', 'This app uses motion to detect activity.'),
-    );
+    requiredKeys.add((
+      'NSMotionUsageDescription',
+      'This app uses motion to detect activity.',
+    ));
   }
 
   for (final (key, defaultValue) in requiredKeys) {
@@ -293,11 +307,13 @@ Future<(int, int)> _checkIos(
       if (shouldFix) {
         final insertPoint = content.lastIndexOf('</dict>');
         if (insertPoint != -1) {
-          final keyValue = '''
+          final keyValue =
+              '''
 \t<key>$key</key>
 \t<string>$defaultValue</string>
 ''';
-          content = content.substring(0, insertPoint) +
+          content =
+              content.substring(0, insertPoint) +
               keyValue +
               content.substring(insertPoint);
           modified = true;
@@ -317,8 +333,10 @@ Future<(int, int)> _checkIos(
 
     if (shouldFix) {
       if (content.contains('<key>UIBackgroundModes</key>')) {
-        final arrayStart =
-            content.indexOf('<array>', content.indexOf('UIBackgroundModes'));
+        final arrayStart = content.indexOf(
+          '<array>',
+          content.indexOf('UIBackgroundModes'),
+        );
         if (arrayStart != -1) {
           final insertPoint = arrayStart + '<array>'.length;
           content =
@@ -336,7 +354,8 @@ Future<(int, int)> _checkIos(
 \t\t<string>location</string>
 \t</array>
 ''';
-          content = content.substring(0, insertPoint) +
+          content =
+              content.substring(0, insertPoint) +
               bgModes +
               content.substring(insertPoint);
           modified = true;
@@ -378,9 +397,11 @@ Future<(int, int)> _checkIos(
         if (configured != null) {
           podfile.writeAsStringSync(configured);
           fixed++;
-          _printFix(includeActivity
-              ? 'Enabled iOS location and motion handlers'
-              : 'Enabled iOS location handler');
+          _printFix(
+            includeActivity
+                ? 'Enabled iOS location and motion handlers'
+                : 'Enabled iOS location handler',
+          );
         }
       }
     }
@@ -402,8 +423,9 @@ Future<void> _checkIosDeploymentTarget() async {
   }
 
   final content = podfile.readAsStringSync();
-  final match =
-      RegExp(r"platform\s*:ios\s*,\s*'(\d+\.\d+)'").firstMatch(content);
+  final match = RegExp(
+    r"platform\s*:ios\s*,\s*'(\d+\.\d+)'",
+  ).firstMatch(content);
 
   if (match != null) {
     final version = double.tryParse(match.group(1) ?? '0') ?? 0;
@@ -411,7 +433,10 @@ Future<void> _checkIosDeploymentTarget() async {
       _printCheck('iOS deployment target is ${match.group(1)} (>= 14.0)', true);
     } else {
       _printCheck(
-          'iOS deployment target is ${match.group(1)}', false, 'Needs >= 14.0');
+        'iOS deployment target is ${match.group(1)}',
+        false,
+        'Needs >= 14.0',
+      );
     }
   } else {
     _printCheck('iOS deployment target', true, 'Using project default');
@@ -420,9 +445,11 @@ Future<void> _checkIosDeploymentTarget() async {
 
 Future<void> _checkPackage() async {
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '║  Checking package configuration...                            ║');
+    '║  Checking package configuration...                            ║',
+  );
 
   // Check pubspec.yaml for locus dependency
   final pubspecFile = File('pubspec.yaml');

@@ -51,7 +51,8 @@ class PrivacyServiceImpl implements PrivacyService {
 
   @override
   StreamSubscription<PrivacyZoneEvent> onChange(
-      void Function(PrivacyZoneEvent) callback) {
+    void Function(PrivacyZoneEvent) callback,
+  ) {
     return _instance.privacyZoneEvents.listen(
       callback,
       onError: (Object error, StackTrace stackTrace) {

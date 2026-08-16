@@ -69,50 +69,61 @@ void main() {
       expect(heartbeat.level, Level.INFO);
     });
 
-    test('tickNow refreshes the registry quarantine gauge from the backlog',
-        () async {
-      // Seed a stale gauge value so we can prove the tick replaces it.
-      registry.setQuarantinedNow(99);
+    test(
+      'tickNow refreshes the registry quarantine gauge from the backlog',
+      () async {
+        // Seed a stale gauge value so we can prove the tick replaces it.
+        registry.setQuarantinedNow(99);
 
-      final emitter = HeartbeatEmitter(
-        backlogReader: () async => const LocationSyncBacklog(
-          quarantinedLocationCount: 4,
-        ),
-      );
-      await emitter.tickNow();
+        final emitter = HeartbeatEmitter(
+          backlogReader: () async =>
+              const LocationSyncBacklog(quarantinedLocationCount: 4),
+        );
+        await emitter.tickNow();
 
-      final snap = await registry.metrics.snapshot();
-      expect(snap.pointsQuarantinedNow, 4,
-          reason: 'each tick must replace the gauge with the live backlog');
-    });
+        final snap = await registry.metrics.snapshot();
+        expect(
+          snap.pointsQuarantinedNow,
+          4,
+          reason: 'each tick must replace the gauge with the live backlog',
+        );
+      },
+    );
 
-    test('tickNow leaves the quarantine gauge alone when backlog read fails',
-        () async {
-      registry.setQuarantinedNow(7);
-      final emitter = HeartbeatEmitter(
-        backlogReader: () async => throw StateError('backlog kaboom'),
-      );
-      await emitter.tickNow();
+    test(
+      'tickNow leaves the quarantine gauge alone when backlog read fails',
+      () async {
+        registry.setQuarantinedNow(7);
+        final emitter = HeartbeatEmitter(
+          backlogReader: () async => throw StateError('backlog kaboom'),
+        );
+        await emitter.tickNow();
 
-      final snap = await registry.metrics.snapshot();
-      expect(snap.pointsQuarantinedNow, 7,
-          reason: 'a failed backlog read must not zero the gauge');
-    });
+        final snap = await registry.metrics.snapshot();
+        expect(
+          snap.pointsQuarantinedNow,
+          7,
+          reason: 'a failed backlog read must not zero the gauge',
+        );
+      },
+    );
 
-    test('emits last_success_age_ms = null when no success has been recorded',
-        () async {
-      final emitter = HeartbeatEmitter(
-        backlogReader: () async => const LocationSyncBacklog(),
-      );
-      await emitter.tickNow();
-      final heartbeat = records.singleWhere(
-        (r) =>
-            r.object is LocusEvent &&
-            (r.object! as LocusEvent).name == 'tracking_heartbeat',
-      );
-      final attrs = (heartbeat.object! as LocusEvent).attributes;
-      expect(attrs['last_success_age_ms'], isNull);
-    });
+    test(
+      'emits last_success_age_ms = null when no success has been recorded',
+      () async {
+        final emitter = HeartbeatEmitter(
+          backlogReader: () async => const LocationSyncBacklog(),
+        );
+        await emitter.tickNow();
+        final heartbeat = records.singleWhere(
+          (r) =>
+              r.object is LocusEvent &&
+              (r.object! as LocusEvent).name == 'tracking_heartbeat',
+        );
+        final attrs = (heartbeat.object! as LocusEvent).attributes;
+        expect(attrs['last_success_age_ms'], isNull);
+      },
+    );
 
     test('logs a warning and continues when backlog read fails', () async {
       final emitter = HeartbeatEmitter(
@@ -121,11 +132,10 @@ void main() {
       await emitter.tickNow();
 
       final warnings = records.whereType<LogRecord>().where(
-            (r) =>
-                r.object is LocusEvent &&
-                (r.object! as LocusEvent).name ==
-                    'heartbeat_backlog_unavailable',
-          );
+        (r) =>
+            r.object is LocusEvent &&
+            (r.object! as LocusEvent).name == 'heartbeat_backlog_unavailable',
+      );
       expect(warnings, hasLength(1));
 
       // The heartbeat itself still fires with default values.

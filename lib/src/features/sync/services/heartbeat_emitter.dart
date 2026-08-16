@@ -29,12 +29,12 @@ class HeartbeatEmitter {
     Duration interval = const Duration(seconds: 60),
     LocusReliabilityRegistry? registry,
     DateTime Function()? clock,
-  })  : assert(interval > Duration.zero, 'heartbeat interval must be positive'),
-        _backlogReader = backlogReader,
-        _pauseReasonReader = pauseReasonReader,
-        _interval = interval,
-        _registry = registry ?? LocusReliabilityRegistry.instance,
-        _clock = clock ?? DateTime.now;
+  }) : assert(interval > Duration.zero, 'heartbeat interval must be positive'),
+       _backlogReader = backlogReader,
+       _pauseReasonReader = pauseReasonReader,
+       _interval = interval,
+       _registry = registry ?? LocusReliabilityRegistry.instance,
+       _clock = clock ?? DateTime.now;
 
   final BacklogReader _backlogReader;
   final PauseReasonReader? _pauseReasonReader;

@@ -31,8 +31,9 @@ class LocusDiagnostics {
   }
 
   static Future<JsonMap?> _getDiagnosticsMetadata() async {
-    final result =
-        await LocusChannels.methods.invokeMethod('getDiagnosticsMetadata');
+    final result = await LocusChannels.methods.invokeMethod(
+      'getDiagnosticsMetadata',
+    );
     if (result is Map) {
       return Map<String, dynamic>.from(result);
     }

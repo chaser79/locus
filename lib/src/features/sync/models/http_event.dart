@@ -50,10 +50,10 @@ class HttpEvent {
   final int? recordsSent;
 
   JsonMap toMap() => {
-        'status': status,
-        'ok': ok,
-        if (responseText != null) 'responseText': responseText,
-        if (response != null) 'response': response,
-        if (recordsSent != null) 'recordsSent': recordsSent,
-      };
+    'status': status,
+    'ok': ok,
+    if (responseText != null) 'responseText': responseText,
+    if (response != null) 'response': response,
+    if (recordsSent != null) 'recordsSent': recordsSent,
+  };
 }

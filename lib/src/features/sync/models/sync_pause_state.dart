@@ -33,9 +33,9 @@ class SyncPauseState {
   bool get isAuthFailure => reason == 'http_401' || reason == 'http_403';
 
   JsonMap toMap() => <String, dynamic>{
-        'isPaused': isPaused,
-        if (reason != null) 'reason': reason,
-      };
+    'isPaused': isPaused,
+    if (reason != null) 'reason': reason,
+  };
 
   @override
   bool operator ==(Object other) =>

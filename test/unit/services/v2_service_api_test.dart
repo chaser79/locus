@@ -216,11 +216,13 @@ void main() {
       final sub = service.events.listen(events.add);
 
       final testGeofence = MockGeofenceExtension.mock(identifier: 'test');
-      mockLocus.emitGeofenceEvent(GeofenceEvent(
-        geofence: testGeofence,
-        action: GeofenceAction.enter,
-        location: MockLocationExtension.mock(),
-      ));
+      mockLocus.emitGeofenceEvent(
+        GeofenceEvent(
+          geofence: testGeofence,
+          action: GeofenceAction.enter,
+          location: MockLocationExtension.mock(),
+        ),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);
@@ -289,10 +291,9 @@ void main() {
     });
 
     test('get delegates to getGeofence', () async {
-      await service.add(MockGeofenceExtension.mock(
-        identifier: 'target',
-        radius: 250,
-      ));
+      await service.add(
+        MockGeofenceExtension.mock(identifier: 'target', radius: 250),
+      );
 
       final geofence = await service.get('target');
       expect(geofence, isNotNull);
@@ -323,11 +324,13 @@ void main() {
       final sub = service.onGeofence(events.add);
 
       final testGeofence = MockGeofenceExtension.mock(identifier: 'work');
-      mockLocus.emitGeofenceEvent(GeofenceEvent(
-        geofence: testGeofence,
-        action: GeofenceAction.exit,
-        location: MockLocationExtension.mock(),
-      ));
+      mockLocus.emitGeofenceEvent(
+        GeofenceEvent(
+          geofence: testGeofence,
+          action: GeofenceAction.exit,
+          location: MockLocationExtension.mock(),
+        ),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);
@@ -504,11 +507,13 @@ void main() {
       final events = <TripEvent>[];
       final sub = service.events.listen(events.add);
 
-      mockLocus.emitTripEvent(TripEvent(
-        type: TripEventType.tripStart,
-        tripId: 'test-trip',
-        timestamp: DateTime.now(),
-      ));
+      mockLocus.emitTripEvent(
+        TripEvent(
+          type: TripEventType.tripStart,
+          tripId: 'test-trip',
+          timestamp: DateTime.now(),
+        ),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);
@@ -541,11 +546,13 @@ void main() {
       final events = <TripEvent>[];
       final sub = service.onEvent(events.add);
 
-      mockLocus.emitTripEvent(TripEvent(
-        type: TripEventType.tripUpdate,
-        tripId: 'test-trip',
-        timestamp: DateTime.now(),
-      ));
+      mockLocus.emitTripEvent(
+        TripEvent(
+          type: TripEventType.tripUpdate,
+          tripId: 'test-trip',
+          timestamp: DateTime.now(),
+        ),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);
@@ -576,11 +583,13 @@ void main() {
       final events = <HttpEvent>[];
       final sub = service.events.listen(events.add);
 
-      mockLocus.emitHttpEvent(const HttpEvent(
-        responseText: '{"success": true}',
-        status: 200,
-        ok: true,
-      ));
+      mockLocus.emitHttpEvent(
+        const HttpEvent(
+          responseText: '{"success": true}',
+          status: 200,
+          ok: true,
+        ),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);
@@ -594,9 +603,9 @@ void main() {
       final events = <ConnectivityChangeEvent>[];
       final sub = service.connectivityEvents.listen(events.add);
 
-      mockLocus.emitConnectivityChange(const ConnectivityChangeEvent(
-        connected: true,
-      ));
+      mockLocus.emitConnectivityChange(
+        const ConnectivityChangeEvent(connected: true),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);
@@ -618,10 +627,7 @@ void main() {
     });
 
     test('setPolicy delegates to setSyncPolicy', () async {
-      const policy = SyncPolicy(
-        lowBatteryThreshold: 20,
-        preferWifi: true,
-      );
+      const policy = SyncPolicy(lowBatteryThreshold: 20, preferWifi: true);
 
       await service.setPolicy(policy);
       expect(_wasMethodCalled(mockLocus, 'setSyncPolicy'), isTrue);
@@ -750,11 +756,9 @@ void main() {
       final events = <HttpEvent>[];
       final sub = service.onHttp(events.add);
 
-      mockLocus.emitHttpEvent(const HttpEvent(
-        responseText: '{}',
-        status: 201,
-        ok: true,
-      ));
+      mockLocus.emitHttpEvent(
+        const HttpEvent(responseText: '{}', status: 201, ok: true),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);
@@ -767,9 +771,9 @@ void main() {
       final events = <ConnectivityChangeEvent>[];
       final sub = service.onConnectivityChange(events.add);
 
-      mockLocus.emitConnectivityChange(const ConnectivityChangeEvent(
-        connected: false,
-      ));
+      mockLocus.emitConnectivityChange(
+        const ConnectivityChangeEvent(connected: false),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);
@@ -874,11 +878,13 @@ void main() {
       final events = <PowerStateChangeEvent>[];
       final sub = service.onPowerStateChange(events.add);
 
-      mockLocus.emitPowerStateChange(PowerStateChangeEvent(
-        previous: PowerState.unknown,
-        current: const PowerState(batteryLevel: 80, isCharging: false),
-        changeType: PowerStateChangeType.batteryLevel,
-      ));
+      mockLocus.emitPowerStateChange(
+        PowerStateChangeEvent(
+          previous: PowerState.unknown,
+          current: const PowerState(batteryLevel: 80, isCharging: false),
+          changeType: PowerStateChangeType.batteryLevel,
+        ),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);

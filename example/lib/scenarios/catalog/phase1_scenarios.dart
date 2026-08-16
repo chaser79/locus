@@ -15,7 +15,7 @@ import 'package:locus_example/scenarios/scenario.dart';
 /// is intentional and roughly mirrors the SDK boot sequence: tracking
 /// lifecycle first, then sync, then geofencing.
 List<Scenario> phase1Scenarios() => <Scenario>[
-      TrackingLifecycleScenario(),
-      SyncPauseResumeScenario(),
-      GeofenceAddRemoveScenario(),
-    ];
+  TrackingLifecycleScenario(),
+  SyncPauseResumeScenario(),
+  GeofenceAddRemoveScenario(),
+];

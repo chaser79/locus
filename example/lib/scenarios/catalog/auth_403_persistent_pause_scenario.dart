@@ -101,7 +101,8 @@ class Auth403PersistentPauseScenario extends Scenario {
       results.add(
         const AssertionResult.fail(
           'SDK observed at least one HTTP 403 response from the backend',
-          failureDetail: 'No http_response_error event with status==403 '
+          failureDetail:
+              'No http_response_error event with status==403 '
               'was recorded since scenario start.',
           expected: '>=1 http_response_error with status==403',
           actual: '0',
@@ -109,15 +110,16 @@ class Auth403PersistentPauseScenario extends Scenario {
       );
     }
 
-    final List<RecordedEvent> pauseTrueWith403Reason =
-        events.where((RecordedEvent e) {
-      if (e.type != 'pause_state_changed') return false;
-      if (e.payload['isPaused'] != true) return false;
-      final Object? reason = e.payload['reason'];
-      if (reason == null) return false;
-      final String reasonStr = reason.toString();
-      return reasonStr == 'http_403' || reasonStr.contains('403');
-    }).toList(growable: false);
+    final List<RecordedEvent> pauseTrueWith403Reason = events
+        .where((RecordedEvent e) {
+          if (e.type != 'pause_state_changed') return false;
+          if (e.payload['isPaused'] != true) return false;
+          final Object? reason = e.payload['reason'];
+          if (reason == null) return false;
+          final String reasonStr = reason.toString();
+          return reasonStr == 'http_403' || reasonStr.contains('403');
+        })
+        .toList(growable: false);
 
     if (pauseTrueWith403Reason.isNotEmpty) {
       results.add(
@@ -150,7 +152,8 @@ class Auth403PersistentPauseScenario extends Scenario {
       results.add(
         const AssertionResult.fail(
           'Locus.dataSync.isPaused is true after the 403 round-trip',
-          failureDetail: 'Synchronous getter still reports false; '
+          failureDetail:
+              'Synchronous getter still reports false; '
               'pause did not stick.',
           expected: 'true',
           actual: 'false',

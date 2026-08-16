@@ -15,16 +15,18 @@ class LocusLocation {
     JsonMap? extras,
   }) async {
     final payload = <String, dynamic>{
-      if (samples != null) 'samples': samples,
-      if (timeout != null) 'timeout': timeout,
-      if (maximumAge != null) 'maximumAge': maximumAge,
-      if (persist != null) 'persist': persist,
-      if (desiredAccuracy != null) 'desiredAccuracy': desiredAccuracy,
-      if (extras != null) 'extras': extras,
+      'samples': ?samples,
+      'timeout': ?timeout,
+      'maximumAge': ?maximumAge,
+      'persist': ?persist,
+      'desiredAccuracy': ?desiredAccuracy,
+      'extras': ?extras,
     };
 
-    final result =
-        await LocusChannels.methods.invokeMethod('getCurrentPosition', payload);
+    final result = await LocusChannels.methods.invokeMethod(
+      'getCurrentPosition',
+      payload,
+    );
     if (result is Map) {
       return Location.fromMap(Map<String, dynamic>.from(result));
     }
@@ -45,7 +47,8 @@ class LocusLocation {
     if (result is List) {
       return result
           .map(
-              (item) => Location.fromMap((item as Map).cast<String, dynamic>()))
+            (item) => Location.fromMap((item as Map).cast<String, dynamic>()),
+          )
           .toList();
     }
     return [];
@@ -107,15 +110,19 @@ class LocusLocation {
 
   /// Changes the motion state (moving/stationary).
   static Future<bool> changePace(bool isMoving) async {
-    final result =
-        await LocusChannels.methods.invokeMethod('changePace', isMoving);
+    final result = await LocusChannels.methods.invokeMethod(
+      'changePace',
+      isMoving,
+    );
     return result == true;
   }
 
   /// Sets the odometer value.
   static Future<double> setOdometer(double value) async {
-    final result =
-        await LocusChannels.methods.invokeMethod('setOdometer', value);
+    final result = await LocusChannels.methods.invokeMethod(
+      'setOdometer',
+      value,
+    );
     return (result as num?)?.toDouble() ?? value;
   }
 

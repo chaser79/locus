@@ -20,22 +20,18 @@ void main() {
 
     // Mock platform channel
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-      const MethodChannel('locus/methods'),
-      (call) async {
-        methodCalls.add(call);
-        return null; // Most methods return void/null
-      },
-    );
+        .setMockMethodCallHandler(const MethodChannel('locus/methods'), (
+          call,
+        ) async {
+          methodCalls.add(call);
+          return null; // Most methods return void/null
+        });
   });
 
   tearDown(() async {
     await locationStream.close();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-      const MethodChannel('locus/methods'),
-      null,
-    );
+        .setMockMethodCallHandler(const MethodChannel('locus/methods'), null);
   });
 
   group('Geofence Workflows', () {
@@ -74,10 +70,9 @@ void main() {
       await Locus.geofencing.remove('zone_a');
 
       expect(
-          methodCalls.map((c) => c.method),
-          containsAllInOrder(
-            ['addGeofence', 'addGeofence', 'removeGeofence'],
-          ));
+        methodCalls.map((c) => c.method),
+        containsAllInOrder(['addGeofence', 'addGeofence', 'removeGeofence']),
+      );
     });
 
     test('Mass Geofence Update', () async {
@@ -104,10 +99,10 @@ void main() {
           )
           .toList();
 
-      expect(
-        geofenceCalls.map((call) => call.method),
-        ['removeGeofences', 'addGeofences'],
-      );
+      expect(geofenceCalls.map((call) => call.method), [
+        'removeGeofences',
+        'addGeofences',
+      ]);
       expect((geofenceCalls[1].arguments as List).length, 100);
     });
 
@@ -144,16 +139,19 @@ void main() {
       expect(Locus.battery.adaptiveTrackingConfig?.enabled, true);
 
       // 2. User starts navigation -> High Accuracy
-      await Locus.battery.setAdaptiveTracking(const AdaptiveTrackingConfig(
-        enabled: true,
-        speedTiers: SpeedTiers.driving,
-        batteryThresholds: BatteryThresholds.conservative,
-        stationaryGpsOff: false, // Keep GPS on for nav
-      ));
+      await Locus.battery.setAdaptiveTracking(
+        const AdaptiveTrackingConfig(
+          enabled: true,
+          speedTiers: SpeedTiers.driving,
+          batteryThresholds: BatteryThresholds.conservative,
+          stationaryGpsOff: false, // Keep GPS on for nav
+        ),
+      );
 
       // 3. User stops navigation -> Power Save
-      await Locus.battery
-          .setAdaptiveTracking(AdaptiveTrackingConfig.aggressive);
+      await Locus.battery.setAdaptiveTracking(
+        AdaptiveTrackingConfig.aggressive,
+      );
       expect(Locus.battery.adaptiveTrackingConfig?.stationaryGpsOff, true);
     });
   });

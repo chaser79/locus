@@ -37,11 +37,7 @@ void main() {
     final location = Location.fromMap({
       'uuid': 'abc',
       'timestamp': DateTime.utc(2025, 1, 1).toIso8601String(),
-      'coords': {
-        'latitude': 10.0,
-        'longitude': 20.0,
-        'accuracy': 5.5,
-      },
+      'coords': {'latitude': 10.0, 'longitude': 20.0, 'accuracy': 5.5},
       'activity': {'type': 'still', 'confidence': 98},
       'battery': {'level': 0.7, 'is_charging': true},
     });
@@ -75,15 +71,17 @@ void main() {
   test('parses connectivity and power save events', () {
     final connectivity = GeolocationEvent.fromMap({
       'type': 'connectivitychange',
-      'data': {'connected': true, 'networkType': 'wifi'}
+      'data': {'connected': true, 'networkType': 'wifi'},
     });
     expect(connectivity.type, EventType.connectivityChange);
     final connectivityData = connectivity.data as ConnectivityChangeEvent;
     expect(connectivityData.connected, true);
     expect(connectivityData.networkType, 'wifi');
 
-    final powerSave =
-        GeolocationEvent.fromMap({'type': 'powersavechange', 'data': true});
+    final powerSave = GeolocationEvent.fromMap({
+      'type': 'powersavechange',
+      'data': true,
+    });
     expect(powerSave.type, EventType.powerSaveChange);
     expect(powerSave.data, true);
   });
@@ -105,7 +103,9 @@ void main() {
       });
       expect(event.previous.batteryLevel, equals(80));
       expect(
-          event.current.batteryLevel, equals(50)); // PowerState.unknown default
+        event.current.batteryLevel,
+        equals(50),
+      ); // PowerState.unknown default
     });
 
     test('handles invalid timestamp gracefully', () {

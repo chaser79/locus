@@ -107,10 +107,7 @@ class MockTripService implements TripService {
     void Function(TripEvent event) callback, {
     Function? onError,
   }) {
-    return _eventsController.stream.listen(
-      callback,
-      onError: onError,
-    );
+    return _eventsController.stream.listen(callback, onError: onError);
   }
 
   // ============================================================
@@ -138,8 +135,8 @@ class MockTripService implements TripService {
       idleSeconds: _currentTrip!.idleSeconds,
       maxSpeedKph: speed != null
           ? (speed > _currentTrip!.maxSpeedKph
-              ? speed
-              : _currentTrip!.maxSpeedKph)
+                ? speed
+                : _currentTrip!.maxSpeedKph)
           : _currentTrip!.maxSpeedKph,
       started: true,
       ended: false,
@@ -266,8 +263,10 @@ class MockTripService implements TripService {
 
     if (durationSeconds == 0) return 0;
 
-    final movingSeconds =
-        (durationSeconds - _currentTrip!.idleSeconds).clamp(0, durationSeconds);
+    final movingSeconds = (durationSeconds - _currentTrip!.idleSeconds).clamp(
+      0,
+      durationSeconds,
+    );
     if (movingSeconds == 0) return 0;
 
     return (_currentTrip!.distanceMeters / movingSeconds) * 3.6;
@@ -283,7 +282,8 @@ class MockTripService implements TripService {
     final dLat = (lat2 - lat1) * 0.017453292519943295;
     final dLon = (lon2 - lon1) * 0.017453292519943295;
 
-    final a = (dLat / 2) * (dLat / 2) +
+    final a =
+        (dLat / 2) * (dLat / 2) +
         (lat1 * 0.017453292519943295).cos() *
             (lat2 * 0.017453292519943295).cos() *
             (dLon / 2) *

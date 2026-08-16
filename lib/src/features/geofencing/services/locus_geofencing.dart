@@ -5,23 +5,29 @@ import 'package:locus/src/core/locus_channels.dart';
 class LocusGeofencing {
   /// Adds a single geofence.
   static Future<bool> addGeofence(Geofence geofence) async {
-    final result = await LocusChannels.methods
-        .invokeMethod('addGeofence', geofence.toMap());
+    final result = await LocusChannels.methods.invokeMethod(
+      'addGeofence',
+      geofence.toMap(),
+    );
     return result == true;
   }
 
   /// Adds multiple geofences.
   static Future<bool> addGeofences(List<Geofence> geofences) async {
     final payload = geofences.map((g) => g.toMap()).toList();
-    final result =
-        await LocusChannels.methods.invokeMethod('addGeofences', payload);
+    final result = await LocusChannels.methods.invokeMethod(
+      'addGeofences',
+      payload,
+    );
     return result == true;
   }
 
   /// Removes a geofence by identifier.
   static Future<bool> removeGeofence(String identifier) async {
-    final result =
-        await LocusChannels.methods.invokeMethod('removeGeofence', identifier);
+    final result = await LocusChannels.methods.invokeMethod(
+      'removeGeofence',
+      identifier,
+    );
     return result == true;
   }
 
@@ -44,8 +50,10 @@ class LocusGeofencing {
 
   /// Gets a geofence by identifier.
   static Future<Geofence?> getGeofence(String identifier) async {
-    final result =
-        await LocusChannels.methods.invokeMethod('getGeofence', identifier);
+    final result = await LocusChannels.methods.invokeMethod(
+      'getGeofence',
+      identifier,
+    );
     if (result is Map) {
       return Geofence.fromMap(Map<String, dynamic>.from(result));
     }
@@ -54,8 +62,10 @@ class LocusGeofencing {
 
   /// Checks if a geofence exists.
   static Future<bool> geofenceExists(String identifier) async {
-    final result =
-        await LocusChannels.methods.invokeMethod('geofenceExists', identifier);
+    final result = await LocusChannels.methods.invokeMethod(
+      'geofenceExists',
+      identifier,
+    );
     return result == true;
   }
 

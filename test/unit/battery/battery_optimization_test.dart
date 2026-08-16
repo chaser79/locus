@@ -251,16 +251,22 @@ void main() {
 
     test('optimizationSuggestion reflects battery state', () {
       const normal = PowerState(batteryLevel: 80, isCharging: false);
-      expect(normal.optimizationSuggestion.level,
-          OptimizationSuggestionLevel.none);
+      expect(
+        normal.optimizationSuggestion.level,
+        OptimizationSuggestionLevel.none,
+      );
 
       const low = PowerState(batteryLevel: 15, isCharging: false);
-      expect(low.optimizationSuggestion.level,
-          OptimizationSuggestionLevel.moderate);
+      expect(
+        low.optimizationSuggestion.level,
+        OptimizationSuggestionLevel.moderate,
+      );
 
       const critical = PowerState(batteryLevel: 5, isCharging: false);
-      expect(critical.optimizationSuggestion.level,
-          OptimizationSuggestionLevel.maximum);
+      expect(
+        critical.optimizationSuggestion.level,
+        OptimizationSuggestionLevel.maximum,
+      );
     });
 
     test('serialization round-trip preserves values', () {
@@ -283,25 +289,25 @@ void main() {
     });
 
     test('charging device suggests no optimization', () {
-      const state = PowerState(
-        batteryLevel: 20,
-        isCharging: true,
+      const state = PowerState(batteryLevel: 20, isCharging: true);
+      expect(
+        state.optimizationSuggestion.level,
+        equals(OptimizationSuggestionLevel.none),
       );
-      expect(state.optimizationSuggestion.level,
-          equals(OptimizationSuggestionLevel.none));
       expect(state.optimizationSuggestion.canUseHighAccuracy, isTrue);
     });
 
-    test('critical battery suggests maximum optimization and no high accuracy',
-        () {
-      const state = PowerState(
-        batteryLevel: 5,
-        isCharging: false,
-      );
-      expect(state.optimizationSuggestion.level,
-          equals(OptimizationSuggestionLevel.maximum));
-      expect(state.optimizationSuggestion.canUseHighAccuracy, isFalse);
-    });
+    test(
+      'critical battery suggests maximum optimization and no high accuracy',
+      () {
+        const state = PowerState(batteryLevel: 5, isCharging: false);
+        expect(
+          state.optimizationSuggestion.level,
+          equals(OptimizationSuggestionLevel.maximum),
+        );
+        expect(state.optimizationSuggestion.canUseHighAccuracy, isFalse);
+      },
+    );
 
     test('power save mode suggests high optimization', () {
       const state = PowerState(
@@ -309,8 +315,10 @@ void main() {
         isCharging: false,
         isPowerSaveMode: true,
       );
-      expect(state.optimizationSuggestion.level,
-          equals(OptimizationSuggestionLevel.high));
+      expect(
+        state.optimizationSuggestion.level,
+        equals(OptimizationSuggestionLevel.high),
+      );
     });
   });
 
@@ -359,10 +367,7 @@ void main() {
 
     test('throws when not started', () {
       final benchmark = BatteryBenchmark();
-      expect(
-        () => benchmark.finish(currentBattery: 90),
-        throwsStateError,
-      );
+      expect(() => benchmark.finish(currentBattery: 90), throwsStateError);
     });
 
     test('tracks state changes', () {

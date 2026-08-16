@@ -1,8 +1,8 @@
 /// Required permission_handler Apple compile-time definitions for Locus.
 List<String> requiredIosPermissionMacros({required bool includeSensors}) => [
-      'PERMISSION_LOCATION=1',
-      if (includeSensors) 'PERMISSION_SENSORS=1',
-    ];
+  'PERMISSION_LOCATION=1',
+  if (includeSensors) 'PERMISSION_SENSORS=1',
+];
 
 const _managedBlockStart = '# locus:permission-handler-macros:start';
 const _managedBlockEnd = '# locus:permission-handler-macros:end';
@@ -13,10 +13,7 @@ const _managedBlockEnd = '# locus:permission-handler-macros:end';
 /// `target.build_configurations` block. It deliberately does not try to parse
 /// arbitrary Ruby control flow. Returns `null` when a custom `post_install`
 /// cannot be changed without guessing.
-String? addIosPermissionMacros(
-  String podfile, {
-  required bool includeSensors,
-}) {
+String? addIosPermissionMacros(String podfile, {required bool includeSensors}) {
   final managed = _managedBlockMatch(podfile);
   if (managed != null) {
     final unowned = podfile.replaceRange(managed.start, managed.end, '');
@@ -78,8 +75,10 @@ String? addIosPermissionMacros(
     }).toList();
     if (stillMissing.isNotEmpty) {
       final insertion = stillMissing
-          .map((macro) =>
-              "${block.bodyIndent}definitions << '$macro' unless definitions.include?('$macro')")
+          .map(
+            (macro) =>
+                "${block.bodyIndent}definitions << '$macro' unless definitions.include?('$macro')",
+          )
           .toList();
       lines.insertAll(block.endLineIndex, insertion);
     }
@@ -96,11 +95,7 @@ String? addIosPermissionMacros(
       indent: indent,
       includeSensors: includeSensors,
     );
-    return podfile.replaceRange(
-      flutterHook.end,
-      flutterHook.end,
-      '\n$block',
-    );
+    return podfile.replaceRange(flutterHook.end, flutterHook.end, '\n$block');
   }
 
   if (!RegExp(
@@ -128,10 +123,7 @@ end
 ///
 /// Unknown Ruby expressions are treated as not ready. This favors a clear
 /// manual review over reporting a false pass for a macro in the wrong scope.
-bool hasIosPermissionMacros(
-  String podfile, {
-  required bool includeSensors,
-}) {
+bool hasIosPermissionMacros(String podfile, {required bool includeSensors}) {
   final managed = _managedBlockMatch(podfile);
   if (managed != null) {
     final unowned = podfile.replaceRange(managed.start, managed.end, '');
@@ -150,8 +142,9 @@ bool hasIosPermissionMacros(
   if (!includeSensors && scan.values.containsKey('PERMISSION_SENSORS')) {
     return false;
   }
-  return requiredIosPermissionMacros(includeSensors: includeSensors)
-      .every((macro) {
+  return requiredIosPermissionMacros(includeSensors: includeSensors).every((
+    macro,
+  ) {
     final values = scan.values[macro.split('=').first] ?? const <int>{};
     return values.contains(1) && !values.contains(0);
   });
@@ -163,11 +156,13 @@ String _renderManagedBlock({
 }) {
   final required = requiredIosPermissionMacros(includeSensors: includeSensors);
   final bodyIndent = '$indent  ';
-  final macroLines = required.map((macro) {
-    final name = macro.split('=').first;
-    return '''${bodyIndent}definitions.delete_if { |definition| definition.to_s.start_with?('$name=') }
+  final macroLines = required
+      .map((macro) {
+        final name = macro.split('=').first;
+        return '''${bodyIndent}definitions.delete_if { |definition| definition.to_s.start_with?('$name=') }
 ${bodyIndent}definitions << '$macro' ''';
-  }).join('\n');
+      })
+      .join('\n');
 
   return '''$indent$_managedBlockStart
 ${indent}target.build_configurations.each do |config|
@@ -178,31 +173,35 @@ $indent$_managedBlockEnd''';
 }
 
 RegExpMatch? _managedBlockMatch(String podfile) => RegExp(
-      '^[ \\t]*${RegExp.escape(_managedBlockStart)}[ \\t]*\\n'
-      '[\\s\\S]*?'
-      '^[ \\t]*${RegExp.escape(_managedBlockEnd)}[ \\t]*',
-      multiLine: true,
-    ).firstMatch(podfile);
+  '^[ \\t]*${RegExp.escape(_managedBlockStart)}[ \\t]*\\n'
+  '[\\s\\S]*?'
+  '^[ \\t]*${RegExp.escape(_managedBlockEnd)}[ \\t]*',
+  multiLine: true,
+).firstMatch(podfile);
 
 bool _blockEnablesRequiredMacros(
   String block, {
   required bool includeSensors,
-}) =>
-    requiredIosPermissionMacros(includeSensors: includeSensors).every((macro) {
-      final name = macro.split('=').first;
-      final removesPriorValues = block.contains(
-        "definitions.delete_if { |definition| definition.to_s.start_with?('$name=') }",
-      );
-      final appendsEnabledValue = RegExp(
-        "^[ \\t]*definitions << '${RegExp.escape(macro)}'[ \\t]*\$",
-        multiLine: true,
-      ).hasMatch(block);
-      return removesPriorValues && appendsEnabledValue;
-    });
+}) => requiredIosPermissionMacros(includeSensors: includeSensors).every((
+  macro,
+) {
+  final name = macro.split('=').first;
+  final removesPriorValues = block.contains(
+    "definitions.delete_if { |definition| definition.to_s.start_with?('$name=') }",
+  );
+  final appendsEnabledValue = RegExp(
+    "^[ \\t]*definitions << '${RegExp.escape(macro)}'[ \\t]*\$",
+    multiLine: true,
+  ).hasMatch(block);
+  return removesPriorValues && appendsEnabledValue;
+});
 
-bool _containsMacroMutation(String podfile) =>
-    podfile.split('\n').map(_activeRuby).any(
-        (line) => RegExp(r'PERMISSION_(LOCATION|SENSORS)=[01]').hasMatch(line));
+bool _containsMacroMutation(String podfile) => podfile
+    .split('\n')
+    .map(_activeRuby)
+    .any(
+      (line) => RegExp(r'PERMISSION_(LOCATION|SENSORS)=[01]').hasMatch(line),
+    );
 
 String _lineIndent(String text) =>
     RegExp(r'^[ \t]*').firstMatch(text)!.group(0)!;
@@ -279,18 +278,21 @@ _PodfileScan _scanDirectConfigurationBlocks(String podfile) {
 
     recognizedMacroLines.addAll(macroLineIndexes);
     for (final lineIndex in macroLineIndexes) {
-      for (final match
-          in macroPattern.allMatches(_activeRuby(lines[lineIndex]))) {
+      for (final match in macroPattern.allMatches(
+        _activeRuby(lines[lineIndex]),
+      )) {
         final name = 'PERMISSION_${match.group(1)}';
         final value = int.parse(match.group(2)!);
         values.putIfAbsent(name, () => <int>{}).add(value);
       }
     }
-    blocks.add(_DirectConfigurationBlock(
-      endLineIndex: cursor,
-      bodyIndent: definitionIndent,
-      macroLineIndexes: macroLineIndexes,
-    ));
+    blocks.add(
+      _DirectConfigurationBlock(
+        endLineIndex: cursor,
+        bodyIndent: definitionIndent,
+        macroLineIndexes: macroLineIndexes,
+      ),
+    );
   }
 
   return _PodfileScan(

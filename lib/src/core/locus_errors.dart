@@ -56,11 +56,11 @@ class NotInitializedException extends LocusException {
   /// await Locus.start();
   /// ```
   const NotInitializedException()
-      : super(
-          'Locus is not initialized. You must call Locus.ready() before using other methods.',
-          suggestion:
-              'Add "await Locus.ready(Config.balanced());" in your main() or initState().',
-        );
+    : super(
+        'Locus is not initialized. You must call Locus.ready() before using other methods.',
+        suggestion:
+            'Add "await Locus.ready(Config.balanced());" in your main() or initState().',
+      );
 }
 
 /// Thrown when HTTP sync is attempted without a URL configured.
@@ -92,11 +92,11 @@ class SyncUrlNotConfiguredException extends LocusException {
   /// ));
   /// ```
   const SyncUrlNotConfiguredException()
-      : super(
-          'HTTP sync URL is not configured. Sync operations will be skipped.',
-          suggestion:
-              'Set the url in Config: Config.balanced(url: "https://api.example.com/locations")',
-        );
+    : super(
+        'HTTP sync URL is not configured. Sync operations will be skipped.',
+        suggestion:
+            'Set the url in Config: Config.balanced(url: "https://api.example.com/locations")',
+      );
 }
 
 /// Thrown when headless task registration fails.
@@ -128,11 +128,11 @@ class HeadlessRegistrationException extends LocusException {
   /// await Locus.registerHeadlessLocationCallback(myHeadlessCallback);
   /// ```
   const HeadlessRegistrationException({String? reason})
-      : super(
-          'Failed to register headless task. ${reason ?? "Callback handles could not be obtained."}',
-          suggestion:
-              'Ensure your headless callback is a top-level or static function with @pragma("vm:entry-point").',
-        );
+    : super(
+        'Failed to register headless task. ${reason ?? "Callback handles could not be obtained."}',
+        suggestion:
+            'Ensure your headless callback is a top-level or static function with @pragma("vm:entry-point").',
+      );
 }
 
 /// Thrown when setSyncBodyBuilder is called with a closure in headless mode.
@@ -165,9 +165,9 @@ class InvalidSyncBodyBuilderException extends LocusException {
   /// await Locus.registerHeadlessSyncBodyBuilder(buildSyncBody);
   /// ```
   const InvalidSyncBodyBuilderException()
-      : super(
-          'Sync body builder for headless mode must be a top-level or static function.',
-          suggestion: '''
+    : super(
+        'Sync body builder for headless mode must be a top-level or static function.',
+        suggestion: '''
 Move your builder to a top-level function:
 
 @pragma('vm:entry-point')
@@ -176,7 +176,7 @@ Future<Map<String, dynamic>> buildSyncBody(SyncBodyContext ctx) async {
 }
 
 await Locus.registerHeadlessSyncBodyBuilder(buildSyncBody);''',
-        );
+      );
 }
 
 /// Thrown when permissions are insufficient for the requested operation.
@@ -213,13 +213,14 @@ class InsufficientPermissionsException extends LocusException {
   ///   // Handle permission denial gracefully
   /// }
   /// ```
-  const InsufficientPermissionsException(
-      {required String operation, String? currentStatus})
-      : super(
-          'Insufficient permissions for $operation. ${currentStatus != null ? "Current status: $currentStatus" : ""}',
-          suggestion:
-              'Request location permissions using Locus.requestPermission() or PermissionAssistant.',
-        );
+  const InsufficientPermissionsException({
+    required String operation,
+    String? currentStatus,
+  }) : super(
+         'Insufficient permissions for $operation. ${currentStatus != null ? "Current status: $currentStatus" : ""}',
+         suggestion:
+             'Request location permissions using Locus.requestPermission() or PermissionAssistant.',
+       );
 }
 
 /// Thrown when geofence limit is exceeded.
@@ -256,13 +257,14 @@ class GeofenceLimitExceededException extends LocusException {
   /// }
   /// await Locus.addGeofence(newGeofence);
   /// ```
-  const GeofenceLimitExceededException(
-      {required int limit, required int attempted})
-      : super(
-          'Cannot add geofence. Maximum limit of $limit geofences reached (attempted: $attempted).',
-          suggestion:
-              'Remove unused geofences with Locus.removeGeofence(identifier) before adding new ones.',
-        );
+  const GeofenceLimitExceededException({
+    required int limit,
+    required int attempted,
+  }) : super(
+         'Cannot add geofence. Maximum limit of $limit geofences reached (attempted: $attempted).',
+         suggestion:
+             'Remove unused geofences with Locus.removeGeofence(identifier) before adding new ones.',
+       );
 }
 
 /// Thrown when tracking profiles are used without being configured.
@@ -292,11 +294,11 @@ class TrackingProfilesNotConfiguredException extends LocusException {
   /// await Locus.switchToProfile('driving');
   /// ```
   const TrackingProfilesNotConfiguredException()
-      : super(
-          'Tracking profiles have not been configured.',
-          suggestion:
-              'Call Locus.setTrackingProfiles() before using profile-related methods.',
-        );
+    : super(
+        'Tracking profiles have not been configured.',
+        suggestion:
+            'Call Locus.setTrackingProfiles() before using profile-related methods.',
+      );
 }
 
 /// Thrown when a geofence workflow references an invalid geofence.
@@ -331,13 +333,14 @@ class InvalidGeofenceWorkflowException extends LocusException {
   ///   geofences: ['home', 'office'],
   /// ));
   /// ```
-  const InvalidGeofenceWorkflowException(
-      {required String workflowId, String? reason})
-      : super(
-          'Invalid geofence workflow "$workflowId". ${reason ?? ""}',
-          suggestion:
-              'Ensure all geofences referenced in the workflow are registered.',
-        );
+  const InvalidGeofenceWorkflowException({
+    required String workflowId,
+    String? reason,
+  }) : super(
+         'Invalid geofence workflow "$workflowId". ${reason ?? ""}',
+         suggestion:
+             'Ensure all geofences referenced in the workflow are registered.',
+       );
 }
 
 /// Thrown when geofence data is invalid.
@@ -375,13 +378,14 @@ class GeofenceValidationException extends LocusException {
   ///   'radius': 100,
   /// });
   /// ```
-  const GeofenceValidationException(
-      {required String field, required String reason})
-      : super(
-          'Invalid geofence: $field - $reason',
-          suggestion:
-              'Ensure geofence has a non-empty identifier, valid coordinates (lat: -90 to 90, lng: -180 to 180), and positive radius (< 100000m).',
-        );
+  const GeofenceValidationException({
+    required String field,
+    required String reason,
+  }) : super(
+         'Invalid geofence: $field - $reason',
+         suggestion:
+             'Ensure geofence has a non-empty identifier, valid coordinates (lat: -90 to 90, lng: -180 to 180), and positive radius (< 100000m).',
+       );
 }
 
 /// Thrown when required permissions are not declared in AndroidManifest.xml.
@@ -400,11 +404,11 @@ class MissingManifestPermissionException extends LocusException {
   ///
   /// The [permissions] parameter lists the missing permission identifiers.
   MissingManifestPermissionException({required this.permissions})
-      : super(
-          'Required permissions not declared in AndroidManifest.xml: ${permissions.join(", ")}.',
-          suggestion:
-              'Add the missing <uses-permission> entries to your AndroidManifest.xml.',
-        );
+    : super(
+        'Required permissions not declared in AndroidManifest.xml: ${permissions.join(", ")}.',
+        suggestion:
+            'Add the missing <uses-permission> entries to your AndroidManifest.xml.',
+      );
 
   /// The list of missing permission identifiers.
   final List<String> permissions;
@@ -436,11 +440,11 @@ class PluginNotAvailableException extends LocusException {
   /// }
   /// ```
   const PluginNotAvailableException({String? platform})
-      : super(
-          'Locus plugin is not available${platform != null ? " on $platform" : ""}.',
-          suggestion:
-              'Ensure the Locus package is properly installed and the app is running on a real device or emulator.',
-        );
+    : super(
+        'Locus plugin is not available${platform != null ? " on $platform" : ""}.',
+        suggestion:
+            'Ensure the Locus package is properly installed and the app is running on a real device or emulator.',
+      );
 }
 
 /// Provides helpful logging for common issues.

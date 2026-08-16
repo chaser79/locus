@@ -54,8 +54,10 @@ class LocusLifecycle {
       }
     }
 
-    final result =
-        await LocusChannels.methods.invokeMethod('ready', config.toMap());
+    final result = await LocusChannels.methods.invokeMethod(
+      'ready',
+      config.toMap(),
+    );
 
     // Start the silent-stop heartbeat now that native init has completed.
     // Constructing a `MethodChannelLocus` no longer auto-starts the timer
@@ -208,12 +210,7 @@ class LocusLifecycle {
     } catch (e, stack) {
       // Expected in test environments — silently return false on missing plugin.
       if (!e.toString().contains('MissingPluginException')) {
-        _log.eventSevere(
-          'geofence_status_check_failed',
-          const {},
-          e,
-          stack,
-        );
+        _log.eventSevere('geofence_status_check_failed', const {}, e, stack);
       }
       return false;
     }
@@ -230,7 +227,8 @@ class _LifecycleObserver extends WidgetsBindingObserver {
     // Treat both resumed and inactive as foreground.
     // inactive fires during permission dialogs, phone calls, etc.
     // and should NOT trigger background behavior.
-    final isForeground = state == AppLifecycleState.resumed ||
+    final isForeground =
+        state == AppLifecycleState.resumed ||
         state == AppLifecycleState.inactive;
     onStateChange(isForeground);
   }

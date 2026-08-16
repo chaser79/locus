@@ -50,16 +50,16 @@ void main() {
         await mock.updateNotification(title: 'Trip', text: '12.3 km'),
         isTrue,
       );
-      expect(mock.methodCalls.where((call) => call == 'updateNotification'),
-          hasLength(2));
+      expect(
+        mock.methodCalls.where((call) => call == 'updateNotification'),
+        hasLength(2),
+      );
     });
 
     test('setMockState updates state', () async {
-      mock.setMockState(const GeolocationState(
-        enabled: true,
-        isMoving: true,
-        odometer: 1000,
-      ));
+      mock.setMockState(
+        const GeolocationState(enabled: true, isMoving: true, odometer: 1000),
+      );
 
       final state = await mock.getState();
       expect(state.enabled, isTrue);

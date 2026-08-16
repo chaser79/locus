@@ -16,7 +16,8 @@ class PermissionErrorEvent {
     return PermissionErrorEvent(
       code: map['code'] as String? ?? 'UNKNOWN',
       message: map['message'] as String? ?? '',
-      permissions: (map['permissions'] as List<dynamic>?)
+      permissions:
+          (map['permissions'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
@@ -37,8 +38,8 @@ class PermissionErrorEvent {
   final List<String> permissions;
 
   JsonMap toMap() => {
-        'code': code,
-        'message': message,
-        if (permissions.isNotEmpty) 'permissions': permissions,
-      };
+    'code': code,
+    'message': message,
+    if (permissions.isNotEmpty) 'permissions': permissions,
+  };
 }

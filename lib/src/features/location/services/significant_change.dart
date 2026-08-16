@@ -119,13 +119,13 @@ class SignificantChangeConfig {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'minDisplacementMeters': minDisplacementMeters,
-        'deferUntilMoved': deferUntilMoved,
-        'wakeFromBackground': wakeFromBackground,
-        'monitorInForeground': monitorInForeground,
-        if (maxUpdateInterval != null)
-          'maxUpdateIntervalMs': maxUpdateInterval!.inMilliseconds,
-      };
+    'minDisplacementMeters': minDisplacementMeters,
+    'deferUntilMoved': deferUntilMoved,
+    'wakeFromBackground': wakeFromBackground,
+    'monitorInForeground': monitorInForeground,
+    if (maxUpdateInterval != null)
+      'maxUpdateIntervalMs': maxUpdateInterval!.inMilliseconds,
+  };
 }
 
 /// Event emitted when a significant location change is detected.
@@ -156,15 +156,13 @@ class SignificantChangeEvent {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'location': location.toMap(),
-        if (previousLocation != null)
-          'previousLocation': previousLocation!.toMap(),
-        if (displacementMeters != null)
-          'displacementMeters': displacementMeters,
-        if (timeSinceLastChange != null)
-          'timeSinceLastChangeMs': timeSinceLastChange!.inMilliseconds,
-        'wasTimerTriggered': wasTimerTriggered,
-      };
+    'location': location.toMap(),
+    if (previousLocation != null) 'previousLocation': previousLocation!.toMap(),
+    if (displacementMeters != null) 'displacementMeters': displacementMeters,
+    if (timeSinceLastChange != null)
+      'timeSinceLastChangeMs': timeSinceLastChange!.inMilliseconds,
+    'wasTimerTriggered': wasTimerTriggered,
+  };
 }
 
 /// Manager for significant location change monitoring.
@@ -251,10 +249,7 @@ class SignificantChangeManager {
     if (_lastLocation == null || !_isMonitoring) return;
 
     // Emit the last known location as a timer-triggered update
-    _emitChange(
-      _lastLocation!,
-      wasTimerTriggered: true,
-    );
+    _emitChange(_lastLocation!, wasTimerTriggered: true);
   }
 
   void _emitChange(

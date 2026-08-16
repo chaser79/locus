@@ -57,8 +57,10 @@ class _ScenarioDetailScreenState extends State<ScenarioDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _runner =
-        ScenarioRunner(recorder: widget.recorder, backend: widget.backend);
+    _runner = ScenarioRunner(
+      recorder: widget.recorder,
+      backend: widget.backend,
+    );
     _result = widget.previousResult;
   }
 
@@ -70,7 +72,8 @@ class _ScenarioDetailScreenState extends State<ScenarioDetailScreen> {
     if (pending != null && !pending.isCompleted) {
       pending.completeError(
         const ScenarioCancelled(
-            'Detail screen disposed while awaiting manual step.'),
+          'Detail screen disposed while awaiting manual step.',
+        ),
       );
     }
     _manualCompleter = null;
@@ -139,8 +142,10 @@ class _ScenarioDetailScreenState extends State<ScenarioDetailScreen> {
       _result = null;
     });
 
-    final ScenarioResult result =
-        await _runner.run(widget.scenario, onManualStep: _onManualStep);
+    final ScenarioResult result = await _runner.run(
+      widget.scenario,
+      onManualStep: _onManualStep,
+    );
 
     if (!mounted) {
       return;
@@ -165,8 +170,9 @@ class _ScenarioDetailScreenState extends State<ScenarioDetailScreen> {
           .toIso8601String()
           .replaceAll(':', '-')
           .replaceAll('.', '-');
-      final File file =
-          File('${dir.path}/scenario-${result.scenarioId}-$stamp.json');
+      final File file = File(
+        '${dir.path}/scenario-${result.scenarioId}-$stamp.json',
+      );
       const JsonEncoder encoder = JsonEncoder.withIndent('  ');
       await file.writeAsString(encoder.convert(result.toJson()));
       messenger.showSnackBar(
@@ -204,9 +210,7 @@ class _ScenarioDetailScreenState extends State<ScenarioDetailScreen> {
         _handlePopAttempt();
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.scenario.displayName),
-        ),
+        appBar: AppBar(title: Text(widget.scenario.displayName)),
         body: Column(
           children: <Widget>[
             if (_manualPrompt != null)
@@ -314,9 +318,7 @@ class _MetadataRow extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 13)),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
         ],
       ),
     );
@@ -424,10 +426,7 @@ class _ResultSection extends StatelessWidget {
             phase: result.errorPhase ?? 'unknown',
           ),
         if (result.assertions.isEmpty)
-          Text(
-            'No assertions ran.',
-            style: text.bodySmall,
-          )
+          Text('No assertions ran.', style: text.bodySmall)
         else
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,10 +520,7 @@ class _ErrorPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            error,
-            style: TextStyle(color: scheme.onErrorContainer),
-          ),
+          Text(error, style: TextStyle(color: scheme.onErrorContainer)),
         ],
       ),
     );
@@ -555,8 +551,9 @@ class _AssertionRowState extends State<_AssertionRow> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           InkWell(
-            onTap:
-                hasDetail ? () => setState(() => _expanded = !_expanded) : null,
+            onTap: hasDetail
+                ? () => setState(() => _expanded = !_expanded)
+                : null,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -586,7 +583,9 @@ class _AssertionRowState extends State<_AssertionRow> {
                     _DetailLine(label: 'Detail', value: a.failureDetail!),
                   if (a.expected != null)
                     _DetailLine(
-                        label: 'Expected', value: a.expected.toString()),
+                      label: 'Expected',
+                      value: a.expected.toString(),
+                    ),
                   if (a.actual != null)
                     _DetailLine(label: 'Actual', value: a.actual.toString()),
                 ],

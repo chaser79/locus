@@ -30,8 +30,8 @@ class ScenarioResult {
     required List<RecordedEvent> trace,
     this.error,
     this.errorPhase,
-  })  : assertions = List.unmodifiable(assertions),
-        trace = List.unmodifiable(trace);
+  }) : assertions = List.unmodifiable(assertions),
+       trace = List.unmodifiable(trace);
 
   final String scenarioId;
   final String displayName;
@@ -62,15 +62,15 @@ class ScenarioResult {
       assertions.where((a) => a.status == AssertionStatus.skip).length;
 
   Map<String, Object?> toJson() => <String, Object?>{
-        'scenarioId': scenarioId,
-        'displayName': displayName,
-        'startedAt': startedAt.toUtc().toIso8601String(),
-        'finishedAt': finishedAt.toUtc().toIso8601String(),
-        'durationMs': duration.inMilliseconds,
-        'status': status.name,
-        'assertions': assertions.map((a) => a.toJson()).toList(),
-        'trace': trace.map((e) => e.toJson()).toList(),
-        if (error != null) 'error': error,
-        if (errorPhase != null) 'errorPhase': errorPhase,
-      };
+    'scenarioId': scenarioId,
+    'displayName': displayName,
+    'startedAt': startedAt.toUtc().toIso8601String(),
+    'finishedAt': finishedAt.toUtc().toIso8601String(),
+    'durationMs': duration.inMilliseconds,
+    'status': status.name,
+    'assertions': assertions.map((a) => a.toJson()).toList(),
+    'trace': trace.map((e) => e.toJson()).toList(),
+    if (error != null) 'error': error,
+    if (errorPhase != null) 'errorPhase': errorPhase,
+  };
 }

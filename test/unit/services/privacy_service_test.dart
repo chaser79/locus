@@ -109,12 +109,14 @@ void main() {
 
     group('removeAll', () {
       test('should remove all zones', () async {
-        await service.add(PrivacyZone.create(
-          identifier: 'z1',
-          latitude: 37.0,
-          longitude: -122.0,
-          radius: 100.0,
-        ));
+        await service.add(
+          PrivacyZone.create(
+            identifier: 'z1',
+            latitude: 37.0,
+            longitude: -122.0,
+            radius: 100.0,
+          ),
+        );
 
         await service.removeAll();
 
@@ -146,18 +148,22 @@ void main() {
 
     group('getAll', () {
       test('should return all privacy zones', () async {
-        await service.add(PrivacyZone.create(
-          identifier: 'z1',
-          latitude: 37.0,
-          longitude: -122.0,
-          radius: 100.0,
-        ));
-        await service.add(PrivacyZone.create(
-          identifier: 'z2',
-          latitude: 37.1,
-          longitude: -122.1,
-          radius: 100.0,
-        ));
+        await service.add(
+          PrivacyZone.create(
+            identifier: 'z1',
+            latitude: 37.0,
+            longitude: -122.0,
+            radius: 100.0,
+          ),
+        );
+        await service.add(
+          PrivacyZone.create(
+            identifier: 'z2',
+            latitude: 37.1,
+            longitude: -122.1,
+            radius: 100.0,
+          ),
+        );
 
         final result = await service.getAll();
 

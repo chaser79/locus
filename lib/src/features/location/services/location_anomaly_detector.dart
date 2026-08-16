@@ -83,8 +83,10 @@ class LocationAnomalyDetector {
         return;
       }
 
-      final distance =
-          LocationUtils.calculateDistance(prev.coords, current.coords);
+      final distance = LocationUtils.calculateDistance(
+        prev.coords,
+        current.coords,
+      );
       if (distance < config.minDistanceMeters) {
         // Update reference - valid location but not enough distance
         previous = current;

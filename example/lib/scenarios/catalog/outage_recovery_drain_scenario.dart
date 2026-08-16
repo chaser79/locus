@@ -102,7 +102,8 @@ class OutageRecoveryDrainScenario extends Scenario {
       results.add(
         const AssertionResult.fail(
           'SDK observed at least one HTTP 503 during the outage window',
-          failureDetail: 'No http_response_error event with status==503 '
+          failureDetail:
+              'No http_response_error event with status==503 '
               'was recorded.',
           expected: '>=1 http_response_error with status==503',
           actual: '0',
@@ -122,7 +123,8 @@ class OutageRecoveryDrainScenario extends Scenario {
         const AssertionResult.fail(
           'SDK observed at least one 2xx HTTP event after the outage '
           'cleared',
-          failureDetail: 'No http_response_ok recorded; recovery 2xx '
+          failureDetail:
+              'No http_response_ok recorded; recovery 2xx '
               'never landed.',
           expected: '>=1 http_response_ok',
           actual: '0',

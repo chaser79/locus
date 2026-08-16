@@ -62,14 +62,14 @@ class MockRequest {
       (headers['content-encoding'] ?? '').toLowerCase().contains('gzip');
 
   Map<String, Object?> toJson() => <String, Object?>{
-        'at': at.toUtc().toIso8601String(),
-        'method': method,
-        'path': path,
-        'headers': headers,
-        'bodyLength': bodyBytes.length,
-        'gzipped': isGzipped,
-        'responseStatus': responseStatus,
-      };
+    'at': at.toUtc().toIso8601String(),
+    'method': method,
+    'path': path,
+    'headers': headers,
+    'bodyLength': bodyBytes.length,
+    'gzipped': isGzipped,
+    'responseStatus': responseStatus,
+  };
 }
 
 /// In-process HTTP server the example app points its sync layer at.

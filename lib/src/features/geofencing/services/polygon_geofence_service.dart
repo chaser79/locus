@@ -6,8 +6,8 @@ import 'package:locus/src/observability/locus_logger.dart';
 final _log = locusLogger('polygon_geofence');
 
 /// Callback for polygon geofence persistence.
-typedef PolygonGeofencePersistCallback = Future<void> Function(
-    List<PolygonGeofence> geofences);
+typedef PolygonGeofencePersistCallback =
+    Future<void> Function(List<PolygonGeofence> geofences);
 
 /// Service for managing polygon geofences.
 ///
@@ -66,8 +66,10 @@ class PolygonGeofenceService {
   /// Returns true if added successfully, false if identifier already exists.
   Future<bool> addPolygonGeofence(PolygonGeofence polygon) async {
     if (!polygon.isValid) {
-      throw ArgumentError('Invalid polygon geofence: ${polygon.identifier}. '
-          'Must have non-empty identifier and at least 3 valid vertices.');
+      throw ArgumentError(
+        'Invalid polygon geofence: ${polygon.identifier}. '
+        'Must have non-empty identifier and at least 3 valid vertices.',
+      );
     }
 
     if (_polygons.containsKey(polygon.identifier)) {
@@ -223,12 +225,14 @@ class PolygonGeofenceService {
         _insideState[polygon.identifier] = true;
 
         if (polygon.notifyOnEntry) {
-          _eventController.add(PolygonGeofenceEvent(
-            geofence: polygon,
-            type: PolygonGeofenceEventType.enter,
-            timestamp: now,
-            triggerLocation: triggerPoint,
-          ));
+          _eventController.add(
+            PolygonGeofenceEvent(
+              geofence: polygon,
+              type: PolygonGeofenceEventType.enter,
+              timestamp: now,
+              triggerLocation: triggerPoint,
+            ),
+          );
           _log.eventInfo('polygon_enter', {'identifier': polygon.identifier});
         }
       } else if (wasInside && !isNowInside) {
@@ -236,12 +240,14 @@ class PolygonGeofenceService {
         _insideState[polygon.identifier] = false;
 
         if (polygon.notifyOnExit) {
-          _eventController.add(PolygonGeofenceEvent(
-            geofence: polygon,
-            type: PolygonGeofenceEventType.exit,
-            timestamp: now,
-            triggerLocation: triggerPoint,
-          ));
+          _eventController.add(
+            PolygonGeofenceEvent(
+              geofence: polygon,
+              type: PolygonGeofenceEventType.exit,
+              timestamp: now,
+              triggerLocation: triggerPoint,
+            ),
+          );
           _log.eventInfo('polygon_exit', {'identifier': polygon.identifier});
         }
       }

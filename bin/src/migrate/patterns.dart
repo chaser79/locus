@@ -1,8 +1,4 @@
-enum MigrationConfidence {
-  high,
-  medium,
-  low,
-}
+enum MigrationConfidence { high, medium, low }
 
 enum MigrationCategory {
   location,
@@ -32,13 +28,13 @@ class PatternMatch {
   final String patternId;
 
   Map<String, dynamic> toJson() => {
-        'filePath': filePath,
-        'line': line,
-        'column': column,
-        'original': original,
-        'replacement': replacement,
-        'patternId': patternId,
-      };
+    'filePath': filePath,
+    'line': line,
+    'column': column,
+    'original': original,
+    'replacement': replacement,
+    'patternId': patternId,
+  };
 
   @override
   bool operator ==(Object other) =>
@@ -82,14 +78,16 @@ class MigrationPattern {
 
       if (match != null) {
         final replacement = _buildReplacement(match);
-        matches.add(PatternMatch(
-          filePath: filePath,
-          line: i + 1,
-          column: match.start,
-          original: match.group(0)!,
-          replacement: replacement,
-          patternId: id,
-        ));
+        matches.add(
+          PatternMatch(
+            filePath: filePath,
+            line: i + 1,
+            column: match.start,
+            original: match.group(0)!,
+            replacement: replacement,
+            patternId: id,
+          ),
+        );
       }
     }
 
@@ -825,7 +823,8 @@ class MigrationPatternDatabase {
   ];
 
   static List<MigrationPattern> getPatternsForCategory(
-      MigrationCategory category) {
+    MigrationCategory category,
+  ) {
     return allPatterns.where((p) => p.category == category).toList();
   }
 

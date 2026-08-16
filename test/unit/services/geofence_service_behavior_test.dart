@@ -20,11 +20,13 @@ void main() {
       final sub = service.events.listen(events.add);
 
       final geofence = MockGeofenceExtension.mock(identifier: 'office');
-      mockLocus.emitGeofenceEvent(GeofenceEvent(
-        geofence: geofence,
-        action: GeofenceAction.enter,
-        location: MockLocationExtension.mock(),
-      ));
+      mockLocus.emitGeofenceEvent(
+        GeofenceEvent(
+          geofence: geofence,
+          action: GeofenceAction.enter,
+          location: MockLocationExtension.mock(),
+        ),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);
@@ -50,12 +52,14 @@ void main() {
       final events = <PolygonGeofenceEvent>[];
       final sub = service.polygonEvents.listen(events.add);
 
-      mockLocus.emitPolygonGeofenceEvent(PolygonGeofenceEvent(
-        geofence: polygon,
-        type: PolygonGeofenceEventType.enter,
-        timestamp: DateTime.now(),
-        triggerLocation: const GeoPoint(latitude: 37.05, longitude: -121.95),
-      ));
+      mockLocus.emitPolygonGeofenceEvent(
+        PolygonGeofenceEvent(
+          geofence: polygon,
+          type: PolygonGeofenceEventType.enter,
+          timestamp: DateTime.now(),
+          triggerLocation: const GeoPoint(latitude: 37.05, longitude: -121.95),
+        ),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);

@@ -92,15 +92,16 @@ void main() {
 
     group('estimateRunway', () {
       test('should return charging runway when charging', () async {
-        mockLocus.setBatteryStats(const BatteryStats(
-          currentBatteryLevel: 50,
-          isCharging: true,
-          trackingDurationMinutes: 60,
-        ));
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 50,
-          isCharging: true,
-        ));
+        mockLocus.setBatteryStats(
+          const BatteryStats(
+            currentBatteryLevel: 50,
+            isCharging: true,
+            trackingDurationMinutes: 60,
+          ),
+        );
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 50, isCharging: true),
+        );
 
         final runway = await service.estimateRunway();
 
@@ -110,16 +111,17 @@ void main() {
       });
 
       test('should estimate duration based on drain rate', () async {
-        mockLocus.setBatteryStats(const BatteryStats(
-          currentBatteryLevel: 80,
-          isCharging: false,
-          trackingDurationMinutes: 60,
-          estimatedDrainPercent: 10.0, // 10% drain in 60 mins
-        ));
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 80,
-          isCharging: false,
-        ));
+        mockLocus.setBatteryStats(
+          const BatteryStats(
+            currentBatteryLevel: 80,
+            isCharging: false,
+            trackingDurationMinutes: 60,
+            estimatedDrainPercent: 10.0, // 10% drain in 60 mins
+          ),
+        );
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 80, isCharging: false),
+        );
 
         final runway = await service.estimateRunway();
 
@@ -129,10 +131,12 @@ void main() {
       });
 
       test('should return insufficient data for short tracking', () async {
-        mockLocus.setBatteryStats(const BatteryStats(
-          currentBatteryLevel: 90,
-          trackingDurationMinutes: 2, // Too short
-        ));
+        mockLocus.setBatteryStats(
+          const BatteryStats(
+            currentBatteryLevel: 90,
+            trackingDurationMinutes: 2, // Too short
+          ),
+        );
 
         final runway = await service.estimateRunway();
 
@@ -179,10 +183,9 @@ void main() {
 
     group('calculateAdaptiveSettings', () {
       test('should calculate settings based on conditions', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 50,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 50, isCharging: false),
+        );
 
         final settings = await service.calculateAdaptiveSettings();
 
@@ -193,11 +196,13 @@ void main() {
       });
 
       test('should disable GPS on critical battery', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 5,
-          isCharging: false,
-          isPowerSaveMode: true,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(
+            batteryLevel: 5,
+            isCharging: false,
+            isPowerSaveMode: true,
+          ),
+        );
         await mockLocus.setAdaptiveTracking(AdaptiveTrackingConfig.balanced);
 
         final settings = await service.calculateAdaptiveSettings();
@@ -207,10 +212,9 @@ void main() {
       });
 
       test('should optimize for low battery', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 15,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 15, isCharging: false),
+        );
 
         final settings = await service.calculateAdaptiveSettings();
 
@@ -220,10 +224,9 @@ void main() {
 
     group('benchmark', () {
       test('should track battery drain during benchmark', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 80,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 80, isCharging: false),
+        );
 
         await service.startBenchmark();
 
@@ -233,10 +236,9 @@ void main() {
         service.recordBenchmarkSync();
 
         // Simulate battery drain
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 75,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 75, isCharging: false),
+        );
 
         final result = await service.stopBenchmark();
 
@@ -253,10 +255,9 @@ void main() {
       });
 
       test('should track multiple location updates', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 90,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 90, isCharging: false),
+        );
 
         await service.startBenchmark();
 
@@ -264,10 +265,9 @@ void main() {
           service.recordBenchmarkLocationUpdate(accuracy: 12.0);
         }
 
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 88,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 88, isCharging: false),
+        );
         final result = await service.stopBenchmark();
 
         expect(result!.locationUpdates, 10);
@@ -275,10 +275,9 @@ void main() {
       });
 
       test('should track sync operations', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 70,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 70, isCharging: false),
+        );
 
         await service.startBenchmark();
 
@@ -286,10 +285,9 @@ void main() {
           service.recordBenchmarkSync();
         }
 
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 68,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 68, isCharging: false),
+        );
         final result = await service.stopBenchmark();
 
         expect(result!.syncRequests, 5);

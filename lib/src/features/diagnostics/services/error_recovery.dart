@@ -49,7 +49,7 @@ class ErrorRecoveryConfig {
   ///
   /// Return [RecoveryAction] to specify how to recover.
   final RecoveryAction Function(LocusError error, ErrorContext context)?
-      onError;
+  onError;
 
   /// Callback when an error is resolved (after successful retry).
   final void Function(LocusError error, int attemptsTaken)? onResolved;
@@ -133,15 +133,15 @@ class ErrorRecoveryConfig {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'maxRetries': maxRetries,
-        'retryDelayMs': retryDelay.inMilliseconds,
-        'retryBackoff': retryBackoff,
-        'maxRetryDelayMs': maxRetryDelay.inMilliseconds,
-        'autoRestart': autoRestart,
-        'autoRetryTypes': autoRetryTypes.map((e) => e.name).toList(),
-        'ignoreTypes': ignoreTypes.map((e) => e.name).toList(),
-        'logErrors': logErrors,
-      };
+    'maxRetries': maxRetries,
+    'retryDelayMs': retryDelay.inMilliseconds,
+    'retryBackoff': retryBackoff,
+    'maxRetryDelayMs': maxRetryDelay.inMilliseconds,
+    'autoRestart': autoRestart,
+    'autoRetryTypes': autoRetryTypes.map((e) => e.name).toList(),
+    'ignoreTypes': ignoreTypes.map((e) => e.name).toList(),
+    'logErrors': logErrors,
+  };
 }
 
 /// Recovery action to take after an error.
@@ -197,28 +197,28 @@ class LocusError implements Exception {
 
   /// Location permission denied.
   factory LocusError.permissionDenied({String? message}) => LocusError(
-        type: LocusErrorType.permissionDenied,
-        message: message ?? 'Location permission denied',
-        isRecoverable: true,
-        suggestedRecovery: RecoveryAction.requestUserAction,
-      );
+    type: LocusErrorType.permissionDenied,
+    message: message ?? 'Location permission denied',
+    isRecoverable: true,
+    suggestedRecovery: RecoveryAction.requestUserAction,
+  );
 
   /// Location services disabled.
   factory LocusError.servicesDisabled({String? message}) => LocusError(
-        type: LocusErrorType.servicesDisabled,
-        message: message ?? 'Location services are disabled',
-        isRecoverable: true,
-        suggestedRecovery: RecoveryAction.requestUserAction,
-      );
+    type: LocusErrorType.servicesDisabled,
+    message: message ?? 'Location services are disabled',
+    isRecoverable: true,
+    suggestedRecovery: RecoveryAction.requestUserAction,
+  );
 
   /// Location acquisition timeout.
   factory LocusError.timeout({Duration? timeout}) => LocusError(
-        type: LocusErrorType.locationTimeout,
-        message: 'Location request timed out',
-        isRecoverable: true,
-        suggestedRecovery: RecoveryAction.retry,
-        details: timeout != null ? {'timeoutMs': timeout.inMilliseconds} : null,
-      );
+    type: LocusErrorType.locationTimeout,
+    message: 'Location request timed out',
+    isRecoverable: true,
+    suggestedRecovery: RecoveryAction.retry,
+    details: timeout != null ? {'timeoutMs': timeout.inMilliseconds} : null,
+  );
 
   /// Network error during sync.
   factory LocusError.networkError({String? message, Object? originalError}) =>
@@ -231,22 +231,23 @@ class LocusError implements Exception {
       );
 
   /// Required permission not declared in AndroidManifest.xml.
-  factory LocusError.missingManifestPermission({List<String>? permissions}) =>
-      LocusError(
-        type: LocusErrorType.missingManifestPermission,
-        message:
-            'Required permissions not declared in manifest: ${permissions?.join(", ") ?? "unknown"}',
-        isRecoverable: false,
-        suggestedRecovery: RecoveryAction.requestUserAction,
-      );
+  factory LocusError.missingManifestPermission({
+    List<String>? permissions,
+  }) => LocusError(
+    type: LocusErrorType.missingManifestPermission,
+    message:
+        'Required permissions not declared in manifest: ${permissions?.join(", ") ?? "unknown"}',
+    isRecoverable: false,
+    suggestedRecovery: RecoveryAction.requestUserAction,
+  );
 
   /// Service disconnected.
   factory LocusError.serviceDisconnected() => LocusError(
-        type: LocusErrorType.serviceDisconnected,
-        message: 'Background service disconnected',
-        isRecoverable: true,
-        suggestedRecovery: RecoveryAction.restart,
-      );
+    type: LocusErrorType.serviceDisconnected,
+    message: 'Background service disconnected',
+    isRecoverable: true,
+    suggestedRecovery: RecoveryAction.restart,
+  );
 
   /// Error type classification.
   final LocusErrorType type;
@@ -277,15 +278,14 @@ class LocusError implements Exception {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'type': type.name,
-        'message': message,
-        if (operation != null) 'operation': operation,
-        'isRecoverable': isRecoverable,
-        if (suggestedRecovery != null)
-          'suggestedRecovery': suggestedRecovery!.name,
-        if (details != null) 'details': details,
-        'timestamp': timestamp.toIso8601String(),
-      };
+    'type': type.name,
+    'message': message,
+    if (operation != null) 'operation': operation,
+    'isRecoverable': isRecoverable,
+    if (suggestedRecovery != null) 'suggestedRecovery': suggestedRecovery!.name,
+    if (details != null) 'details': details,
+    'timestamp': timestamp.toIso8601String(),
+  };
 
   @override
   String toString() => 'LocusError(${type.name}): $message';
@@ -368,7 +368,7 @@ class ErrorContext {
 class ErrorRecoveryManager {
   /// Creates an error recovery manager.
   ErrorRecoveryManager([ErrorRecoveryConfig? config])
-      : _config = config ?? const ErrorRecoveryConfig();
+    : _config = config ?? const ErrorRecoveryConfig();
   ErrorRecoveryConfig _config;
   final Map<LocusErrorType, int> _retryCounts = {};
   final Map<LocusErrorType, DateTime> _firstOccurrences = {};
@@ -404,8 +404,9 @@ class ErrorRecoveryManager {
 
     // Track first occurrence
     _firstOccurrences[error.type] ??= DateTime.now();
-    final timeSinceFirst =
-        DateTime.now().difference(_firstOccurrences[error.type]!);
+    final timeSinceFirst = DateTime.now().difference(
+      _firstOccurrences[error.type]!,
+    );
 
     // Build context
     final context = ErrorContext(
@@ -498,10 +499,7 @@ class ErrorRecoveryManager {
   }
 
   /// Schedules a retry with appropriate delay.
-  void scheduleRetry(
-    LocusErrorType errorType,
-    void Function() retryAction,
-  ) {
+  void scheduleRetry(LocusErrorType errorType, void Function() retryAction) {
     final delay = getRetryDelay(errorType);
     _retryTimers[errorType]?.cancel();
     _retryTimers[errorType] = Timer(delay, () {

@@ -117,7 +117,7 @@ class SyncQueueCard extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: itemCount,
-                separatorBuilder: (_, __) => const Divider(height: 1),
+                separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (_, i) {
                   final item = queue[i];
                   final shortIdLength = item.id.length > 6 ? 6 : item.id.length;
@@ -133,10 +133,7 @@ class SyncQueueCard extends StatelessWidget {
                     ),
                     trailing: Text(
                       item.id.substring(0, shortIdLength),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey,
-                      ),
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
                     ),
                   );
                 },

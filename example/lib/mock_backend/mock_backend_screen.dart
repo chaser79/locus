@@ -22,10 +22,7 @@ const int _kBodyPreviewByteLimit = 4096;
 /// The screen does not own the backend — it observes one passed in. The
 /// caller is responsible for [MockBackend.dispose].
 class MockBackendScreen extends StatefulWidget {
-  const MockBackendScreen({
-    required this.backend,
-    super.key,
-  });
+  const MockBackendScreen({required this.backend, super.key});
 
   final MockBackend backend;
 
@@ -65,8 +62,9 @@ class _MockBackendScreenState extends State<MockBackendScreen> {
     await widget.backend.reset();
     if (!mounted) return;
     setState(() {});
-    final ScaffoldMessengerState? messenger =
-        ScaffoldMessenger.maybeOf(context);
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
+      context,
+    );
     messenger?.showSnackBar(
       const SnackBar(content: Text('Mock backend reset')),
     );
@@ -77,11 +75,10 @@ class _MockBackendScreenState extends State<MockBackendScreen> {
       ClipboardData(text: widget.backend.baseUrl.toString()),
     );
     if (!mounted) return;
-    final ScaffoldMessengerState? messenger =
-        ScaffoldMessenger.maybeOf(context);
-    messenger?.showSnackBar(
-      const SnackBar(content: Text('Copied base URL')),
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
+      context,
     );
+    messenger?.showSnackBar(const SnackBar(content: Text('Copied base URL')));
   }
 
   void _showRequestDetails(MockRequest req) {
@@ -105,23 +102,16 @@ class _MockBackendScreenState extends State<MockBackendScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: <Widget>[
-          _BaseUrlCard(
-            url: backend.baseUrl,
-            onCopy: _copyBaseUrl,
-          ),
+          _BaseUrlCard(url: backend.baseUrl, onCopy: _copyBaseUrl),
           const SizedBox(height: 16),
-          _ModePicker(
-            current: backend.mode,
-            onChanged: _onModeChanged,
-          ),
+          _ModePicker(current: backend.mode, onChanged: _onModeChanged),
           const SizedBox(height: 16),
-          _CountRow(
-            count: backend.requestCount,
-            onReset: _onReset,
-          ),
+          _CountRow(count: backend.requestCount, onReset: _onReset),
           const SizedBox(height: 16),
           _RecentRequestsHeader(
-              visible: requests.length, total: requests.length),
+            visible: requests.length,
+            total: requests.length,
+          ),
           const SizedBox(height: 8),
           if (requests.isEmpty)
             const _EmptyRequestsHint()
@@ -287,10 +277,7 @@ class _CountRow extends StatelessWidget {
                 children: <Widget>[
                   Text('Requests', style: theme.textTheme.labelMedium),
                   const SizedBox(height: 2),
-                  Text(
-                    '$count',
-                    style: theme.textTheme.headlineSmall,
-                  ),
+                  Text('$count', style: theme.textTheme.headlineSmall),
                 ],
               ),
             ),
@@ -353,11 +340,7 @@ class _EmptyRequestsHint extends StatelessWidget {
 }
 
 class _RequestTile extends StatelessWidget {
-  const _RequestTile({
-    required this.request,
-    required this.onTap,
-    super.key,
-  });
+  const _RequestTile({required this.request, required this.onTap, super.key});
 
   final MockRequest request;
   final VoidCallback onTap;
@@ -449,18 +432,14 @@ class _RequestDetailsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final MediaQueryData media = MediaQuery.of(context);
-    final List<MapEntry<String, String>> headers = request.headers.entries
-        .toList(growable: false)
-      ..sort((MapEntry<String, String> a, MapEntry<String, String> b) =>
-          a.key.compareTo(b.key));
+    final List<MapEntry<String, String>> headers =
+        request.headers.entries.toList(growable: false)..sort(
+          (MapEntry<String, String> a, MapEntry<String, String> b) =>
+              a.key.compareTo(b.key),
+        );
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        0,
-        16,
-        16 + media.viewInsets.bottom,
-      ),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + media.viewInsets.bottom),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: media.size.height * 0.85),
         child: Column(
@@ -474,8 +453,9 @@ class _RequestDetailsSheet extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '${request.method} ${request.path.isEmpty ? '/' : request.path}',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontFamily: 'monospace'),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontFamily: 'monospace',
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -495,18 +475,16 @@ class _RequestDetailsSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     if (headers.isEmpty)
-                      Text(
-                        '(none)',
-                        style: theme.textTheme.bodySmall,
-                      )
+                      Text('(none)', style: theme.textTheme.bodySmall)
                     else
                       for (final MapEntry<String, String> h in headers)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2),
                           child: SelectableText(
                             '${h.key}: ${h.value}',
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(fontFamily: 'monospace'),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontFamily: 'monospace',
+                            ),
                           ),
                         ),
                     const SizedBox(height: 16),
@@ -565,8 +543,9 @@ class _BodyPreview extends StatelessWidget {
             ),
             child: SelectableText(
               text,
-              style:
-                  theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontFamily: 'monospace',
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -581,8 +560,10 @@ class _BodyPreview extends StatelessWidget {
           ),
           child: SelectableText(
             hex,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(fontFamily: 'monospace', fontSize: 11),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontFamily: 'monospace',
+              fontSize: 11,
+            ),
           ),
         ),
         if (truncated)
@@ -612,8 +593,9 @@ class _BodyPreview extends StatelessWidget {
     const int rowWidth = 16;
     final StringBuffer out = StringBuffer();
     for (int offset = 0; offset < bytes.length; offset += rowWidth) {
-      final int end =
-          (offset + rowWidth < bytes.length) ? offset + rowWidth : bytes.length;
+      final int end = (offset + rowWidth < bytes.length)
+          ? offset + rowWidth
+          : bytes.length;
       final StringBuffer hex = StringBuffer();
       final StringBuffer ascii = StringBuffer();
       for (int i = offset; i < offset + rowWidth; i++) {

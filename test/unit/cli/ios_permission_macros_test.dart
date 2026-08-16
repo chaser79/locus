@@ -43,7 +43,9 @@ end
 
     expect(configured, contains('post_install do |installer|'));
     expect(
-        configured, contains('flutter_additional_ios_build_settings(target)'));
+      configured,
+      contains('flutter_additional_ios_build_settings(target)'),
+    );
     expect(hasIosPermissionMacros(configured, includeSensors: true), isTrue);
   });
 
@@ -61,14 +63,8 @@ post_install do |installer|
 end
 ''';
 
-    expect(
-      hasIosPermissionMacros(misleading, includeSensors: true),
-      isFalse,
-    );
-    expect(
-      addIosPermissionMacros(misleading, includeSensors: true),
-      isNull,
-    );
+    expect(hasIosPermissionMacros(misleading, includeSensors: true), isFalse);
+    expect(addIosPermissionMacros(misleading, includeSensors: true), isNull);
   });
 
   test('normalizes conflicting disabled definitions', () {
@@ -160,10 +156,7 @@ end
 ''';
 
     expect(hasIosPermissionMacros(legacy, includeSensors: false), isFalse);
-    final configured = addIosPermissionMacros(
-      legacy,
-      includeSensors: false,
-    )!;
+    final configured = addIosPermissionMacros(legacy, includeSensors: false)!;
 
     expect(configured, contains('PERMISSION_LOCATION=1'));
     expect(configured, isNot(contains('PERMISSION_SENSORS=')));
@@ -258,9 +251,6 @@ post_install do |installer|
 end
 ''';
 
-    expect(
-      addIosPermissionMacros(custom, includeSensors: true),
-      isNull,
-    );
+    expect(addIosPermissionMacros(custom, includeSensors: true), isNull);
   });
 }

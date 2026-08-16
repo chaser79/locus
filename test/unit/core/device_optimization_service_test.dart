@@ -19,47 +19,58 @@ void main() {
   // handler tests on the platform side (tracked via #39).
 
   group('DeviceOptimizationService.getManufacturerInstructionsUrl', () {
-    test('returns null on non-Android hosts without invoking the channel',
-        () async {
-      // Guard: this assumption holds because `flutter test` runs on the
-      // host (macOS / Linux / Windows / web). If `Platform.isAndroid`
-      // ever becomes true here, the test would silently turn into an
-      // integration test and need a channel mock instead.
-      expect(Platform.isAndroid, isFalse,
-          reason: 'precondition: tests run on a non-Android host');
+    test(
+      'returns null on non-Android hosts without invoking the channel',
+      () async {
+        // Guard: this assumption holds because `flutter test` runs on the
+        // host (macOS / Linux / Windows / web). If `Platform.isAndroid`
+        // ever becomes true here, the test would silently turn into an
+        // integration test and need a channel mock instead.
+        expect(
+          Platform.isAndroid,
+          isFalse,
+          reason: 'precondition: tests run on a non-Android host',
+        );
 
-      final calls = <MethodCall>[];
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-        const MethodChannel('locus/methods'),
-        (call) async {
-          calls.add(call);
-          return null;
-        },
-      );
-      addTearDown(() {
+        final calls = <MethodCall>[];
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(
-                const MethodChannel('locus/methods'), null);
-      });
+            .setMockMethodCallHandler(const MethodChannel('locus/methods'), (
+              call,
+            ) async {
+              calls.add(call);
+              return null;
+            });
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(
+                const MethodChannel('locus/methods'),
+                null,
+              );
+        });
 
-      final url =
-          await DeviceOptimizationService.getManufacturerInstructionsUrl();
+        final url =
+            await DeviceOptimizationService.getManufacturerInstructionsUrl();
 
-      expect(url, isNull);
-      expect(calls, isEmpty,
-          reason: 'channel must not be invoked on non-Android');
-    });
+        expect(url, isNull);
+        expect(
+          calls,
+          isEmpty,
+          reason: 'channel must not be invoked on non-Android',
+        );
+      },
+    );
 
-    test('isIgnoringBatteryOptimizations returns false on non-Android',
-        () async {
-      expect(Platform.isAndroid, isFalse);
+    test(
+      'isIgnoringBatteryOptimizations returns false on non-Android',
+      () async {
+        expect(Platform.isAndroid, isFalse);
 
-      final result =
-          await DeviceOptimizationService.isIgnoringBatteryOptimizations();
+        final result =
+            await DeviceOptimizationService.isIgnoringBatteryOptimizations();
 
-      expect(result, isFalse);
-    });
+        expect(result, isFalse);
+      },
+    );
   });
 
   group('DeviceOptimizationService.getBackgroundLimitsInfo', () {

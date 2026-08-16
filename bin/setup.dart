@@ -38,12 +38,19 @@ const _footer = '''
 
 void main(List<String> args) async {
   final parser = ArgParser()
-    ..addFlag('interactive',
-        abbr: 'i', defaultsTo: false, help: 'Interactive mode')
+    ..addFlag(
+      'interactive',
+      abbr: 'i',
+      defaultsTo: false,
+      help: 'Interactive mode',
+    )
     ..addFlag('android-only', defaultsTo: false, help: 'Only configure Android')
     ..addFlag('ios-only', defaultsTo: false, help: 'Only configure iOS')
-    ..addFlag('activity',
-        defaultsTo: true, help: 'Include activity recognition')
+    ..addFlag(
+      'activity',
+      defaultsTo: true,
+      help: 'Include activity recognition',
+    )
     ..addFlag('version', abbr: 'v', negatable: false, help: 'Show version')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show help');
 
@@ -61,7 +68,8 @@ void main(List<String> args) async {
     stdout.writeln('Locus Setup Wizard v$_version');
     stdout.writeln('');
     stdout.writeln(
-        'Automatically configures Android and iOS platform files for Locus.');
+      'Automatically configures Android and iOS platform files for Locus.',
+    );
     stdout.writeln('');
     stdout.writeln('Usage: dart run locus:setup [options]');
     stdout.writeln('');
@@ -111,18 +119,22 @@ void main(List<String> args) async {
 
 Future<bool> setupAndroid({required bool includeActivity}) async {
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '║  Setting up Android...                                        ║');
+    '║  Setting up Android...                                        ║',
+  );
 
   const manifestPath = 'android/app/src/main/AndroidManifest.xml';
   final manifestFile = File(manifestPath);
 
   if (!manifestFile.existsSync()) {
     stdout.writeln(
-        '║  ✗ AndroidManifest.xml not found at $manifestPath           ║');
+      '║  ✗ AndroidManifest.xml not found at $manifestPath           ║',
+    );
     stdout.writeln(
-        '║    Run this command from your Flutter project root.         ║');
+      '║    Run this command from your Flutter project root.         ║',
+    );
     return false;
   }
 
@@ -156,7 +168,8 @@ Future<bool> setupAndroid({required bool includeActivity}) async {
       if (insertPoint != -1) {
         final permissionTag =
             '    <uses-permission android:name="$permission" />\n';
-        content = content.substring(0, insertPoint) +
+        content =
+            content.substring(0, insertPoint) +
             permissionTag +
             content.substring(insertPoint);
         modified = true;
@@ -190,8 +203,10 @@ Future<void> _checkAndroidMinSdk() async {
   }
 
   if (gradleFile == null) {
-    _printStatus('build.gradle not found - verify minSdkVersion >= 26',
-        isWarning: true);
+    _printStatus(
+      'build.gradle not found - verify minSdkVersion >= 26',
+      isWarning: true,
+    );
     return;
   }
 
@@ -217,8 +232,10 @@ Future<void> _checkAndroidMinSdk() async {
     if (minSdk >= 26) {
       _printStatus('minSdkVersion is $minSdk (required: >= 26)', isNew: false);
     } else {
-      _printStatus('minSdkVersion is $minSdk - needs to be >= 26',
-          isWarning: true);
+      _printStatus(
+        'minSdkVersion is $minSdk - needs to be >= 26',
+        isWarning: true,
+      );
     }
   } else {
     // Flutter's default uses flutter.minSdkVersion which is usually fine
@@ -226,8 +243,10 @@ Future<void> _checkAndroidMinSdk() async {
         content.contains('minSdkVersion.get()')) {
       _printStatus('Using Flutter default minSdkVersion', isNew: false);
     } else {
-      _printStatus('Could not detect minSdkVersion - verify >= 26',
-          isWarning: true);
+      _printStatus(
+        'Could not detect minSdkVersion - verify >= 26',
+        isWarning: true,
+      );
     }
   }
 }
@@ -237,18 +256,22 @@ Future<bool> setupIos({
   required bool includeActivity,
 }) async {
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '║  Setting up iOS...                                            ║');
+    '║  Setting up iOS...                                            ║',
+  );
 
   const plistPath = 'ios/Runner/Info.plist';
   final plistFile = File(plistPath);
 
   if (!plistFile.existsSync()) {
     stdout.writeln(
-        '║  ✗ Info.plist not found at $plistPath                       ║');
+      '║  ✗ Info.plist not found at $plistPath                       ║',
+    );
     stdout.writeln(
-        '║    Run this command from your Flutter project root.         ║');
+      '║    Run this command from your Flutter project root.         ║',
+    );
     return false;
   }
 
@@ -285,8 +308,10 @@ Future<bool> setupIos({
     modified = true;
     _printStatus('Added location to UIBackgroundModes');
   } else {
-    _printStatus('UIBackgroundModes includes location (already present)',
-        isNew: false);
+    _printStatus(
+      'UIBackgroundModes includes location (already present)',
+      isNew: false,
+    );
   }
 
   // Add BGTaskSchedulerPermittedIdentifiers
@@ -305,8 +330,10 @@ Future<bool> setupIos({
   const podfilePath = 'ios/Podfile';
   final podfile = File(podfilePath);
   if (!podfile.existsSync()) {
-    _printStatus('Podfile not found - cannot enable iOS permission handlers',
-        isWarning: true);
+    _printStatus(
+      'Podfile not found - cannot enable iOS permission handlers',
+      isWarning: true,
+    );
     return false;
   }
   final podfileContent = podfile.readAsStringSync();
@@ -315,8 +342,10 @@ Future<bool> setupIos({
     includeSensors: includeActivity,
   );
   if (configuredPodfile == null) {
-    _printStatus('Custom Podfile needs permission_handler macros',
-        isWarning: true);
+    _printStatus(
+      'Custom Podfile needs permission_handler macros',
+      isWarning: true,
+    );
     return false;
   }
   if (configuredPodfile != podfileContent) {
@@ -350,19 +379,22 @@ Future<void> _checkIosDeploymentTarget() async {
   }
 
   final content = podfile.readAsStringSync();
-  final match =
-      RegExp(r"platform\s*:ios\s*,\s*'(\d+\.\d+)'").firstMatch(content);
+  final match = RegExp(
+    r"platform\s*:ios\s*,\s*'(\d+\.\d+)'",
+  ).firstMatch(content);
 
   if (match != null) {
     final version = double.tryParse(match.group(1) ?? '0') ?? 0;
     if (version >= 14.0) {
       _printStatus(
-          'iOS deployment target is ${match.group(1)} (required: >= 14.0)',
-          isNew: false);
+        'iOS deployment target is ${match.group(1)} (required: >= 14.0)',
+        isNew: false,
+      );
     } else {
       _printStatus(
-          'iOS deployment target is ${match.group(1)} - needs to be >= 14.0',
-          isWarning: true);
+        'iOS deployment target is ${match.group(1)} - needs to be >= 14.0',
+        isWarning: true,
+      );
     }
   }
 }
@@ -372,7 +404,8 @@ String _addPlistKey(String content, String key, String value) {
   final insertPoint = content.lastIndexOf('</dict>');
   if (insertPoint == -1) return content;
 
-  final keyValue = '''
+  final keyValue =
+      '''
 \t<key>$key</key>
 \t<string>$value</string>
 ''';
@@ -386,8 +419,10 @@ String _addBackgroundMode(String content, String mode) {
   // Check if UIBackgroundModes already exists
   if (content.contains('<key>UIBackgroundModes</key>')) {
     // Add to existing array
-    final arrayStart =
-        content.indexOf('<array>', content.indexOf('UIBackgroundModes'));
+    final arrayStart = content.indexOf(
+      '<array>',
+      content.indexOf('UIBackgroundModes'),
+    );
     if (arrayStart != -1) {
       final insertPoint = arrayStart + '<array>'.length;
       final modeEntry = '\n\t\t<string>$mode</string>';
@@ -399,7 +434,8 @@ String _addBackgroundMode(String content, String mode) {
     // Create new UIBackgroundModes entry
     final insertPoint = content.lastIndexOf('</dict>');
     if (insertPoint != -1) {
-      final bgModes = '''
+      final bgModes =
+          '''
 \t<key>UIBackgroundModes</key>
 \t<array>
 \t\t<string>$mode</string>
@@ -418,7 +454,9 @@ String _addBgTaskIdentifier(String content, String identifier) {
   if (content.contains('<key>BGTaskSchedulerPermittedIdentifiers</key>')) {
     // Add to existing array
     final arrayStart = content.indexOf(
-        '<array>', content.indexOf('BGTaskSchedulerPermittedIdentifiers'));
+      '<array>',
+      content.indexOf('BGTaskSchedulerPermittedIdentifiers'),
+    );
     if (arrayStart != -1) {
       final insertPoint = arrayStart + '<array>'.length;
       final idEntry = '\n\t\t<string>$identifier</string>';
@@ -430,7 +468,8 @@ String _addBgTaskIdentifier(String content, String identifier) {
     // Create new entry
     final insertPoint = content.lastIndexOf('</dict>');
     if (insertPoint != -1) {
-      final bgTask = '''
+      final bgTask =
+          '''
 \t<key>BGTaskSchedulerPermittedIdentifiers</key>
 \t<array>
 \t\t<string>$identifier</string>

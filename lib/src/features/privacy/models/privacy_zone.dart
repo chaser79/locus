@@ -167,7 +167,8 @@ class PrivacyZone {
     final dLat = _toRadians(lat2 - lat1);
     final dLng = _toRadians(lng2 - lng1);
 
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(_toRadians(lat1)) *
             math.cos(_toRadians(lat2)) *
             math.sin(dLng / 2) *
@@ -210,18 +211,18 @@ class PrivacyZone {
   }
 
   JsonMap toMap() => {
-        'identifier': identifier,
-        'latitude': latitude,
-        'longitude': longitude,
-        'radius': radius,
-        'action': action.name,
-        'obfuscationRadius': obfuscationRadius,
-        if (label != null) 'label': label,
-        'enabled': enabled,
-        if (extras != null) 'extras': extras,
-        'createdAt': createdAt.toIso8601String(),
-        if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
-      };
+    'identifier': identifier,
+    'latitude': latitude,
+    'longitude': longitude,
+    'radius': radius,
+    'action': action.name,
+    'obfuscationRadius': obfuscationRadius,
+    if (label != null) 'label': label,
+    'enabled': enabled,
+    if (extras != null) 'extras': extras,
+    'createdAt': createdAt.toIso8601String(),
+    if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+  };
 
   @override
   String toString() =>
@@ -271,11 +272,11 @@ class PrivacyZoneResult {
   bool get isUsable => !wasExcluded && processedLocation != null;
 
   JsonMap toMap() => {
-        'originalLocation': originalLocation.toMap(),
-        if (processedLocation != null)
-          'processedLocation': processedLocation!.toMap(),
-        'matchedZones': matchedZones.map((z) => z.toMap()).toList(),
-        'wasExcluded': wasExcluded,
-        'wasObfuscated': wasObfuscated,
-      };
+    'originalLocation': originalLocation.toMap(),
+    if (processedLocation != null)
+      'processedLocation': processedLocation!.toMap(),
+    'matchedZones': matchedZones.map((z) => z.toMap()).toList(),
+    'wasExcluded': wasExcluded,
+    'wasObfuscated': wasObfuscated,
+  };
 }

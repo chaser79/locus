@@ -40,16 +40,8 @@ class MigrateCommand extends Command<void> {
         help: 'Show detailed output',
         defaultsTo: false,
       )
-      ..addFlag(
-        'skip-tests',
-        help: 'Skip test files',
-        defaultsTo: false,
-      )
-      ..addFlag(
-        'no-color',
-        help: 'Disable colored output',
-        defaultsTo: false,
-      )
+      ..addFlag('skip-tests', help: 'Skip test files', defaultsTo: false)
+      ..addFlag('no-color', help: 'Disable colored output', defaultsTo: false)
       ..addFlag(
         'rollback',
         abbr: 'r',
@@ -151,7 +143,8 @@ class MigrateCommand extends Command<void> {
         if (!detection.hasLocusUsage) {
           cli.warn('No packages with Locus SDK usage detected.');
           cli.info(
-              'Migration will still scan all packages for any Locus patterns.');
+            'Migration will still scan all packages for any Locus patterns.',
+          );
         }
 
         final result = await migrator.migrateMonorepo(
@@ -230,7 +223,8 @@ class MigrateCommand extends Command<void> {
 
     cli.info('Found backup: ${latestBackup.path}');
     cli.warn(
-        'This will restore your project to the state before the last migration.');
+      'This will restore your project to the state before the last migration.',
+    );
 
     final migrator = MigrationMigrator(verbose: verbose);
     final success = await migrator.rollback(latestBackup.path);
@@ -389,8 +383,10 @@ class MigrateCommand extends Command<void> {
       return 1;
     }
 
-    final manualReviewCount = result.analysis.packageResults.values
-        .fold(0, (sum, r) => sum + r.manualReviewCount);
+    final manualReviewCount = result.analysis.packageResults.values.fold(
+      0,
+      (sum, r) => sum + r.manualReviewCount,
+    );
 
     if (manualReviewCount > 0 && !result.dryRun) {
       return 0;

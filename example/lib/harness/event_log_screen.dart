@@ -133,9 +133,7 @@ class _EventLogBodyState extends State<_EventLogBody> {
   Future<void> _openFilterSheet() async {
     final result = await showModalBottomSheet<Set<EventCategory>>(
       context: context,
-      builder: (BuildContext sheetContext) => _FilterSheet(
-        initial: _selected,
-      ),
+      builder: (BuildContext sheetContext) => _FilterSheet(initial: _selected),
     );
     if (!mounted || result == null) return;
     setState(() {

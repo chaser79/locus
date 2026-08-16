@@ -30,11 +30,11 @@ class QuarantineJanitor {
     this.ttl = const Duration(days: 7),
     Duration sweepInterval = const Duration(hours: 1),
     LocusReliabilityRegistry? registry,
-  })  : assert(ttl > Duration.zero, 'ttl must be positive'),
-        assert(sweepInterval > Duration.zero, 'sweepInterval must be positive'),
-        _purger = purger ?? _noopPurger,
-        _sweepInterval = sweepInterval,
-        _registry = registry ?? LocusReliabilityRegistry.instance;
+  }) : assert(ttl > Duration.zero, 'ttl must be positive'),
+       assert(sweepInterval > Duration.zero, 'sweepInterval must be positive'),
+       _purger = purger ?? _noopPurger,
+       _sweepInterval = sweepInterval,
+       _registry = registry ?? LocusReliabilityRegistry.instance;
 
   /// Records older than [ttl] are eligible for discard.
   final Duration ttl;
@@ -74,8 +74,12 @@ class QuarantineJanitor {
     try {
       discarded = await _purger(ttl);
     } on Object catch (e, stack) {
-      _log.eventWarning('quarantine_purge_failed',
-          <String, Object?>{'ttl_ms': ttl.inMilliseconds}, e, stack);
+      _log.eventWarning(
+        'quarantine_purge_failed',
+        <String, Object?>{'ttl_ms': ttl.inMilliseconds},
+        e,
+        stack,
+      );
       return 0;
     }
     if (discarded > 0) {

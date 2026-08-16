@@ -66,9 +66,7 @@ abstract class DiagnosticsService {
   /// - Poor accuracy readings
   ///
   /// [config] - Optional configuration for anomaly detection thresholds.
-  Stream<LocationAnomaly> locationAnomalies({
-    LocationAnomalyConfig config,
-  });
+  Stream<LocationAnomaly> locationAnomalies({LocationAnomalyConfig config});
 
   /// Subscribes to location anomaly events.
   StreamSubscription<LocationAnomaly> onLocationAnomaly(
@@ -86,9 +84,7 @@ abstract class DiagnosticsService {
   /// - Environmental factors
   ///
   /// [config] - Optional configuration for quality thresholds.
-  Stream<LocationQuality> locationQuality({
-    LocationQualityConfig config,
-  });
+  Stream<LocationQuality> locationQuality({LocationQualityConfig config});
 
   /// Subscribes to location quality events.
   StreamSubscription<LocationQuality> onLocationQuality(

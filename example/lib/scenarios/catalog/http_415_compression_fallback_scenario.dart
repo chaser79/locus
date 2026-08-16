@@ -65,8 +65,9 @@ class Http415CompressionFallbackScenario extends Scenario {
     }
     await Locus.dataSync.syncQueue();
 
-    final DateTime phase1Deadline =
-        DateTime.now().add(const Duration(seconds: 6));
+    final DateTime phase1Deadline = DateTime.now().add(
+      const Duration(seconds: 6),
+    );
     while (DateTime.now().isBefore(phase1Deadline)) {
       final List<RecordedEvent> events = ctx.recorder.since(ctx.startedAt);
       final bool saw415 = events.any(
@@ -91,8 +92,9 @@ class Http415CompressionFallbackScenario extends Scenario {
     });
     await Locus.dataSync.syncQueue();
 
-    final DateTime phase2Deadline =
-        DateTime.now().add(const Duration(seconds: 4));
+    final DateTime phase2Deadline = DateTime.now().add(
+      const Duration(seconds: 4),
+    );
     while (DateTime.now().isBefore(phase2Deadline)) {
       // Stop early if the queue fully drained.
       final List<QueueItem> queue = await Locus.dataSync.getQueue(limit: 10);
@@ -106,8 +108,10 @@ class Http415CompressionFallbackScenario extends Scenario {
     final MockBackend backend = ctx.backend!;
     final List<RecordedEvent> httpEvents = ctx.recorder
         .since(ctx.startedAt)
-        .where((RecordedEvent e) =>
-            e.type == 'http_response_ok' || e.type == 'http_response_error')
+        .where(
+          (RecordedEvent e) =>
+              e.type == 'http_response_ok' || e.type == 'http_response_error',
+        )
         .toList(growable: false);
 
     final List<AssertionResult> results = <AssertionResult>[];
@@ -116,7 +120,8 @@ class Http415CompressionFallbackScenario extends Scenario {
       results.add(
         const AssertionResult.fail(
           'At least one HTTP event was recorded',
-          failureDetail: 'No http_response_ok or http_response_error '
+          failureDetail:
+              'No http_response_ok or http_response_error '
               'events captured since scenario start.',
           expected: '>=1 HTTP event',
           actual: '0',
@@ -164,7 +169,8 @@ class Http415CompressionFallbackScenario extends Scenario {
       results.add(
         const AssertionResult.fail(
           'A 2xx HTTP event followed the 415 (queue continued to drain)',
-          failureDetail: 'Only the leading 415 was recorded; no recovery 2xx '
+          failureDetail:
+              'Only the leading 415 was recorded; no recovery 2xx '
               'observed within the execute window.',
           expected: '>=1 http_response_ok after the 415',
           actual: '0',
@@ -177,11 +183,14 @@ class Http415CompressionFallbackScenario extends Scenario {
     final List<MockRequest> requests = backend.recentRequests;
     // recentRequests is newest-first; iterate in chronological order to
     // reason about "first gzipped, then raw".
-    final List<MockRequest> chronological =
-        requests.reversed.toList(growable: false);
-    final int firstGzippedIndex =
-        chronological.indexWhere((MockRequest r) => r.isGzipped);
-    final bool laterRawSeen = firstGzippedIndex >= 0 &&
+    final List<MockRequest> chronological = requests.reversed.toList(
+      growable: false,
+    );
+    final int firstGzippedIndex = chronological.indexWhere(
+      (MockRequest r) => r.isGzipped,
+    );
+    final bool laterRawSeen =
+        firstGzippedIndex >= 0 &&
         chronological
             .skip(firstGzippedIndex + 1)
             .any((MockRequest r) => !r.isGzipped);
@@ -198,7 +207,8 @@ class Http415CompressionFallbackScenario extends Scenario {
         const AssertionResult.fail(
           'At least one captured request was gzipped and a later request '
           'was raw — compression fallback flipped encoding off',
-          failureDetail: 'No gzipped request was observed; the SDK did not '
+          failureDetail:
+              'No gzipped request was observed; the SDK did not '
               'attempt compression in this run.',
           expected: '>=1 gzipped request followed by >=1 raw request',
           actual: '0 gzipped requests',

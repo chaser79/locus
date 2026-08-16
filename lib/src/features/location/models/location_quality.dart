@@ -18,11 +18,11 @@ class LocationQuality {
   final bool isSpoofSuspected;
 
   JsonMap toMap() => {
-        'location': location.toMap(),
-        'accuracyScore': accuracyScore,
-        'speedScore': speedScore,
-        'jitterScore': jitterScore,
-        'overallScore': overallScore,
-        'isSpoofSuspected': isSpoofSuspected,
-      };
+    'location': location.toMap(),
+    'accuracyScore': accuracyScore,
+    'speedScore': speedScore,
+    'jitterScore': jitterScore,
+    'overallScore': overallScore,
+    'isSpoofSuspected': isSpoofSuspected,
+  };
 }

@@ -197,15 +197,17 @@ class _DemosScreenState extends State<DemosScreen> {
             ),
           ]
         : const <TrackingProfileRule>[];
-    await Locus.setTrackingProfiles({
-      TrackingProfile.offDuty: ConfigPresets.lowPower,
-      TrackingProfile.standby: ConfigPresets.balanced,
-      TrackingProfile.enRoute: ConfigPresets.tracking,
-      TrackingProfile.arrived: ConfigPresets.trail,
-    },
-        initialProfile: TrackingProfile.standby,
-        rules: rules,
-        enableAutomation: enableAutomation);
+    await Locus.setTrackingProfiles(
+      {
+        TrackingProfile.offDuty: ConfigPresets.lowPower,
+        TrackingProfile.standby: ConfigPresets.balanced,
+        TrackingProfile.enRoute: ConfigPresets.tracking,
+        TrackingProfile.arrived: ConfigPresets.trail,
+      },
+      initialProfile: TrackingProfile.standby,
+      rules: rules,
+      enableAutomation: enableAutomation,
+    );
     setState(() {
       _currentProfile = Locus.currentTrackingProfile;
       _automationEnabled = enableAutomation;
@@ -337,8 +339,10 @@ class _DemosScreenState extends State<DemosScreen> {
     if (updated) {
       _showSnackbar('Notification updated');
     } else {
-      _showSnackbar('Notification not updated (tracking inactive)',
-          isSuccess: false);
+      _showSnackbar(
+        'Notification not updated (tracking inactive)',
+        isSuccess: false,
+      );
     }
   }
 
@@ -714,15 +718,19 @@ class _DemosScreenState extends State<DemosScreen> {
       _showSnackbar('Quality monitoring stopped');
       return;
     }
-    _qualitySubscription = Locus.locationQuality(
-      config: const LocationQualityConfig(maxAccuracyMeters: 80, windowSize: 5),
-    ).listen((quality) {
-      setState(() => _lastQuality = quality);
-      _recordEvent(
-        'quality',
-        'Quality: ${(quality.overallScore * 100).toStringAsFixed(0)}%',
-      );
-    });
+    _qualitySubscription =
+        Locus.locationQuality(
+          config: const LocationQualityConfig(
+            maxAccuracyMeters: 80,
+            windowSize: 5,
+          ),
+        ).listen((quality) {
+          setState(() => _lastQuality = quality);
+          _recordEvent(
+            'quality',
+            'Quality: ${(quality.overallScore * 100).toStringAsFixed(0)}%',
+          );
+        });
     setState(() => _qualityMonitoringEnabled = true);
     _showSnackbar('Quality monitoring started');
   }
@@ -737,15 +745,16 @@ class _DemosScreenState extends State<DemosScreen> {
       _showSnackbar('Anomaly monitoring stopped');
       return;
     }
-    _anomalySubscription = Locus.locationAnomalies(
-      config: const LocationAnomalyConfig(maxSpeedKph: 180),
-    ).listen((anomaly) {
-      setState(() => _lastAnomaly = anomaly);
-      _recordEvent(
-        'anomaly',
-        'Anomaly: ${anomaly.speedKph.toStringAsFixed(0)} kph',
-      );
-    });
+    _anomalySubscription =
+        Locus.locationAnomalies(
+          config: const LocationAnomalyConfig(maxSpeedKph: 180),
+        ).listen((anomaly) {
+          setState(() => _lastAnomaly = anomaly);
+          _recordEvent(
+            'anomaly',
+            'Anomaly: ${anomaly.speedKph.toStringAsFixed(0)} kph',
+          );
+        });
     setState(() => _anomalyMonitoringEnabled = true);
     _showSnackbar('Anomaly monitoring started');
   }
@@ -780,13 +789,8 @@ class _DemosScreenState extends State<DemosScreen> {
         const TripConfig(
           tripId: 'delivery-204',
           startOnMoving: true,
-          destination: RoutePoint(
-            latitude: 37.4187,
-            longitude: -122.0816,
-          ),
-          waypoints: [
-            RoutePoint(latitude: 37.4215, longitude: -122.0834),
-          ],
+          destination: RoutePoint(latitude: 37.4187, longitude: -122.0816),
+          waypoints: [RoutePoint(latitude: 37.4215, longitude: -122.0834)],
         ),
       );
     }
@@ -852,8 +856,9 @@ class _DemosScreenState extends State<DemosScreen> {
             ),
           ],
         ),
-        backgroundColor:
-            isSuccess ? const Color(0xFF2E7D5F) : const Color(0xFFB33A3A),
+        backgroundColor: isSuccess
+            ? const Color(0xFF2E7D5F)
+            : const Color(0xFFB33A3A),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -887,8 +892,9 @@ class _DemosScreenState extends State<DemosScreen> {
                     isScrollable: true,
                     tabs: [
                       Tab(
-                          icon: Icon(Icons.dashboard_rounded),
-                          text: 'Dashboard'),
+                        icon: Icon(Icons.dashboard_rounded),
+                        text: 'Dashboard',
+                      ),
                       Tab(icon: Icon(Icons.list_alt_rounded), text: 'Events'),
                       Tab(icon: Icon(Icons.storage_rounded), text: 'Storage'),
                       Tab(icon: Icon(Icons.settings_rounded), text: 'Settings'),
@@ -970,10 +976,7 @@ class _DemosScreenState extends State<DemosScreen> {
           onClearWorkflows: _stopWorkflows,
         ),
         const SizedBox(height: 16),
-        TripsDemoCard(
-          onStartTrip: _startTrip,
-          onStopTrip: _stopTrip,
-        ),
+        TripsDemoCard(onStartTrip: _startTrip, onStopTrip: _stopTrip),
         const SizedBox(height: 16),
         _buildUseCases(),
         const SizedBox(height: 16),
@@ -1204,10 +1207,7 @@ class _DemosScreenState extends State<DemosScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SectionHeader(
-                  icon: Icons.info_outline_rounded,
-                  title: 'About',
-                ),
+                SectionHeader(icon: Icons.info_outline_rounded, title: 'About'),
                 SizedBox(height: 16),
                 Text(
                   'Locus Example App showcases tracking profiles, sync queues, adaptive tracking, polygon geofences, workflows, diagnostics, and quality monitoring.',

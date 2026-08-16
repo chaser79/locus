@@ -105,7 +105,7 @@ class StoredLocationsCard extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: locations.length.clamp(0, 20),
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (_, i) {
                 final loc = locations[i];
                 return ListTile(
@@ -146,11 +146,7 @@ class StoredLocationsCard extends StatelessWidget {
 
 /// Logs card — fetches recent SDK log entries on demand.
 class LogsCard extends StatelessWidget {
-  const LogsCard({
-    super.key,
-    required this.logs,
-    required this.onLoad,
-  });
+  const LogsCard({super.key, required this.logs, required this.onLoad});
 
   final List<LogEntry>? logs;
   final VoidCallback onLoad;
@@ -169,10 +165,7 @@ class LogsCard extends StatelessWidget {
               trailing: logs != null
                   ? Text(
                       '${logs!.length} entries',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     )
                   : null,
             ),
@@ -192,15 +185,15 @@ class LogsCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  logs!.take(10).map((e) {
-                    final ts =
-                        '${e.timestamp.hour.toString().padLeft(2, '0')}:${e.timestamp.minute.toString().padLeft(2, '0')}';
-                    return '[$ts] ${e.level}: ${e.message}';
-                  }).join('\n'),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                  ),
+                  logs!
+                      .take(10)
+                      .map((e) {
+                        final ts =
+                            '${e.timestamp.hour.toString().padLeft(2, '0')}:${e.timestamp.minute.toString().padLeft(2, '0')}';
+                        return '[$ts] ${e.level}: ${e.message}';
+                      })
+                      .join('\n'),
+                  style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
                 ),
               ),
             ],
@@ -315,10 +308,10 @@ class DiagnosticsCard extends StatelessWidget {
               title: 'Diagnostics',
               trailing: snapshot != null
                   ? Text(
-                      snapshot!.capturedAt
-                          .toLocal()
-                          .toString()
-                          .substring(0, 16),
+                      snapshot!.capturedAt.toLocal().toString().substring(
+                        0,
+                        16,
+                      ),
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     )
                   : null,
@@ -586,11 +579,7 @@ class EventStatsCard extends StatelessWidget {
 
 /// Scrollable event log — header (with count + clear) plus the list view.
 class EventsView extends StatelessWidget {
-  const EventsView({
-    super.key,
-    required this.events,
-    required this.onClear,
-  });
+  const EventsView({super.key, required this.events, required this.onClear});
 
   final List<String> events;
   final VoidCallback onClear;
@@ -638,7 +627,7 @@ class EventsView extends StatelessWidget {
               : ListView.separated(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: events.length,
-                  separatorBuilder: (_, __) =>
+                  separatorBuilder: (_, _) =>
                       const Divider(height: 1, indent: 56),
                   itemBuilder: (_, i) => ListTile(
                     leading: const CircleAvatar(

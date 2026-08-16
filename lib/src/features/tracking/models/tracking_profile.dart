@@ -1,6 +1,1 @@
-enum TrackingProfile {
-  offDuty,
-  standby,
-  enRoute,
-  arrived,
-}
+enum TrackingProfile { offDuty, standby, enRoute, arrived }

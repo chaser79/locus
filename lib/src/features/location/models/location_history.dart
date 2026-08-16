@@ -143,16 +143,16 @@ class LocationQuery {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        if (from != null) 'from': from!.toIso8601String(),
-        if (to != null) 'to': to!.toIso8601String(),
-        if (minAccuracy != null) 'minAccuracy': minAccuracy,
-        if (maxAccuracy != null) 'maxAccuracy': maxAccuracy,
-        if (isMoving != null) 'isMoving': isMoving,
-        if (bounds != null) 'bounds': bounds!.toMap(),
-        if (limit != null) 'limit': limit,
-        'offset': offset,
-        'sortOrder': sortOrder.name,
-      };
+    if (from != null) 'from': from!.toIso8601String(),
+    if (to != null) 'to': to!.toIso8601String(),
+    if (minAccuracy != null) 'minAccuracy': minAccuracy,
+    if (maxAccuracy != null) 'maxAccuracy': maxAccuracy,
+    if (isMoving != null) 'isMoving': isMoving,
+    if (bounds != null) 'bounds': bounds!.toMap(),
+    if (limit != null) 'limit': limit,
+    'offset': offset,
+    'sortOrder': sortOrder.name,
+  };
 }
 
 /// Sort order for location queries.
@@ -167,10 +167,7 @@ enum LocationSortOrder {
 /// Geographic bounding box for spatial filtering.
 class LocationBounds {
   /// Creates a bounding box.
-  const LocationBounds({
-    required this.southwest,
-    required this.northeast,
-  });
+  const LocationBounds({required this.southwest, required this.northeast});
 
   /// Creates from a map.
   factory LocationBounds.fromMap(JsonMap map) {
@@ -200,9 +197,9 @@ class LocationBounds {
 
   /// Converts to a map.
   JsonMap toMap() => {
-        'southwest': southwest.toMap(),
-        'northeast': northeast.toMap(),
-      };
+    'southwest': southwest.toMap(),
+    'northeast': northeast.toMap(),
+  };
 }
 
 /// Summary of location history for a time period.
@@ -232,16 +229,16 @@ class LocationSummary {
 
   /// Creates an empty summary.
   const LocationSummary.empty()
-      : totalDistanceMeters = 0,
-        movingDuration = Duration.zero,
-        stationaryDuration = Duration.zero,
-        locationCount = 0,
-        averageSpeedMps = null,
-        maxSpeedMps = null,
-        periodStart = null,
-        periodEnd = null,
-        frequentLocations = const [],
-        averageAccuracyMeters = null;
+    : totalDistanceMeters = 0,
+      movingDuration = Duration.zero,
+      stationaryDuration = Duration.zero,
+      locationCount = 0,
+      averageSpeedMps = null,
+      maxSpeedMps = null,
+      periodStart = null,
+      periodEnd = null,
+      frequentLocations = const [],
+      averageAccuracyMeters = null;
 
   /// Total distance traveled in meters.
   final double totalDistanceMeters;
@@ -290,20 +287,20 @@ class LocationSummary {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'totalDistanceMeters': totalDistanceMeters,
-        'movingDurationSeconds': movingDuration.inSeconds,
-        'stationaryDurationSeconds': stationaryDuration.inSeconds,
-        'locationCount': locationCount,
-        if (averageSpeedMps != null) 'averageSpeedMps': averageSpeedMps,
-        if (maxSpeedMps != null) 'maxSpeedMps': maxSpeedMps,
-        if (periodStart != null) 'periodStart': periodStart!.toIso8601String(),
-        if (periodEnd != null) 'periodEnd': periodEnd!.toIso8601String(),
-        'frequentLocations': frequentLocations.map((l) => l.toMap()).toList(),
-        if (averageAccuracyMeters != null)
-          'averageAccuracyMeters': averageAccuracyMeters,
-        'totalDistanceKm': totalDistanceKm,
-        'movingPercent': movingPercent,
-      };
+    'totalDistanceMeters': totalDistanceMeters,
+    'movingDurationSeconds': movingDuration.inSeconds,
+    'stationaryDurationSeconds': stationaryDuration.inSeconds,
+    'locationCount': locationCount,
+    if (averageSpeedMps != null) 'averageSpeedMps': averageSpeedMps,
+    if (maxSpeedMps != null) 'maxSpeedMps': maxSpeedMps,
+    if (periodStart != null) 'periodStart': periodStart!.toIso8601String(),
+    if (periodEnd != null) 'periodEnd': periodEnd!.toIso8601String(),
+    'frequentLocations': frequentLocations.map((l) => l.toMap()).toList(),
+    if (averageAccuracyMeters != null)
+      'averageAccuracyMeters': averageAccuracyMeters,
+    'totalDistanceKm': totalDistanceKm,
+    'movingPercent': movingPercent,
+  };
 }
 
 /// A frequently visited location (cluster center).
@@ -330,11 +327,11 @@ class FrequentLocation {
 
   /// Converts to a map.
   JsonMap toMap() => {
-        'center': center.toMap(),
-        'visitCount': visitCount,
-        'totalDurationSeconds': totalDuration.inSeconds,
-        if (name != null) 'name': name,
-      };
+    'center': center.toMap(),
+    'visitCount': visitCount,
+    'totalDurationSeconds': totalDuration.inSeconds,
+    if (name != null) 'name': name,
+  };
 }
 
 /// Calculator for location history statistics.
@@ -410,8 +407,9 @@ class LocationHistoryCalculator {
       periodStart: sorted.first.timestamp,
       periodEnd: sorted.last.timestamp,
       frequentLocations: frequentLocations,
-      averageAccuracyMeters:
-          accuracyCount > 0 ? totalAccuracy / accuracyCount : null,
+      averageAccuracyMeters: accuracyCount > 0
+          ? totalAccuracy / accuracyCount
+          : null,
     );
   }
 
@@ -427,7 +425,8 @@ class LocationHistoryCalculator {
     final dLat = _toRadians(lat2 - lat1);
     final dLon = _toRadians(lon2 - lon1);
 
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(_toRadians(lat1)) *
             math.cos(_toRadians(lat2)) *
             math.sin(dLon / 2) *
@@ -454,8 +453,9 @@ class LocationHistoryCalculator {
     if (locations.length < minVisits) return [];
 
     // Only consider stationary points for clustering
-    final stationaryPoints =
-        locations.where((l) => l.isMoving != true).toList();
+    final stationaryPoints = locations
+        .where((l) => l.isMoving != true)
+        .toList();
     if (stationaryPoints.length < minVisits) return [];
 
     // Create spatial grid for O(1) cluster lookups
@@ -504,8 +504,8 @@ class LocationHistoryCalculator {
 /// Internal cluster representation for frequent location calculation.
 class _Cluster {
   _Cluster(Location initial)
-      : centerLat = initial.coords.latitude,
-        centerLng = initial.coords.longitude {
+    : centerLat = initial.coords.latitude,
+      centerLng = initial.coords.longitude {
     _lastTimestamp = initial.timestamp;
   }
   double centerLat;
@@ -536,7 +536,7 @@ class _Cluster {
 /// checked (the cell containing the query point plus its 8 neighbors).
 class _SpatialGrid {
   _SpatialGrid({required double cellSizeMeters})
-      : _cellSizeDegrees = _metersToDegreesApprox(cellSizeMeters);
+    : _cellSizeDegrees = _metersToDegreesApprox(cellSizeMeters);
 
   /// The cell size in degrees (approximate).
   /// At equator: 1 degree ≈ 111km, so 100m ≈ 0.0009 degrees.

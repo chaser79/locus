@@ -50,9 +50,7 @@ class HeadersRefreshOn401Scenario extends Scenario {
 
   Future<Map<String, String>> _provideHeaders() async {
     _callbackInvocations += 1;
-    return <String, String>{
-      'Authorization': 'Bearer scenario-refreshed-token',
-    };
+    return <String, String>{'Authorization': 'Bearer scenario-refreshed-token'};
   }
 
   @override
@@ -111,7 +109,8 @@ class HeadersRefreshOn401Scenario extends Scenario {
       results.add(
         const AssertionResult.fail(
           'Headers refresh callback was invoked at least once',
-          failureDetail: 'The callback registered via '
+          failureDetail:
+              'The callback registered via '
               'Locus.dataSync.setHeadersCallback was never called during '
               'the 401 recovery path.',
           expected: '>=1 invocation',
@@ -121,9 +120,11 @@ class HeadersRefreshOn401Scenario extends Scenario {
     }
 
     final List<MockRequest> requestsWithRefreshedAuth = backend.recentRequests
-        .where((MockRequest r) =>
-            (r.headers['authorization'] ?? '') ==
-            'Bearer scenario-refreshed-token')
+        .where(
+          (MockRequest r) =>
+              (r.headers['authorization'] ?? '') ==
+              'Bearer scenario-refreshed-token',
+        )
         .toList(growable: false);
 
     if (requestsWithRefreshedAuth.isNotEmpty) {
@@ -139,7 +140,8 @@ class HeadersRefreshOn401Scenario extends Scenario {
         AssertionResult.fail(
           'A request carried the refreshed Authorization header, proving '
           'the headers callback output reached the wire',
-          failureDetail: 'Inspected ${backend.recentRequests.length} captured '
+          failureDetail:
+              'Inspected ${backend.recentRequests.length} captured '
               'request(s); none had Authorization=='
               '"Bearer scenario-refreshed-token". The callback fired '
               'but its return value did not flow through to the network '
@@ -157,7 +159,8 @@ class HeadersRefreshOn401Scenario extends Scenario {
     results.add(
       AssertionResult.skip(
         'Pause-vs-no-pause outcome is implementation-defined here',
-        failureDetail: 'isPaused=${Locus.dataSync.isPaused} '
+        failureDetail:
+            'isPaused=${Locus.dataSync.isPaused} '
             'pauseReason=${Locus.dataSync.pauseReason ?? "(none)"} — '
             'recorded for context, not asserted.',
       ),

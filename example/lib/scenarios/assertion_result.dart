@@ -12,10 +12,10 @@ enum AssertionStatus { pass, fail, skip }
 @immutable
 class AssertionResult {
   const AssertionResult.pass(this.description)
-      : status = AssertionStatus.pass,
-        failureDetail = null,
-        expected = null,
-        actual = null;
+    : status = AssertionStatus.pass,
+      failureDetail = null,
+      expected = null,
+      actual = null;
 
   const AssertionResult.fail(
     this.description, {
@@ -25,9 +25,9 @@ class AssertionResult {
   }) : status = AssertionStatus.fail;
 
   const AssertionResult.skip(this.description, {required this.failureDetail})
-      : status = AssertionStatus.skip,
-        expected = null,
-        actual = null;
+    : status = AssertionStatus.skip,
+      expected = null,
+      actual = null;
 
   /// Short, human-readable description of what this assertion checks.
   /// Conventionally written in the third person ("HTTP layer paused
@@ -48,10 +48,10 @@ class AssertionResult {
   bool get failed => status == AssertionStatus.fail;
 
   Map<String, Object?> toJson() => <String, Object?>{
-        'description': description,
-        'status': status.name,
-        if (failureDetail != null) 'failureDetail': failureDetail,
-        if (expected != null) 'expected': expected.toString(),
-        if (actual != null) 'actual': actual.toString(),
-      };
+    'description': description,
+    'status': status.name,
+    if (failureDetail != null) 'failureDetail': failureDetail,
+    if (expected != null) 'expected': expected.toString(),
+    if (actual != null) 'actual': actual.toString(),
+  };
 }

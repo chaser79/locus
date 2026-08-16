@@ -84,9 +84,7 @@ class TrackingLifecycleScenario implements Scenario {
         sawLocation = true;
         ctx.log(
           'first_location_observed',
-          payload: <String, Object?>{
-            'elapsedMs': sw.elapsedMilliseconds,
-          },
+          payload: <String, Object?>{'elapsedMs': sw.elapsedMilliseconds},
         );
         break;
       }
@@ -97,9 +95,7 @@ class TrackingLifecycleScenario implements Scenario {
     if (!sawLocation) {
       ctx.log(
         'first_location_timeout',
-        payload: <String, Object?>{
-          'elapsedMs': sw.elapsedMilliseconds,
-        },
+        payload: <String, Object?>{'elapsedMs': sw.elapsedMilliseconds},
       );
     }
 
@@ -113,14 +109,19 @@ class TrackingLifecycleScenario implements Scenario {
     final List<RecordedEvent> trace = ctx.recorder.since(ctx.startedAt);
 
     final List<RecordedEvent> locations = trace
-        .where((RecordedEvent e) =>
-            e.category == EventCategory.location && e.type == 'location_update')
+        .where(
+          (RecordedEvent e) =>
+              e.category == EventCategory.location &&
+              e.type == 'location_update',
+        )
         .toList(growable: false);
 
     final RecordedEvent? timeoutMarker = trace
-        .where((RecordedEvent e) =>
-            e.category == EventCategory.scenario &&
-            e.type == 'first_location_timeout')
+        .where(
+          (RecordedEvent e) =>
+              e.category == EventCategory.scenario &&
+              e.type == 'first_location_timeout',
+        )
         .cast<RecordedEvent?>()
         .firstWhere((_) => true, orElse: () => null);
 
@@ -182,7 +183,8 @@ class TrackingLifecycleScenario implements Scenario {
       results.add(
         AssertionResult.fail(
           'No error-category events fired during the lifecycle',
-          failureDetail: '${errors.length} error event(s) recorded; first: '
+          failureDetail:
+              '${errors.length} error event(s) recorded; first: '
               '${errors.first.type} (${errors.first.payload})',
           expected: 0,
           actual: errors.length,

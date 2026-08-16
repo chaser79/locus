@@ -148,7 +148,9 @@ class AdaptiveTrackingCard extends StatelessWidget {
                 Expanded(
                   child: ActionButton(
                     onPressed: () => onSetConfig(
-                        AdaptiveTrackingConfig.balanced, 'Balanced'),
+                      AdaptiveTrackingConfig.balanced,
+                      'Balanced',
+                    ),
                     icon: Icons.tune,
                     label: 'Balanced',
                     filled: true,
@@ -158,7 +160,9 @@ class AdaptiveTrackingCard extends StatelessWidget {
                 Expanded(
                   child: ActionButton(
                     onPressed: () => onSetConfig(
-                        AdaptiveTrackingConfig.aggressive, 'Aggressive'),
+                      AdaptiveTrackingConfig.aggressive,
+                      'Aggressive',
+                    ),
                     icon: Icons.flash_on,
                     label: 'Aggressive',
                   ),
@@ -171,7 +175,9 @@ class AdaptiveTrackingCard extends StatelessWidget {
                 Expanded(
                   child: ActionButton(
                     onPressed: () => onSetConfig(
-                        AdaptiveTrackingConfig.disabled, 'Disabled'),
+                      AdaptiveTrackingConfig.disabled,
+                      'Disabled',
+                    ),
                     icon: Icons.power_settings_new,
                     label: 'Disable',
                   ),

@@ -31,22 +31,17 @@ void main() {
       final laterSameDay = day.add(const Duration(minutes: 10));
       final nextDay = day.add(const Duration(days: 1));
 
-      mockLocus.emitLocation(MockLocationExtension.mock(
-        timestamp: day,
-        isMoving: false,
-      ));
-      mockLocus.emitLocation(MockLocationExtension.mock(
-        timestamp: laterSameDay,
-        isMoving: false,
-      ));
-      mockLocus.emitLocation(MockLocationExtension.mock(
-        timestamp: nextDay,
-        isMoving: true,
-      ));
-
-      final summary = await service.getSummary(
-        date: DateTime(2026, 1, 1),
+      mockLocus.emitLocation(
+        MockLocationExtension.mock(timestamp: day, isMoving: false),
       );
+      mockLocus.emitLocation(
+        MockLocationExtension.mock(timestamp: laterSameDay, isMoving: false),
+      );
+      mockLocus.emitLocation(
+        MockLocationExtension.mock(timestamp: nextDay, isMoving: true),
+      );
+
+      final summary = await service.getSummary(date: DateTime(2026, 1, 1));
 
       expect(summary.locationCount, 2);
       expect(summary.totalDistanceMeters, 0);
@@ -60,14 +55,12 @@ void main() {
       final first = DateTime(2026, 1, 1, 10);
       final second = first.add(const Duration(minutes: 1));
 
-      mockLocus.emitLocation(MockLocationExtension.mock(
-        timestamp: first,
-        isMoving: false,
-      ));
-      mockLocus.emitLocation(MockLocationExtension.mock(
-        timestamp: second,
-        isMoving: true,
-      ));
+      mockLocus.emitLocation(
+        MockLocationExtension.mock(timestamp: first, isMoving: false),
+      );
+      mockLocus.emitLocation(
+        MockLocationExtension.mock(timestamp: second, isMoving: true),
+      );
 
       final summary = await service.getSummary(
         query: const LocationQuery(isMoving: true),

@@ -189,17 +189,17 @@ class SpoofDetectionConfig {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'enabled': enabled,
-        'blockMockLocations': blockMockLocations,
-        'sensitivity': sensitivity.name,
-        'maxPossibleSpeedKph': maxPossibleSpeedKph,
-        'maxAltitudeChangePerSecond': maxAltitudeChangePerSecond,
-        'minFactorsForDetection': minFactorsForDetection,
-        'checkMockProvider': checkMockProvider,
-        'checkDeveloperOptions': checkDeveloperOptions,
-        'checkMockMode': checkMockMode,
-        'trustedMockProviders': trustedMockProviders,
-      };
+    'enabled': enabled,
+    'blockMockLocations': blockMockLocations,
+    'sensitivity': sensitivity.name,
+    'maxPossibleSpeedKph': maxPossibleSpeedKph,
+    'maxAltitudeChangePerSecond': maxAltitudeChangePerSecond,
+    'minFactorsForDetection': minFactorsForDetection,
+    'checkMockProvider': checkMockProvider,
+    'checkDeveloperOptions': checkDeveloperOptions,
+    'checkMockMode': checkMockMode,
+    'trustedMockProviders': trustedMockProviders,
+  };
 }
 
 /// Sensitivity level for spoof detection.
@@ -228,8 +228,8 @@ class SpoofDetectionEvent {
     this.wasBlocked = false,
     Map<String, dynamic>? details,
     DateTime? timestamp,
-  })  : details = details ?? const {},
-        timestamp = timestamp ?? DateTime.now();
+  }) : details = details ?? const {},
+       timestamp = timestamp ?? DateTime.now();
 
   /// The suspicious location.
   final Location location;
@@ -256,22 +256,22 @@ class SpoofDetectionEvent {
   String get description {
     final buffer = StringBuffer();
     buffer.write(
-        'Spoof detected (${(confidence * 100).toStringAsFixed(0)}% confidence): ');
+      'Spoof detected (${(confidence * 100).toStringAsFixed(0)}% confidence): ',
+    );
     buffer.write(factors.map((f) => f.description).join(', '));
     return buffer.toString();
   }
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'location': location.toMap(),
-        if (previousLocation != null)
-          'previousLocation': previousLocation!.toMap(),
-        'factors': factors.map((f) => f.name).toList(),
-        'confidence': confidence,
-        'wasBlocked': wasBlocked,
-        'timestamp': timestamp.toIso8601String(),
-        'details': details,
-      };
+    'location': location.toMap(),
+    if (previousLocation != null) 'previousLocation': previousLocation!.toMap(),
+    'factors': factors.map((f) => f.name).toList(),
+    'confidence': confidence,
+    'wasBlocked': wasBlocked,
+    'timestamp': timestamp.toIso8601String(),
+    'details': details,
+  };
 }
 
 /// Factors that can indicate location spoofing.
@@ -379,7 +379,7 @@ class SpoofDetector {
     if (_previousLocation != null) {
       final isSameLocation =
           _previousLocation!.coords.latitude == location.coords.latitude &&
-              _previousLocation!.coords.longitude == location.coords.longitude;
+          _previousLocation!.coords.longitude == location.coords.longitude;
       if (isSameLocation) {
         _repeatedCoordCount++;
         if (_repeatedCoordCount >= _repeatedThreshold) {
@@ -395,10 +395,13 @@ class SpoofDetector {
         _previousLocation!.coords,
         location.coords,
       );
-      final duration =
-          location.timestamp.difference(_previousLocation!.timestamp);
-      final calculatedSpeedKph =
-          LocationUtils.calculateSpeedKph(distance, duration);
+      final duration = location.timestamp.difference(
+        _previousLocation!.timestamp,
+      );
+      final calculatedSpeedKph = LocationUtils.calculateSpeedKph(
+        distance,
+        duration,
+      );
 
       if (calculatedSpeedKph > config.maxPossibleSpeedKph) {
         factors.add(SpoofFactor.impossibleSpeed);

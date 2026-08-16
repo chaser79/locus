@@ -97,7 +97,7 @@ class _ScenarioScreenState extends State<ScenarioScreen> {
           : ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: _scenarios.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (BuildContext context, int index) {
                 final Scenario scenario = _scenarios[index];
                 return _ScenarioTile(
@@ -251,10 +251,7 @@ class _DurationChip extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           _format(duration),
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurfaceVariant,
-          ),
+          style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
       ],
     );
@@ -287,10 +284,7 @@ class _ManualStepsChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             'manual',
-            style: TextStyle(
-              fontSize: 12,
-              color: scheme.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -313,10 +307,7 @@ class _MockBackendChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             'mock',
-            style: TextStyle(
-              fontSize: 12,
-              color: scheme.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
           ),
         ],
       ),

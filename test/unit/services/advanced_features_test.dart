@@ -33,10 +33,9 @@ void main() {
 
   group('SpoofDetector', () {
     test('detects mock provider', () {
-      final detector = SpoofDetector(const SpoofDetectionConfig(
-        enabled: true,
-        minFactorsForDetection: 1,
-      ));
+      final detector = SpoofDetector(
+        const SpoofDetectionConfig(enabled: true, minFactorsForDetection: 1),
+      );
 
       final location = _createLocation(lat: 37.0, lng: -122.0);
       final event = detector.analyze(location, isMockProvider: true);
@@ -47,11 +46,13 @@ void main() {
     });
 
     test('detects impossible speed', () {
-      final detector = SpoofDetector(const SpoofDetectionConfig(
-        enabled: true,
-        minFactorsForDetection: 1,
-        maxPossibleSpeedKph: 200,
-      ));
+      final detector = SpoofDetector(
+        const SpoofDetectionConfig(
+          enabled: true,
+          minFactorsForDetection: 1,
+          maxPossibleSpeedKph: 200,
+        ),
+      );
 
       // First location
       final loc1 = _createLocation(
@@ -74,10 +75,9 @@ void main() {
     });
 
     test('detects repeated coordinates', () {
-      final detector = SpoofDetector(const SpoofDetectionConfig(
-        enabled: true,
-        minFactorsForDetection: 1,
-      ));
+      final detector = SpoofDetector(
+        const SpoofDetectionConfig(enabled: true, minFactorsForDetection: 1),
+      );
 
       final location = _createLocation(lat: 37.0, lng: -122.0);
 
@@ -92,9 +92,9 @@ void main() {
     });
 
     test('returns null when disabled', () {
-      final detector = SpoofDetector(const SpoofDetectionConfig(
-        enabled: false,
-      ));
+      final detector = SpoofDetector(
+        const SpoofDetectionConfig(enabled: false),
+      );
 
       final location = _createLocation(lat: 37.0, lng: -122.0);
       final event = detector.analyze(location, isMockProvider: true);
@@ -103,10 +103,9 @@ void main() {
     });
 
     test('respects minFactorsForDetection', () {
-      final detector = SpoofDetector(const SpoofDetectionConfig(
-        enabled: true,
-        minFactorsForDetection: 3,
-      ));
+      final detector = SpoofDetector(
+        const SpoofDetectionConfig(enabled: true, minFactorsForDetection: 3),
+      );
 
       final location = _createLocation(lat: 37.0, lng: -122.0);
       // Only one factor (mock provider)
@@ -164,10 +163,12 @@ void main() {
 
     test('emits events for significant movement', () async {
       final manager = SignificantChangeManager();
-      manager.start(const SignificantChangeConfig(
-        minDisplacementMeters: 100,
-        deferUntilMoved: true,
-      ));
+      manager.start(
+        const SignificantChangeConfig(
+          minDisplacementMeters: 100,
+          deferUntilMoved: true,
+        ),
+      );
 
       final events = <SignificantChangeEvent>[];
       manager.events.listen(events.add);
@@ -193,10 +194,12 @@ void main() {
 
     test('ignores small movements', () async {
       final manager = SignificantChangeManager();
-      manager.start(const SignificantChangeConfig(
-        minDisplacementMeters: 500000, // 500km threshold (very large)
-        deferUntilMoved: true,
-      ));
+      manager.start(
+        const SignificantChangeConfig(
+          minDisplacementMeters: 500000, // 500km threshold (very large)
+          deferUntilMoved: true,
+        ),
+      );
 
       final events = <SignificantChangeEvent>[];
       manager.events.listen(events.add);
@@ -244,10 +247,13 @@ void main() {
       final permissionError = LocusError.permissionDenied();
       expect(permissionError.type, LocusErrorType.permissionDenied);
       expect(
-          permissionError.suggestedRecovery, RecoveryAction.requestUserAction);
+        permissionError.suggestedRecovery,
+        RecoveryAction.requestUserAction,
+      );
 
-      final timeoutError =
-          LocusError.timeout(timeout: const Duration(seconds: 30));
+      final timeoutError = LocusError.timeout(
+        timeout: const Duration(seconds: 30),
+      );
       expect(timeoutError.type, LocusErrorType.locationTimeout);
       expect(timeoutError.suggestedRecovery, RecoveryAction.retry);
       expect(timeoutError.details?['timeoutMs'], 30000);
@@ -272,10 +278,12 @@ void main() {
 
   group('ErrorRecoveryManager', () {
     test('handles ignored error types', () async {
-      final manager = ErrorRecoveryManager(const ErrorRecoveryConfig(
-        ignoreTypes: {LocusErrorType.locationTimeout},
-        logErrors: false,
-      ));
+      final manager = ErrorRecoveryManager(
+        const ErrorRecoveryConfig(
+          ignoreTypes: {LocusErrorType.locationTimeout},
+          logErrors: false,
+        ),
+      );
 
       final error = LocusError.timeout();
       final action = await manager.handleError(error);
@@ -284,10 +292,9 @@ void main() {
     });
 
     test('tracks retry counts', () async {
-      final manager = ErrorRecoveryManager(const ErrorRecoveryConfig(
-        maxRetries: 3,
-        logErrors: false,
-      ));
+      final manager = ErrorRecoveryManager(
+        const ErrorRecoveryConfig(maxRetries: 3, logErrors: false),
+      );
 
       final error = LocusError.networkError();
 
@@ -304,11 +311,13 @@ void main() {
     });
 
     test('calculates retry delay with backoff', () async {
-      final manager = ErrorRecoveryManager(const ErrorRecoveryConfig(
-        retryDelay: Duration(seconds: 1),
-        retryBackoff: 2.0,
-        logErrors: false,
-      ));
+      final manager = ErrorRecoveryManager(
+        const ErrorRecoveryConfig(
+          retryDelay: Duration(seconds: 1),
+          retryBackoff: 2.0,
+          logErrors: false,
+        ),
+      );
 
       // Simulate retries to increment counter
       await manager.handleError(LocusError.networkError());
@@ -324,9 +333,9 @@ void main() {
     });
 
     test('emits errors to stream', () async {
-      final manager = ErrorRecoveryManager(const ErrorRecoveryConfig(
-        logErrors: false,
-      ));
+      final manager = ErrorRecoveryManager(
+        const ErrorRecoveryConfig(logErrors: false),
+      );
 
       final errors = <LocusError>[];
       manager.errors.listen(errors.add);
@@ -341,9 +350,9 @@ void main() {
     });
 
     test('markResolved clears retry count', () async {
-      final manager = ErrorRecoveryManager(const ErrorRecoveryConfig(
-        logErrors: false,
-      ));
+      final manager = ErrorRecoveryManager(
+        const ErrorRecoveryConfig(logErrors: false),
+      );
 
       await manager.handleError(LocusError.networkError());
       await manager.handleError(LocusError.networkError());

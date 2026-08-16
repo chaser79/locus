@@ -12,8 +12,11 @@ import 'package:locus/locus.dart';
 /// ```dart
 /// expect(location, isLocationAt(37.7749, -122.4194));
 /// ```
-Matcher isLocationAt(double latitude, double longitude,
-    {double tolerance = 0.0001}) {
+Matcher isLocationAt(
+  double latitude,
+  double longitude, {
+  double tolerance = 0.0001,
+}) {
   return _LocationMatcher(latitude, longitude, tolerance);
 }
 
@@ -86,8 +89,9 @@ class _IsMovingMatcher extends Matcher {
 
   @override
   Description describe(Description description) {
-    return description
-        .add(expectedMoving ? 'moving location' : 'stationary location');
+    return description.add(
+      expectedMoving ? 'moving location' : 'stationary location',
+    );
   }
 }
 
@@ -125,9 +129,7 @@ class _AccuracyMatcher extends Matcher {
     if (item is! Location) {
       return mismatchDescription.add('is not a Location');
     }
-    return mismatchDescription.add(
-      'has accuracy ${item.coords.accuracy}m',
-    );
+    return mismatchDescription.add('has accuracy ${item.coords.accuracy}m');
   }
 }
 
@@ -207,7 +209,8 @@ class _IsInsideGeofenceMatcher extends Matcher {
     final dLat = (lat2 - lat1) * 0.017453292519943295;
     final dLon = (lon2 - lon1) * 0.017453292519943295;
 
-    final a = (dLat / 2) * (dLat / 2) +
+    final a =
+        (dLat / 2) * (dLat / 2) +
         (lat1 * 0.017453292519943295).cos() *
             (lat2 * 0.017453292519943295).cos() *
             (dLon / 2) *

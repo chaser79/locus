@@ -108,7 +108,8 @@ class Auth401PausesSyncScenario extends Scenario {
       results.add(
         const AssertionResult.fail(
           'SDK observed at least one HTTP 401 response from the backend',
-          failureDetail: 'No http_response_error event with status==401 '
+          failureDetail:
+              'No http_response_error event with status==401 '
               'was recorded since scenario start.',
           expected: '>=1 http_response_error with status==401',
           actual: '0',
@@ -144,7 +145,8 @@ class Auth401PausesSyncScenario extends Scenario {
       results.add(
         const AssertionResult.fail(
           'Locus.dataSync.isPaused is true after the 401 round-trip',
-          failureDetail: 'Synchronous getter still reports false; pause '
+          failureDetail:
+              'Synchronous getter still reports false; pause '
               'state did not stick.',
           expected: 'true',
           actual: 'false',

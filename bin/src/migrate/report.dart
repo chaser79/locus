@@ -55,8 +55,9 @@ class MigrationReportGenerator {
       buffer.writeln('─' * 30);
 
       for (final file in analysis.analyzedFiles.where((f) => f.hasLocusUsage)) {
-        final fileMatches =
-            analysis.matches.where((m) => m.filePath == file.path);
+        final fileMatches = analysis.matches.where(
+          (m) => m.filePath == file.path,
+        );
 
         if (fileMatches.isNotEmpty) {
           buffer.writeln();
@@ -129,7 +130,8 @@ class MigrationReportGenerator {
     buffer.writeln('Total patterns found: ${result.analysis.totalMatches}');
     buffer.writeln('Auto-migratable: ${result.analysis.autoMigratableCount}');
     buffer.writeln(
-        'Manual review required: ${result.analysis.manualReviewCount}');
+      'Manual review required: ${result.analysis.manualReviewCount}',
+    );
     buffer.writeln('Removed features: ${result.analysis.removedFeaturesCount}');
     buffer.writeln();
 
@@ -149,7 +151,8 @@ class MigrationReportGenerator {
       buffer.writeln('⚠️  Warnings (${result.analysis.warnings.length})');
       for (final warning in result.analysis.warnings.take(5)) {
         buffer.writeln(
-            '  - ${warning.filePath}:${warning.line} - ${warning.message}');
+          '  - ${warning.filePath}:${warning.line} - ${warning.message}',
+        );
       }
       if (result.analysis.warnings.length > 5) {
         buffer.writeln('  ... and ${result.analysis.warnings.length - 5} more');
@@ -160,8 +163,9 @@ class MigrationReportGenerator {
     if (result.analysis.errors.isNotEmpty) {
       buffer.writeln('❌ Errors (${result.analysis.errors.length})');
       for (final error in result.analysis.errors) {
-        buffer
-            .writeln('  - ${error.filePath}:${error.line} - ${error.message}');
+        buffer.writeln(
+          '  - ${error.filePath}:${error.line} - ${error.message}',
+        );
       }
       buffer.writeln();
     }
@@ -181,9 +185,11 @@ class MigrationReportGenerator {
       buffer.writeln('2. Build your app to check for errors');
       if (result.backupPath != null) {
         buffer.writeln(
-            '3. Backup is available at: ${result.backupPath}/backup.tar.gz');
+          '3. Backup is available at: ${result.backupPath}/backup.tar.gz',
+        );
         buffer.writeln(
-            '   Run `tar -xzf ${result.backupPath}/backup.tar.gz` to restore');
+          '   Run `tar -xzf ${result.backupPath}/backup.tar.gz` to restore',
+        );
       }
     }
 

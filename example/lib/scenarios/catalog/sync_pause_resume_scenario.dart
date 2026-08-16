@@ -84,8 +84,11 @@ class SyncPauseResumeScenario implements Scenario {
     final List<RecordedEvent> trace = ctx.recorder.since(ctx.startedAt);
 
     final List<RecordedEvent> pauseStateEvents = trace
-        .where((RecordedEvent e) =>
-            e.category == EventCategory.sync && e.type == 'pause_state_changed')
+        .where(
+          (RecordedEvent e) =>
+              e.category == EventCategory.sync &&
+              e.type == 'pause_state_changed',
+        )
         .toList(growable: false);
 
     final int pausedTrueIndex = pauseStateEvents.indexWhere(
@@ -119,7 +122,8 @@ class SyncPauseResumeScenario implements Scenario {
               'updates internal state but skips the broadcast on '
               'SyncService.pauseChanges.',
           expected: '>=1 pause_state_changed event with isPaused=true',
-          actual: '${pauseStateEvents.length} pause_state_changed events, '
+          actual:
+              '${pauseStateEvents.length} pause_state_changed events, '
               'none with isPaused=true',
         ),
       );
@@ -141,9 +145,11 @@ class SyncPauseResumeScenario implements Scenario {
               'No pause_state_changed event with isPaused=false was found '
               'after the isPaused=true event. resume() may have updated the '
               'in-memory flag without re-publishing on pauseChanges (issue #35).',
-          expected: 'pause_state_changed(isPaused: false) after the '
+          expected:
+              'pause_state_changed(isPaused: false) after the '
               'isPaused: true transition',
-          actual: 'pauseStateEvents.length=${pauseStateEvents.length}, '
+          actual:
+              'pauseStateEvents.length=${pauseStateEvents.length}, '
               'pausedTrueIndex=$pausedTrueIndex, '
               'pausedFalseAfterTrueIndex=$pausedFalseAfterTrueIndex',
         ),

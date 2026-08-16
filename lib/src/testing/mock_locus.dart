@@ -58,8 +58,8 @@ export 'package:locus/src/core/locus_interface.dart';
 class MockLocus implements LocusInterface {
   /// Creates a new MockLocus instance.
   MockLocus({GeolocationState? initialState, Config? initialConfig})
-      : _state = initialState ?? const GeolocationState(enabled: false),
-        _config = initialConfig ?? const Config();
+    : _state = initialState ?? const GeolocationState(enabled: false),
+      _config = initialConfig ?? const Config();
 
   GeolocationState _state;
   Config _config;
@@ -645,8 +645,10 @@ class MockLocus implements LocusInterface {
     if (_isSyncPaused) {
       _isSyncPaused = false;
       _pauseReason = null;
-      _emitEvent(EventType.syncPauseChange,
-          const SyncPauseState(isPaused: false, reason: null));
+      _emitEvent(
+        EventType.syncPauseChange,
+        const SyncPauseState(isPaused: false, reason: null),
+      );
     }
     return true;
   }
@@ -680,8 +682,10 @@ class MockLocus implements LocusInterface {
     if (!_isSyncPaused) {
       _isSyncPaused = true;
       _pauseReason = 'app';
-      _emitEvent(EventType.syncPauseChange,
-          const SyncPauseState(isPaused: true, reason: 'app'));
+      _emitEvent(
+        EventType.syncPauseChange,
+        const SyncPauseState(isPaused: true, reason: 'app'),
+      );
     }
   }
 
@@ -1526,7 +1530,8 @@ extension MockGeofenceExtension on Geofence {
     Map<String, dynamic>? extras,
   }) {
     return Geofence(
-      identifier: identifier ??
+      identifier:
+          identifier ??
           'mock-geofence-${DateTime.now().millisecondsSinceEpoch}',
       latitude: latitude,
       longitude: longitude,

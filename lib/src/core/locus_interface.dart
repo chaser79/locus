@@ -15,8 +15,8 @@ typedef HeadlessEventCallback = Future<void> Function(HeadlessEvent event);
 /// [extras] contains the extras from Config.
 ///
 /// Must return a JSON-serializable Map that will be sent as the request body.
-typedef SyncBodyBuilder = Future<JsonMap> Function(
-    List<Location> locations, JsonMap extras);
+typedef SyncBodyBuilder =
+    Future<JsonMap> Function(List<Location> locations, JsonMap extras);
 
 /// Context passed to headless sync body builder.
 class SyncBodyContext {
@@ -38,9 +38,8 @@ class SyncBodyContext {
   final JsonMap extras;
 }
 
-typedef HeadlessPreSyncValidator = Future<bool> Function(
-  SyncBodyContext context,
-);
+typedef HeadlessPreSyncValidator =
+    Future<bool> Function(SyncBodyContext context);
 
 typedef HeadlessHeadersCallback = Future<Map<String, String>> Function();
 

@@ -28,9 +28,9 @@ class MigrationAnalysisResult {
     final counts = <String, int>{};
     for (final match in matches) {
       final pattern = MigrationPatternDatabase.allPatterns.firstWhere(
-          (p) => p.id == match.patternId,
-          orElse: () =>
-              throw Exception('Pattern not found: ${match.patternId}'));
+        (p) => p.id == match.patternId,
+        orElse: () => throw Exception('Pattern not found: ${match.patternId}'),
+      );
       counts[pattern.category.name] = (counts[pattern.category.name] ?? 0) + 1;
     }
     return counts;
@@ -38,46 +38,49 @@ class MigrationAnalysisResult {
 
   int get autoMigratableCount {
     return matches.where((m) {
-      final pattern = MigrationPatternDatabase.allPatterns
-          .firstWhere((p) => p.id == m.patternId);
+      final pattern = MigrationPatternDatabase.allPatterns.firstWhere(
+        (p) => p.id == m.patternId,
+      );
       return pattern.confidence == MigrationConfidence.high;
     }).length;
   }
 
   int get manualReviewCount {
     return matches.where((m) {
-      final pattern = MigrationPatternDatabase.allPatterns
-          .firstWhere((p) => p.id == m.patternId);
+      final pattern = MigrationPatternDatabase.allPatterns.firstWhere(
+        (p) => p.id == m.patternId,
+      );
       return pattern.confidence == MigrationConfidence.low;
     }).length;
   }
 
   int get removedFeaturesCount {
     return matches.where((m) {
-      final pattern = MigrationPatternDatabase.allPatterns
-          .firstWhere((p) => p.id == m.patternId);
+      final pattern = MigrationPatternDatabase.allPatterns.firstWhere(
+        (p) => p.id == m.patternId,
+      );
       return pattern.category == MigrationCategory.removed;
     }).length;
   }
 
   Map<String, dynamic> toJson() => {
-        'projectPath': projectPath,
-        'timestamp': timestamp.toIso8601String(),
-        'summary': {
-          'totalFiles': totalFiles,
-          'filesWithLocus': filesWithLocus,
-          'totalMatches': totalMatches,
-          'autoMigratable': autoMigratableCount,
-          'manualReview': manualReviewCount,
-          'removedFeatures': removedFeaturesCount,
-          'matchesByCategory': matchesByCategory,
-        },
-        'files': analyzedFiles.map((f) => f.toJson()).toList(),
-        'matches': matches.map((m) => m.toJson()).toList(),
-        'warnings': warnings.map((w) => w.toJson()).toList(),
-        'errors': errors.map((e) => e.toJson()).toList(),
-        'importedPackages': importedPackages.toList(),
-      };
+    'projectPath': projectPath,
+    'timestamp': timestamp.toIso8601String(),
+    'summary': {
+      'totalFiles': totalFiles,
+      'filesWithLocus': filesWithLocus,
+      'totalMatches': totalMatches,
+      'autoMigratable': autoMigratableCount,
+      'manualReview': manualReviewCount,
+      'removedFeatures': removedFeaturesCount,
+      'matchesByCategory': matchesByCategory,
+    },
+    'files': analyzedFiles.map((f) => f.toJson()).toList(),
+    'matches': matches.map((m) => m.toJson()).toList(),
+    'warnings': warnings.map((w) => w.toJson()).toList(),
+    'errors': errors.map((e) => e.toJson()).toList(),
+    'importedPackages': importedPackages.toList(),
+  };
 }
 
 class AnalyzedFile {
@@ -99,13 +102,13 @@ class AnalyzedFile {
   final int locusMatchCount;
 
   Map<String, dynamic> toJson() => {
-        'path': path,
-        'lineCount': lineCount,
-        'hasLocusUsage': hasLocusUsage,
-        'locusMethods': locusMethods.toList(),
-        'imports': imports.toList(),
-        'locusMatchCount': locusMatchCount,
-      };
+    'path': path,
+    'lineCount': lineCount,
+    'hasLocusUsage': hasLocusUsage,
+    'locusMethods': locusMethods.toList(),
+    'imports': imports.toList(),
+    'locusMatchCount': locusMatchCount,
+  };
 }
 
 class MigrationWarning {
@@ -123,12 +126,12 @@ class MigrationWarning {
   final String? suggestion;
 
   Map<String, dynamic> toJson() => {
-        'filePath': filePath,
-        'line': line,
-        'message': message,
-        'code': code,
-        'suggestion': suggestion,
-      };
+    'filePath': filePath,
+    'line': line,
+    'message': message,
+    'code': code,
+    'suggestion': suggestion,
+  };
 }
 
 class MigrationError {
@@ -144,11 +147,11 @@ class MigrationError {
   final String code;
 
   Map<String, dynamic> toJson() => {
-        'filePath': filePath,
-        'line': line,
-        'message': message,
-        'code': code,
-      };
+    'filePath': filePath,
+    'line': line,
+    'message': message,
+    'code': code,
+  };
 }
 
 class MigrationAnalyzer {
@@ -157,13 +160,13 @@ class MigrationAnalyzer {
     Set<String>? ignoredPatterns,
     Set<String>? onlyCategories,
     bool verbose = false,
-  })  : _patterns = _filterPatternsByCategory(
-          patterns ?? MigrationPatternDatabase.allPatterns,
-          onlyCategories,
-        ),
-        _ignoredPatterns = ignoredPatterns ?? {},
-        _onlyCategories = _parseCategories(onlyCategories),
-        _verbose = verbose;
+  }) : _patterns = _filterPatternsByCategory(
+         patterns ?? MigrationPatternDatabase.allPatterns,
+         onlyCategories,
+       ),
+       _ignoredPatterns = ignoredPatterns ?? {},
+       _onlyCategories = _parseCategories(onlyCategories),
+       _verbose = verbose;
   final List<MigrationPattern> _patterns;
   final Set<String> _ignoredPatterns;
   final Set<MigrationCategory> _onlyCategories;
@@ -185,10 +188,12 @@ class MigrationAnalyzer {
       return MigrationCategory.values.toSet();
     }
     return categoryNames
-        .map((name) => MigrationCategory.values.firstWhere(
-              (c) => c.name.toLowerCase() == name.toLowerCase(),
-              orElse: () => throw ArgumentError('Unknown category: $name'),
-            ))
+        .map(
+          (name) => MigrationCategory.values.firstWhere(
+            (c) => c.name.toLowerCase() == name.toLowerCase(),
+            orElse: () => throw ArgumentError('Unknown category: $name'),
+          ),
+        )
         .toSet();
   }
 
@@ -228,11 +233,7 @@ class MigrationAnalyzer {
     for (final file in files) {
       try {
         final content = await file.readAsString();
-        final fileResult = await _analyzeFile(
-          file,
-          content,
-          projectDir.path,
-        );
+        final fileResult = await _analyzeFile(file, content, projectDir.path);
 
         analyzedFiles.add(fileResult);
 
@@ -250,15 +251,18 @@ class MigrationAnalyzer {
 
         if (_verbose) {
           stdout.writeln(
-              '[INFO] Analyzed ${file.path} - ${fileResult.locusMatchCount} Locus matches');
+            '[INFO] Analyzed ${file.path} - ${fileResult.locusMatchCount} Locus matches',
+          );
         }
       } catch (e, stack) {
-        errors.add(MigrationError(
-          filePath: file.path,
-          line: 1,
-          message: 'Failed to analyze file: $e',
-          code: 'ANALYSIS_ERROR',
-        ));
+        errors.add(
+          MigrationError(
+            filePath: file.path,
+            line: 1,
+            message: 'Failed to analyze file: $e',
+            code: 'ANALYSIS_ERROR',
+          ),
+        );
 
         if (_verbose) {
           stdout.writeln('[ERROR] Failed to analyze ${file.path}: $e');
@@ -274,23 +278,27 @@ class MigrationAnalyzer {
       );
 
       if (pattern.category == MigrationCategory.removed) {
-        warnings.add(MigrationWarning(
-          filePath: match.filePath,
-          line: match.line,
-          message: 'Feature "${pattern.name}" is removed in v2.0',
-          code: 'REMOVED_FEATURE',
-          suggestion: 'Remove this line and implement the feature yourself',
-        ));
+        warnings.add(
+          MigrationWarning(
+            filePath: match.filePath,
+            line: match.line,
+            message: 'Feature "${pattern.name}" is removed in v2.0',
+            code: 'REMOVED_FEATURE',
+            suggestion: 'Remove this line and implement the feature yourself',
+          ),
+        );
       }
 
       if (pattern.confidence == MigrationConfidence.low) {
-        warnings.add(MigrationWarning(
-          filePath: match.filePath,
-          line: match.line,
-          message: 'Manual review required for "${pattern.name}"',
-          code: 'MANUAL_REVIEW',
-          suggestion: pattern.description,
-        ));
+        warnings.add(
+          MigrationWarning(
+            filePath: match.filePath,
+            line: match.line,
+            message: 'Manual review required for "${pattern.name}"',
+            code: 'MANUAL_REVIEW',
+            suggestion: pattern.description,
+          ),
+        );
       }
     }
 
@@ -298,9 +306,11 @@ class MigrationAnalyzer {
 
     if (_verbose) {
       stdout.writeln(
-          '[INFO] Analysis completed in ${stopwatch.elapsedMilliseconds}ms');
+        '[INFO] Analysis completed in ${stopwatch.elapsedMilliseconds}ms',
+      );
       stdout.writeln(
-          '[INFO] Found $allMatches matches across ${analyzedFiles.where((f) => f.hasLocusUsage).length} files');
+        '[INFO] Found $allMatches matches across ${analyzedFiles.where((f) => f.hasLocusUsage).length} files',
+      );
     }
 
     return MigrationAnalysisResult(
@@ -432,14 +442,16 @@ class MigrationAnalyzer {
         final lineMatches = pattern.findMatches(line, filePath);
 
         for (final match in lineMatches) {
-          matches.add(PatternMatch(
-            filePath: filePath,
-            line: i + 1,
-            column: match.column,
-            original: match.original,
-            replacement: match.replacement,
-            patternId: match.patternId,
-          ));
+          matches.add(
+            PatternMatch(
+              filePath: filePath,
+              line: i + 1,
+              column: match.column,
+              original: match.original,
+              replacement: match.replacement,
+              patternId: match.patternId,
+            ),
+          );
         }
       }
     }
@@ -465,7 +477,8 @@ class MigrationAnalyzer {
 
     if (_verbose) {
       stdout.writeln(
-          '[INFO] Found ${packages.length} package(s): ${packages.map((p) => p.displayName).join(', ')}');
+        '[INFO] Found ${packages.length} package(s): ${packages.map((p) => p.displayName).join(', ')}',
+      );
     }
 
     final packageResults = <String, MigrationAnalysisResult>{};
@@ -482,16 +495,19 @@ class MigrationAnalyzer {
         );
         packageResults[package.displayName] = result;
       } catch (e, stack) {
-        allErrors.add(MigrationError(
-          filePath: package.path,
-          line: 1,
-          message: 'Failed to analyze package "${package.displayName}": $e',
-          code: 'PACKAGE_ANALYSIS_ERROR',
-        ));
+        allErrors.add(
+          MigrationError(
+            filePath: package.path,
+            line: 1,
+            message: 'Failed to analyze package "${package.displayName}": $e',
+            code: 'PACKAGE_ANALYSIS_ERROR',
+          ),
+        );
 
         if (_verbose) {
           stdout.writeln(
-              '[ERROR] Failed to analyze package ${package.displayName}: $e');
+            '[ERROR] Failed to analyze package ${package.displayName}: $e',
+          );
           stdout.writeln(stack);
         }
       }
@@ -501,7 +517,8 @@ class MigrationAnalyzer {
 
     if (_verbose) {
       stdout.writeln(
-          '[INFO] Monorepo analysis completed in ${stopwatch.elapsedMilliseconds}ms');
+        '[INFO] Monorepo analysis completed in ${stopwatch.elapsedMilliseconds}ms',
+      );
     }
 
     return MonorepoMigrationAnalysisResult(
@@ -563,22 +580,18 @@ class MonorepoMigrationAnalysisResult {
   }
 
   Map<String, dynamic> toJson() => {
-        'rootPath': rootPath,
-        'timestamp': timestamp.toIso8601String(),
-        'isMonorepo': isMonorepo,
-        'packages': packages
-            .map((p) => {
-                  'path': p.path,
-                  'name': p.name,
-                  'isApp': p.isApp,
-                })
-            .toList(),
-        'packageResults': {
-          for (final entry in packageResults.entries)
-            entry.key: entry.value.toJson(),
-        },
-        'aggregated': aggregated.toJson(),
-        'warnings': warnings.map((w) => w.toJson()).toList(),
-        'errors': errors.map((e) => e.toJson()).toList(),
-      };
+    'rootPath': rootPath,
+    'timestamp': timestamp.toIso8601String(),
+    'isMonorepo': isMonorepo,
+    'packages': packages
+        .map((p) => {'path': p.path, 'name': p.name, 'isApp': p.isApp})
+        .toList(),
+    'packageResults': {
+      for (final entry in packageResults.entries)
+        entry.key: entry.value.toJson(),
+    },
+    'aggregated': aggregated.toJson(),
+    'warnings': warnings.map((w) => w.toJson()).toList(),
+    'errors': errors.map((e) => e.toJson()).toList(),
+  };
 }

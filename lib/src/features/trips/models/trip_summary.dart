@@ -15,7 +15,8 @@ class TripSummary {
   factory TripSummary.fromMap(JsonMap map) {
     return TripSummary(
       tripId: map['tripId'] as String? ?? '',
-      startedAt: DateTime.tryParse(map['startedAt'] as String? ?? '') ??
+      startedAt:
+          DateTime.tryParse(map['startedAt'] as String? ?? '') ??
           DateTime.now(),
       endedAt:
           DateTime.tryParse(map['endedAt'] as String? ?? '') ?? DateTime.now(),
@@ -36,13 +37,13 @@ class TripSummary {
   final double averageSpeedKph;
 
   JsonMap toMap() => {
-        'tripId': tripId,
-        'startedAt': startedAt.toIso8601String(),
-        'endedAt': endedAt.toIso8601String(),
-        'distanceMeters': distanceMeters,
-        'durationSeconds': durationSeconds,
-        'idleSeconds': idleSeconds,
-        'maxSpeedKph': maxSpeedKph,
-        'averageSpeedKph': averageSpeedKph,
-      };
+    'tripId': tripId,
+    'startedAt': startedAt.toIso8601String(),
+    'endedAt': endedAt.toIso8601String(),
+    'distanceMeters': distanceMeters,
+    'durationSeconds': durationSeconds,
+    'idleSeconds': idleSeconds,
+    'maxSpeedKph': maxSpeedKph,
+    'averageSpeedKph': averageSpeedKph,
+  };
 }

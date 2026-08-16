@@ -11,10 +11,10 @@ import 'package:locus_example/scenarios/scenario.dart';
 /// SDK's HTTP / sync layer handles it the way recent CHANGELOG fixes
 /// require. Mock-free scenarios live in a separate barrel.
 List<Scenario> phase2Scenarios() => <Scenario>[
-      Auth401PausesSyncScenario(),
-      Auth403PersistentPauseScenario(),
-      Http415CompressionFallbackScenario(),
-      OutageRecoveryDrainScenario(),
-      HeadersRefreshOn401Scenario(),
-      FlakyRetrySucceedsScenario(),
-    ];
+  Auth401PausesSyncScenario(),
+  Auth403PersistentPauseScenario(),
+  Http415CompressionFallbackScenario(),
+  OutageRecoveryDrainScenario(),
+  HeadersRefreshOn401Scenario(),
+  FlakyRetrySucceedsScenario(),
+];

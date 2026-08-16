@@ -108,16 +108,8 @@ void main() {
     test('should filter by bounding box', () {
       const query = LocationQuery(
         bounds: LocationBounds(
-          southwest: Coords(
-            latitude: 37.4,
-            longitude: -122.1,
-            accuracy: 0,
-          ),
-          northeast: Coords(
-            latitude: 37.5,
-            longitude: -122.0,
-            accuracy: 0,
-          ),
+          southwest: Coords(latitude: 37.4, longitude: -122.1, accuracy: 0),
+          northeast: Coords(latitude: 37.5, longitude: -122.0, accuracy: 0),
         ),
       );
       final result = query.apply(testLocations);
@@ -197,10 +189,16 @@ void main() {
         southwest: Coords(latitude: 37.4, longitude: -122.1, accuracy: 0),
         northeast: Coords(latitude: 37.5, longitude: -122.0, accuracy: 0),
       );
-      const onNorthEdge =
-          Coords(latitude: 37.5, longitude: -122.05, accuracy: 0);
-      const onSouthEdge =
-          Coords(latitude: 37.4, longitude: -122.05, accuracy: 0);
+      const onNorthEdge = Coords(
+        latitude: 37.5,
+        longitude: -122.05,
+        accuracy: 0,
+      );
+      const onSouthEdge = Coords(
+        latitude: 37.4,
+        longitude: -122.05,
+        accuracy: 0,
+      );
       expect(bbox.contains(onNorthEdge), true);
       expect(bbox.contains(onSouthEdge), true);
     });
@@ -416,11 +414,7 @@ void main() {
   group('FrequentLocation', () {
     test('should serialize to map correctly', () {
       const freq = FrequentLocation(
-        center: Coords(
-          latitude: 37.4219,
-          longitude: -122.0840,
-          accuracy: 0,
-        ),
+        center: Coords(latitude: 37.4219, longitude: -122.0840, accuracy: 0),
         visitCount: 5,
         totalDuration: Duration(hours: 2),
         name: 'Home',

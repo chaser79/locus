@@ -16,22 +16,22 @@ class PackageInMonorepo {
   String get displayName => isApp ? '$name (app)' : name;
 
   PackageInMonorepo copyWith({bool? usesLocus}) => PackageInMonorepo(
-        path: path,
-        name: name,
-        isApp: isApp,
-        usesLocus: usesLocus ?? this.usesLocus,
-      );
+    path: path,
+    name: name,
+    isApp: isApp,
+    usesLocus: usesLocus ?? this.usesLocus,
+  );
 
   @override
   String toString() =>
       'Package: $path (name: $name, isApp: $isApp, usesLocus: $usesLocus)';
 
   Map<String, dynamic> toJson() => {
-        'path': path,
-        'name': name,
-        'isApp': isApp,
-        'usesLocus': usesLocus,
-      };
+    'path': path,
+    'name': name,
+    'isApp': isApp,
+    'usesLocus': usesLocus,
+  };
 }
 
 /// Result of monorepo detection
@@ -92,9 +92,7 @@ class MonorepoDetector {
 
   /// Finds all Dart packages in a directory structure
   /// Returns a list of packages found, empty if not a monorepo
-  static Future<List<PackageInMonorepo>> findPackages(
-    Directory rootDir,
-  ) async {
+  static Future<List<PackageInMonorepo>> findPackages(Directory rootDir) async {
     final packages = <PackageInMonorepo>[];
     final visited = <String>{};
 
@@ -105,11 +103,13 @@ class MonorepoDetector {
       final rootPath = rootDir.absolute.path;
       if (!visited.contains(rootPath)) {
         visited.add(rootPath);
-        packages.add(PackageInMonorepo(
-          path: rootPath,
-          name: name ?? 'root',
-          isApp: await _isFlutterApp(rootDir),
-        ));
+        packages.add(
+          PackageInMonorepo(
+            path: rootPath,
+            name: name ?? 'root',
+            isApp: await _isFlutterApp(rootDir),
+          ),
+        );
       }
     }
 
@@ -151,11 +151,13 @@ class MonorepoDetector {
             if (!visited.contains(path)) {
               visited.add(path);
               final name = await _extractPackageName(pubspec);
-              packages.add(PackageInMonorepo(
-                path: path,
-                name: name ?? entity.path.split('/').last,
-                isApp: await _isFlutterApp(entity),
-              ));
+              packages.add(
+                PackageInMonorepo(
+                  path: path,
+                  name: name ?? entity.path.split('/').last,
+                  isApp: await _isFlutterApp(entity),
+                ),
+              );
             }
           }
         }
@@ -187,11 +189,13 @@ class MonorepoDetector {
             if (!visited.contains(path)) {
               visited.add(path);
               final name = await _extractPackageName(pubspec);
-              packages.add(PackageInMonorepo(
-                path: path,
-                name: name ?? dirName,
-                isApp: await _isFlutterApp(entity),
-              ));
+              packages.add(
+                PackageInMonorepo(
+                  path: path,
+                  name: name ?? dirName,
+                  isApp: await _isFlutterApp(entity),
+                ),
+              );
             }
           }
         }

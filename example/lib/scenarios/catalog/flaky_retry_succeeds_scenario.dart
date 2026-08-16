@@ -118,7 +118,8 @@ class FlakyRetrySucceedsScenario extends Scenario {
         AssertionResult.fail(
           'SDK observed at least 2 successful HTTP events between the '
           'failures',
-          failureDetail: 'http_response_ok count=${httpOks.length}; '
+          failureDetail:
+              'http_response_ok count=${httpOks.length}; '
               'recovery 2xx responses were not delivered or not retried.',
           expected: '>=2 http_response_ok events',
           actual: '${httpOks.length}',

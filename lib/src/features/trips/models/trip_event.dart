@@ -72,16 +72,16 @@ class TripEvent {
   final int? waypointIndex;
 
   JsonMap toMap() => {
-        'type': type.name,
-        'tripId': tripId,
-        'timestamp': timestamp.toIso8601String(),
-        if (location != null) 'location': location!.toMap(),
-        if (summary != null) 'summary': summary!.toMap(),
-        if (distanceFromRouteMeters != null)
-          'distanceFromRouteMeters': distanceFromRouteMeters,
-        if (isMoving != null) 'isMoving': isMoving,
-        if (message != null) 'message': message,
-        if (data != null) 'data': data,
-        if (waypointIndex != null) 'waypointIndex': waypointIndex,
-      };
+    'type': type.name,
+    'tripId': tripId,
+    'timestamp': timestamp.toIso8601String(),
+    if (location != null) 'location': location!.toMap(),
+    if (summary != null) 'summary': summary!.toMap(),
+    if (distanceFromRouteMeters != null)
+      'distanceFromRouteMeters': distanceFromRouteMeters,
+    if (isMoving != null) 'isMoving': isMoving,
+    if (message != null) 'message': message,
+    if (data != null) 'data': data,
+    if (waypointIndex != null) 'waypointIndex': waypointIndex,
+  };
 }

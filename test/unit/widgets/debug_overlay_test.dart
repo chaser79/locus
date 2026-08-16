@@ -31,18 +31,14 @@ void main() {
     });
 
     testWidgets('renders in collapsed state by default', (tester) async {
-      await tester.pumpWidget(
-        _testApp(child: const LocusDebugOverlay()),
-      );
+      await tester.pumpWidget(_testApp(child: const LocusDebugOverlay()));
 
       // Should show collapsed view with tracking status
       expect(find.text('Tracking OFF'), findsOneWidget);
     });
 
     testWidgets('expands when tapped', (tester) async {
-      await tester.pumpWidget(
-        _testApp(child: const LocusDebugOverlay()),
-      );
+      await tester.pumpWidget(_testApp(child: const LocusDebugOverlay()));
 
       // Tap to expand
       await tester.tap(find.byType(InkWell).first);
@@ -82,9 +78,7 @@ void main() {
     testWidgets('displays tracking status when enabled', (tester) async {
       mockLocus.setMockState(const GeolocationState(enabled: true));
 
-      await tester.pumpWidget(
-        _testApp(child: const LocusDebugOverlay()),
-      );
+      await tester.pumpWidget(_testApp(child: const LocusDebugOverlay()));
 
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -97,16 +91,18 @@ void main() {
       );
 
       // Emit a location
-      mockLocus.emitLocation(Location(
-        uuid: 'test-location',
-        timestamp: DateTime.now(),
-        coords: const Coords(
-          latitude: 37.4219,
-          longitude: -122.0840,
-          accuracy: 10,
+      mockLocus.emitLocation(
+        Location(
+          uuid: 'test-location',
+          timestamp: DateTime.now(),
+          coords: const Coords(
+            latitude: 37.4219,
+            longitude: -122.0840,
+            accuracy: 10,
+          ),
+          isMoving: false,
         ),
-        isMoving: false,
-      ));
+      );
 
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -186,13 +182,21 @@ void main() {
     test('has all corner positions', () {
       expect(DebugOverlayPosition.values.length, 4);
       expect(
-          DebugOverlayPosition.values, contains(DebugOverlayPosition.topLeft));
+        DebugOverlayPosition.values,
+        contains(DebugOverlayPosition.topLeft),
+      );
       expect(
-          DebugOverlayPosition.values, contains(DebugOverlayPosition.topRight));
-      expect(DebugOverlayPosition.values,
-          contains(DebugOverlayPosition.bottomLeft));
-      expect(DebugOverlayPosition.values,
-          contains(DebugOverlayPosition.bottomRight));
+        DebugOverlayPosition.values,
+        contains(DebugOverlayPosition.topRight),
+      );
+      expect(
+        DebugOverlayPosition.values,
+        contains(DebugOverlayPosition.bottomLeft),
+      );
+      expect(
+        DebugOverlayPosition.values,
+        contains(DebugOverlayPosition.bottomRight),
+      );
     });
   });
 }

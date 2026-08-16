@@ -23,9 +23,9 @@ void main() {
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('locus/methods'),
-      (call) => mockHandler(call),
-    );
+          const MethodChannel('locus/methods'),
+          (call) => mockHandler(call),
+        );
   });
 
   tearDown(() {
@@ -71,7 +71,8 @@ void main() {
 
       expect(updated, isTrue);
       final call = methodCalls.firstWhere(
-          (methodCall) => methodCall.method == 'updateNotification');
+        (methodCall) => methodCall.method == 'updateNotification',
+      );
       expect(call.arguments['title'], 'Trip');
       expect(call.arguments['text'], '12.3 km');
     });

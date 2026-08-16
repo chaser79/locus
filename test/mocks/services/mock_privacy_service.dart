@@ -41,10 +41,7 @@ class MockPrivacyService implements PrivacyService {
     _zones.removeWhere((z) => z.identifier == zone.identifier);
     _zones.add(zone);
 
-    _emitEvent(PrivacyZoneEvent(
-      type: PrivacyZoneEventType.added,
-      zone: zone,
-    ));
+    _emitEvent(PrivacyZoneEvent(type: PrivacyZoneEventType.added, zone: zone));
   }
 
   @override
@@ -57,16 +54,15 @@ class MockPrivacyService implements PrivacyService {
   @override
   Future<bool> remove(String identifier) async {
     final zone = _zones.cast<PrivacyZone?>().firstWhere(
-          (z) => z?.identifier == identifier,
-          orElse: () => null,
-        );
+      (z) => z?.identifier == identifier,
+      orElse: () => null,
+    );
 
     if (zone != null) {
       _zones.removeWhere((z) => z.identifier == identifier);
-      _emitEvent(PrivacyZoneEvent(
-        type: PrivacyZoneEventType.removed,
-        zone: zone,
-      ));
+      _emitEvent(
+        PrivacyZoneEvent(type: PrivacyZoneEventType.removed, zone: zone),
+      );
       return true;
     }
     return false;
@@ -75,15 +71,17 @@ class MockPrivacyService implements PrivacyService {
   @override
   Future<void> removeAll() async {
     _zones.clear();
-    _emitEvent(PrivacyZoneEvent(
-      type: PrivacyZoneEventType.removed,
-      zone: PrivacyZone.create(
-        identifier: 'all',
-        latitude: 0,
-        longitude: 0,
-        radius: 0,
+    _emitEvent(
+      PrivacyZoneEvent(
+        type: PrivacyZoneEventType.removed,
+        zone: PrivacyZone.create(
+          identifier: 'all',
+          latitude: 0,
+          longitude: 0,
+          radius: 0,
+        ),
       ),
-    ));
+    );
   }
 
   @override
@@ -122,7 +120,8 @@ class MockPrivacyService implements PrivacyService {
 
   @override
   StreamSubscription<PrivacyZoneEvent> onChange(
-      void Function(PrivacyZoneEvent) callback) {
+    void Function(PrivacyZoneEvent) callback,
+  ) {
     _callbacks.add(callback);
     return _eventsController.stream.listen(callback);
   }
@@ -195,7 +194,8 @@ class MockPrivacyService implements PrivacyService {
         final distance = random.nextDouble() * radius;
 
         final latOffset = (distance / 111000) * math.cos(angle);
-        final lngOffset = (distance / 111000) *
+        final lngOffset =
+            (distance / 111000) *
             math.sin(angle) /
             math.cos(location.coords.latitude * math.pi / 180);
 
@@ -222,30 +222,28 @@ class MockPrivacyService implements PrivacyService {
   /// Triggers a privacy zone entry event.
   void triggerEntry(String identifier, Location location) {
     final zone = _zones.cast<PrivacyZone?>().firstWhere(
-          (z) => z?.identifier == identifier,
-          orElse: () => null,
-        );
+      (z) => z?.identifier == identifier,
+      orElse: () => null,
+    );
 
     if (zone != null) {
-      _emitEvent(PrivacyZoneEvent(
-        type: PrivacyZoneEventType.added,
-        zone: zone,
-      ));
+      _emitEvent(
+        PrivacyZoneEvent(type: PrivacyZoneEventType.added, zone: zone),
+      );
     }
   }
 
   /// Triggers a privacy zone exit event.
   void triggerExit(String identifier, Location location) {
     final zone = _zones.cast<PrivacyZone?>().firstWhere(
-          (z) => z?.identifier == identifier,
-          orElse: () => null,
-        );
+      (z) => z?.identifier == identifier,
+      orElse: () => null,
+    );
 
     if (zone != null) {
-      _emitEvent(PrivacyZoneEvent(
-        type: PrivacyZoneEventType.removed,
-        zone: zone,
-      ));
+      _emitEvent(
+        PrivacyZoneEvent(type: PrivacyZoneEventType.removed, zone: zone),
+      );
     }
   }
 
@@ -259,7 +257,8 @@ class MockPrivacyService implements PrivacyService {
     final dLat = _toRadians(lat2 - lat1);
     final dLon = _toRadians(lon2 - lon1);
 
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(_toRadians(lat1)) *
             math.cos(_toRadians(lat2)) *
             math.sin(dLon / 2) *

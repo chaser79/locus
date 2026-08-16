@@ -66,7 +66,9 @@ class LocationQualityAnalyzer {
   }
 
   static double _accuracyScore(
-      Location location, LocationQualityConfig config) {
+    Location location,
+    LocationQualityConfig config,
+  ) {
     final accuracy = location.coords.accuracy;
     if (accuracy <= 0) {
       return 0;
@@ -83,8 +85,10 @@ class LocationQualityAnalyzer {
     if (previous == null) {
       return 1.0;
     }
-    final distance =
-        LocationUtils.calculateDistance(previous.coords, current.coords);
+    final distance = LocationUtils.calculateDistance(
+      previous.coords,
+      current.coords,
+    );
     final duration = current.timestamp.difference(previous.timestamp);
     final speedKph = LocationUtils.calculateSpeedKph(distance, duration);
     if (speedKph <= config.maxSpeedKph) {
@@ -103,7 +107,9 @@ class LocationQualityAnalyzer {
     double total = 0;
     for (var i = 1; i < window.length; i++) {
       total += LocationUtils.calculateDistance(
-          window[i - 1].coords, window[i].coords);
+        window[i - 1].coords,
+        window[i].coords,
+      );
     }
     final average = total / (window.length - 1);
     if (average <= config.jitterThresholdMeters) {
@@ -121,8 +127,10 @@ class LocationQualityAnalyzer {
     if (previous == null) {
       return false;
     }
-    final distance =
-        LocationUtils.calculateDistance(previous.coords, current.coords);
+    final distance = LocationUtils.calculateDistance(
+      previous.coords,
+      current.coords,
+    );
     final duration = current.timestamp.difference(previous.timestamp);
     final speedKph = LocationUtils.calculateSpeedKph(distance, duration);
 
