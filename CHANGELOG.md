@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-08-16
+
 ### Added
 
 - **Android: release-gating runtime recovery matrix** — CI now exercises API 26, 29, 34, and 36 with the production config parser plus process-death, fresh-location, Task Manager Stop, and explicit-stop contracts.
