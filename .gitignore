@@ -121,3 +121,6 @@ ios/.build/
 ios/Package.resolved
 /docs/planning
 .local-agent.json
+
+# local-agent-setup: personal/machine-local agent overrides (gitignored)
+AGENTS.override.md
