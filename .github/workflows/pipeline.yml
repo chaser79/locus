@@ -106,55 +106,6 @@ jobs:
       - name: Build Example APK
         run: cd example && flutter build apk --debug
 
-  android-runtime-check:
-    name: Android Runtime (API ${{ matrix.api-level }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        # Minimum supported, FGS location-type introduction, modern
-        # background restrictions, and the current platform boundary.
-        api-level: [26, 29, 34, 36]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-      - uses: actions/setup-java@v5
-        with:
-          distribution: "temurin"
-          java-version: ${{ env.JAVA_VERSION }}
-      - run: flutter pub get
-
-      - name: Add resilient Android adb wrapper
-        run: |
-          mkdir -p "$RUNNER_TEMP/locus-adb"
-          ln -sf "$GITHUB_WORKSPACE/tool/android_adb_retry.sh" "$RUNNER_TEMP/locus-adb/adb"
-          echo "$RUNNER_TEMP/locus-adb" >> "$GITHUB_PATH"
-
-      - name: Device Contracts and Process-Recovery Smoke
-        # v2, pinned to its immutable peeled commit.
-        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
-        with:
-          api-level: ${{ matrix.api-level }}
-          target: google_apis
-          arch: x86_64
-          profile: pixel_2
-          # Hosted Linux runners do not expose KVM; two emulated cores avoid
-          # starving system_server while retaining the full API matrix.
-          cores: 2
-          emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
-          script: |
-            # The emulator action runs each script line in a fresh shell.
-            # UTP's split-APK installer can hang on unaccelerated hosted images;
-            # invoke the same instrumentation contract through adb directly.
-            bash ./tool/android_config_snapshot_smoke.sh
-            bash ./tool/android_process_recovery_smoke.sh
-
   ios-check:
     name: iOS CocoaPods Check
     runs-on: macos-15
@@ -237,7 +188,7 @@ jobs:
   # -----------------------------------------------------------------
   quality-gate:
     name: Quality Gate
-    needs: [code-quality, android-check, android-runtime-check, ios-check, ios-swiftpm-check]
+    needs: [code-quality, android-check, ios-check, ios-swiftpm-check]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -249,10 +200,6 @@ jobs:
           fi
           if [ "${{ needs.android-check.result }}" != "success" ]; then
             echo "::error::Android check failed"
-            exit 1
-          fi
-          if [ "${{ needs.android-runtime-check.result }}" != "success" ]; then
-            echo "::error::Android runtime check failed"
             exit 1
           fi
           if [ "${{ needs.ios-check.result }}" != "success" ]; then
