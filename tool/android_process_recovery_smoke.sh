@@ -12,6 +12,8 @@ readonly ACTION_STOP="dev.locus.test.action.STOP_RECOVERY"
 readonly ADB="${ADB:-adb}"
 readonly ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 readonly TEST_APK="${LOCUS_ANDROID_TEST_APK:-$ROOT_DIR/example/build/locus/outputs/apk/androidTest/debug/locus-debug-androidTest.apk}"
+readonly LOGCAT_CLEAR_ATTEMPTS=3
+readonly LOGCAT_CLEAR_RETRY_SECONDS=1
 
 fail() {
   echo "Android process-recovery smoke failed: $*" >&2
@@ -122,11 +124,27 @@ wait_for_service_stop() {
   return 1
 }
 
+clear_logcat() {
+  local attempt
+  for attempt in $(seq 1 "$LOGCAT_CLEAR_ATTEMPTS"); do
+    if "$ADB" logcat -c >/dev/null 2>&1 ||
+      "$ADB" shell logcat -c >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep "$LOGCAT_CLEAR_RETRY_SECONDS"
+  done
+
+  # Some hosted API 26 images reject the clear request even though logcat can
+  # still be read and appended to. read_report() already waits for a changed
+  # report line, so a stale buffer cannot satisfy the lifecycle assertions.
+  echo "Warning: unable to clear logcat; continuing with report change detection." >&2
+}
+
 [[ -f "$TEST_APK" ]] || fail "instrumentation APK not found at $TEST_APK"
 "$ADB" get-state >/dev/null 2>&1 || fail "no adb device is ready"
 "$ADB" install -r -t "$TEST_APK" >/dev/null || fail "could not install instrumentation APK"
 "$ADB" shell am force-stop "$PACKAGE"
-"$ADB" logcat -c
+clear_logcat
 
 readonly SDK=$("$ADB" shell getprop ro.build.version.sdk | tr -d '\r')
 [[ "$SDK" =~ ^[0-9]+$ ]] || fail "could not read device API level"
