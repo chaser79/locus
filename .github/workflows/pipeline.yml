@@ -138,9 +138,8 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: |
-            cd example/android
-            ./gradlew :locus:connectedDebugAndroidTest
-            cd ../..
+            # The emulator action runs each script line in a fresh shell.
+            (cd example/android && ./gradlew :locus:connectedDebugAndroidTest)
             bash ./tool/android_process_recovery_smoke.sh
 
   ios-check:
