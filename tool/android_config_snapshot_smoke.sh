@@ -8,6 +8,8 @@ readonly PACKAGE="dev.locus.test"
 readonly INSTRUMENTATION="$PACKAGE/dev.locus.core.ConfigSnapshotInstrumentation"
 readonly BUILD_ATTEMPTS=3
 readonly BUILD_RETRY_SECONDS=15
+readonly INSTALL_ATTEMPTS=3
+readonly INSTALL_RETRY_SECONDS=5
 
 fail() {
   echo "Android config-snapshot instrumentation failed: $*" >&2
@@ -28,9 +30,26 @@ build_test_apk() {
   return 1
 }
 
+install_test_apk() {
+  local attempt
+  local output=""
+  for attempt in $(seq 1 "$INSTALL_ATTEMPTS"); do
+    if output=$("$ADB" install -r -t "$TEST_APK" 2>&1); then
+      printf '%s\n' "$output"
+      return 0
+    fi
+    printf '%s\n' "$output" >&2
+    if (( attempt < INSTALL_ATTEMPTS )); then
+      echo "Instrumentation APK install attempt $attempt/$INSTALL_ATTEMPTS failed; retrying." >&2
+      sleep "$INSTALL_RETRY_SECONDS"
+    fi
+  done
+  return 1
+}
+
 build_test_apk || fail "could not assemble the instrumentation APK"
 [[ -f "$TEST_APK" ]] || fail "instrumentation APK not found at $TEST_APK"
-"$ADB" install -r -t "$TEST_APK" >/dev/null || fail "could not install instrumentation APK"
+install_test_apk || fail "could not install instrumentation APK"
 
 instrumentation_output=""
 if ! instrumentation_output=$(

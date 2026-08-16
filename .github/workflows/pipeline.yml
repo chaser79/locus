@@ -150,8 +150,9 @@ jobs:
           disable-animations: true
           script: |
             # The emulator action runs each script line in a fresh shell.
-            # API 29's UTP split-APK installer rejects this healthy device before the instrumentation starts, so invoke the same contract runner directly there.
-            if [ "${{ matrix.api-level }}" = "29" ]; then bash ./tool/android_config_snapshot_smoke.sh; else (cd example/android && ./gradlew :locus:connectedDebugAndroidTest); fi
+            # UTP's split-APK installer can hang on unaccelerated hosted images;
+            # invoke the same instrumentation contract through adb directly.
+            bash ./tool/android_config_snapshot_smoke.sh
             bash ./tool/android_process_recovery_smoke.sh
 
   ios-check:
