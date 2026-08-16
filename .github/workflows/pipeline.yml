@@ -128,6 +128,12 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
       - run: flutter pub get
 
+      - name: Add resilient Android adb wrapper
+        run: |
+          mkdir -p "$RUNNER_TEMP/locus-adb"
+          ln -sf "$GITHUB_WORKSPACE/tool/android_adb_retry.sh" "$RUNNER_TEMP/locus-adb/adb"
+          echo "$RUNNER_TEMP/locus-adb" >> "$GITHUB_PATH"
+
       - name: Device Contracts and Process-Recovery Smoke
         # v2, pinned to its immutable peeled commit.
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
@@ -136,7 +142,9 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_2
-          cores: 4
+          # Hosted Linux runners do not expose KVM; two emulated cores avoid
+          # starving system_server while retaining the full API matrix.
+          cores: 2
           emulator-boot-timeout: 1200
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           disable-animations: true

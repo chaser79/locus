@@ -14,6 +14,8 @@ readonly ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 readonly TEST_APK="${LOCUS_ANDROID_TEST_APK:-$ROOT_DIR/example/build/locus/outputs/apk/androidTest/debug/locus-debug-androidTest.apk}"
 readonly LOGCAT_CLEAR_ATTEMPTS=3
 readonly LOGCAT_CLEAR_RETRY_SECONDS=1
+readonly PROCESS_KILL_ATTEMPTS=3
+readonly PROCESS_KILL_RETRY_SECONDS=1
 
 fail() {
   echo "Android process-recovery smoke failed: $*" >&2
@@ -140,6 +142,36 @@ clear_logcat() {
   echo "Warning: unable to clear logcat; continuing with report change detection." >&2
 }
 
+kill_process() {
+  local pid="$1"
+  local attempt
+  local shell_error=""
+  local run_as_error=""
+
+  for attempt in $(seq 1 "$PROCESS_KILL_ATTEMPTS"); do
+    if shell_error=$("$ADB" shell kill -9 "$pid" 2>&1); then
+      return 0
+    fi
+    if run_as_error=$("$ADB" shell run-as "$PACKAGE" /system/bin/kill -9 "$pid" 2>&1); then
+      return 0
+    fi
+
+    # A heavily contended emulator can report a transient adb failure after
+    # the signal has already taken effect. The replacement-PID assertion below
+    # still proves that the service recovered from process death.
+    if [[ "$(pid_of_package)" != "$pid" ]]; then
+      return 0
+    fi
+    if (( attempt < PROCESS_KILL_ATTEMPTS )); then
+      sleep "$PROCESS_KILL_RETRY_SECONDS"
+    fi
+  done
+
+  printf 'adb shell kill failed: %s\nrun-as kill failed: %s\n' \
+    "$shell_error" "$run_as_error" >&2
+  return 1
+}
+
 [[ -f "$TEST_APK" ]] || fail "instrumentation APK not found at $TEST_APK"
 "$ADB" get-state >/dev/null 2>&1 || fail "no adb device is ready"
 "$ADB" install -r -t "$TEST_APK" >/dev/null || fail "could not install instrumentation APK"
@@ -170,11 +202,13 @@ start_command "$ACTION_ARM"
 initial_pid=$(wait_for_service) || fail "foreground service did not start"
 [[ -n "$initial_pid" ]] || fail "initial process PID was empty"
 
-# SIGKILL through run-as reproduces process loss without force-stopping the
-# package. A force-stop would intentionally clear Android's restart eligibility
-# and would therefore test the wrong lifecycle contract.
-"$ADB" shell run-as "$PACKAGE" kill -9 "$initial_pid" >/dev/null 2>&1 ||
-  fail "could not kill process $initial_pid through run-as"
+# SIGKILL reproduces process loss without force-stopping the package. A
+# force-stop would intentionally clear Android's restart eligibility and would
+# therefore test the wrong lifecycle contract. The adb-shell form works on
+# older API images where run-as may reject the test-only package; run-as remains
+# a fallback for devices that restrict shell process signals.
+kill_process "$initial_pid" ||
+  fail "could not kill process $initial_pid without force-stopping the package"
 recovered_pid=$(wait_for_service "$initial_pid") ||
   fail "sticky service did not recover with a replacement process"
 [[ "$recovered_pid" != "$initial_pid" ]] || fail "process PID did not change"
