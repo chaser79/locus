@@ -22,7 +22,7 @@ env:
   # surfaces as "iOS <X.Y> Platform Not Installed" errors. Pinning the
   # macOS runner family (macos-15) is the level of determinism that
   # works without paying for a multi-GB platform download per build.
-  FLUTTER_VERSION: "3.41.9"
+  FLUTTER_VERSION: "3.47.0"
   JAVA_VERSION: "17"
 
 defaults:
@@ -116,7 +116,7 @@ jobs:
         # background restrictions, and the current platform boundary.
         api-level: [26, 29, 34, 36]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -200,11 +200,11 @@ jobs:
     name: iOS SwiftPM Check
     runs-on: macos-15
     env:
-      # Flutter 3.41.9 supports SwiftPM but does not enable it by default.
+      # Flutter 3.47.0 supports SwiftPM but does not enable it by default.
       # Keep this explicit so the nested plugin package remains a real CI lane.
       FLUTTER_SWIFT_PACKAGE_MANAGER: "true"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}

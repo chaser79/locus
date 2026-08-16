@@ -4,6 +4,14 @@ include: package:flutter_lints/flutter.yaml
 # are expected - the lints resolve correctly when using `flutter analyze`.
 
 analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 
 linter:
   rules:

@@ -17,10 +17,12 @@ Detailed iOS and Android setup instructions for the Locus SDK, including permiss
 ### Minimum Requirements
 
 - **Minimum SDK**: 26 (Android 8.0 Oreo)
-- **Target SDK**: 33+ (Android 13+)
-- **Compile SDK**: 33+
-- **Gradle**: 7.0+
-- **Kotlin**: 1.7+
+- **Target SDK**: Set by the host application; the Locus library does not override it
+- **Compile SDK**: 37+
+- **Gradle**: 9.5.0+
+- **Android Gradle Plugin**: 9.3.1+
+- **Kotlin**: 2.4.10+
+- **Java**: 17+
 
 ### 1. AndroidManifest.xml Permissions
 
@@ -74,13 +76,13 @@ Add required permissions to `android/app/src/main/AndroidManifest.xml`:
 
 ```kotlin
 buildscript {
-    ext.kotlin_version = '1.9.0'
+    ext.kotlin_version = '2.4.10'
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.0'
+        classpath 'com.android.tools.build:gradle:9.3.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -98,12 +100,12 @@ allprojects {
 ```kotlin
 android {
     namespace = "com.example.app"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.app"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36 // The host application owns the target SDK.
         versionCode = 1
         versionName = "1.0.0"
         
@@ -464,14 +466,14 @@ Fix issues based on output.
 
 | Component | Minimum Version | Recommended |
 |-----------|----------------|-------------|
-| Gradle | 7.0 | 8.1+ |
-| Android Gradle Plugin | 7.0.0 | 8.1+ |
-| Kotlin | 1.7.0 | 1.9+ |
-| compileSdk | 31 | 34 |
+| Gradle | 9.5.0 | 9.5.0+ |
+| Android Gradle Plugin | 9.3.1 | 9.3.1+ |
+| Kotlin | 2.4.10 | 2.4.10+ |
+| compileSdk | 37 | 37+ |
 | minSdk | 26 | 26+ |
-| targetSdk | 31 | 34 |
-| Google Play Services Location | 20.0.0 | 21.0.1 |
-| AndroidX Core | 1.6.0 | 1.12+ |
+| targetSdk | Host-controlled | Host-controlled |
+| Google Play Services Location | 21.4.0 | 21.4.0 |
+| AndroidX Core | 1.19.0 | 1.19.0 |
 
 ### iOS
 
@@ -486,8 +488,8 @@ Fix issues based on output.
 
 | Component | Minimum Version | Recommended |
 |-----------|----------------|-------------|
-| Flutter | 3.0.0 | 3.16+ |
-| Dart | 2.17.0 | 3.2+ |
+| Flutter | 3.24.0 | 3.47.0 |
+| Dart | 3.8.0 | 3.13.0 |
 
 ---
 

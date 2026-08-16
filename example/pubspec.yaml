@@ -5,19 +5,20 @@ description: Demonstrates how to use the Locus background geolocation plugin.
 publish_to: "none"
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.38.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  google_fonts: ^6.2.1
-  flutter_svg: ^2.0.10
+  google_fonts: ^8.2.1
+  flutter_svg: ^2.3.0
 
   locus:
     path: ../
 
-  cupertino_icons: ^1.0.2
+  cupertino_icons: ^1.0.9
 
 dev_dependencies:
   flutter_test:

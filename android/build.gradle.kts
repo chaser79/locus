@@ -1,4 +1,4 @@
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.JavaVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -17,8 +17,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.7.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
+        classpath("com.android.tools.build:gradle:9.3.1")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10")
     }
 }
 
@@ -31,14 +31,15 @@ allprojects {
 
 apply(plugin = "com.android.library")
 apply(plugin = "org.jetbrains.kotlin.android")
-
 extensions.configure<LibraryExtension>("android") {
     namespace = "dev.locus"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 26
-        targetSdk = 34
+        // targetSdk belongs to the consuming application. Setting it on this
+        // library caused LibraryDefaultConfig.setTargetSdk(Integer) linkage
+        // failures with newer host Android Gradle Plugin versions.
         // This dependency-free instrumentation executes the production parser
         // against Android's real org.json implementation. TODO: migrate it to
         // AndroidJUnitRunner if a broader Android test suite is introduced.
@@ -47,13 +48,13 @@ extensions.configure<LibraryExtension>("android") {
 
     sourceSets {
         getByName("main") {
-            java.srcDirs("src/main/kotlin")
+            java.directories.add("src/main/kotlin")
         }
         getByName("test") {
-            java.srcDirs("src/test/kotlin")
+            java.directories.add("src/test/kotlin")
         }
         getByName("androidTest") {
-            java.srcDirs("src/androidTest/kotlin")
+            java.directories.add("src/androidTest/kotlin")
         }
     }
 
@@ -79,13 +80,13 @@ tasks.withType<KotlinCompile>().configureEach {
 }
 
 dependencies {
-    add("implementation", "com.google.android.gms:play-services-location:21.3.0")
-    add("implementation", "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    add("implementation", "com.google.android.gms:play-services-location:21.4.0")
+    add("implementation", "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 
     // JVM unit tests under src/test/kotlin. State helpers
     // (`CompressionFallbackState`, future drainExhaustedContexts) are
     // Context-free by design so plain JUnit + kotlinx-coroutines-test is
     // enough — no Robolectric / emulator required.
     add("testImplementation", "junit:junit:4.13.2")
-    add("testImplementation", "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    add("testImplementation", "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 }
