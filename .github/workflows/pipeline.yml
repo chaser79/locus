@@ -143,7 +143,7 @@ jobs:
           script: |
             # The emulator action runs each script line in a fresh shell.
             # API 29's UTP split-APK installer rejects this healthy device before the instrumentation starts, so invoke the same contract runner directly there.
-            if [ "${{ matrix.api-level }}" = "29" ]; then (cd example/android && ./gradlew :locus:assembleDebugAndroidTest); adb install -r -t example/build/locus/outputs/apk/androidTest/debug/locus-debug-androidTest.apk; output="$(adb shell am instrument -w -r dev.locus.test/dev.locus.core.ConfigSnapshotInstrumentation)"; printf '%s\n' "$output"; printf '%s\n' "$output" | grep -Fq 'INSTRUMENTATION_CODE: -1'; else (cd example/android && ./gradlew :locus:connectedDebugAndroidTest); fi
+            if [ "${{ matrix.api-level }}" = "29" ]; then bash ./tool/android_config_snapshot_smoke.sh; else (cd example/android && ./gradlew :locus:connectedDebugAndroidTest); fi
             bash ./tool/android_process_recovery_smoke.sh
 
   ios-check:
