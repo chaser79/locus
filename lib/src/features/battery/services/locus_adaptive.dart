@@ -108,13 +108,15 @@ class LocusAdaptive {
         'heartbeat_interval_s': settings.heartbeatInterval,
         'gps_enabled': settings.gpsEnabled,
       });
-      await LocusConfig.setConfig(Config(
-        desiredAccuracy: settings.desiredAccuracy,
-        distanceFilter: settings.distanceFilter,
-        locationUpdateInterval: settings.heartbeatInterval * 1000,
-        // Also update heartbeat interval itself if using heartbeat mechanism
-        heartbeatInterval: settings.heartbeatInterval,
-      ));
+      await LocusConfig.setConfig(
+        Config(
+          desiredAccuracy: settings.desiredAccuracy,
+          distanceFilter: settings.distanceFilter,
+          locationUpdateInterval: settings.heartbeatInterval * 1000,
+          // Also update heartbeat interval itself if using heartbeat mechanism
+          heartbeatInterval: settings.heartbeatInterval,
+        ),
+      );
     } catch (e, stack) {
       // Only log for unexpected errors, not MissingPluginException in tests
       if (!e.toString().contains('MissingPluginException')) {

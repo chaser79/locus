@@ -209,10 +209,7 @@ class PolygonGeofenceFactory {
       throw ArgumentError('Polygon must have at least 3 vertices');
     }
 
-    return PolygonGeofence(
-      identifier: _identifier,
-      vertices: _vertices,
-    );
+    return PolygonGeofence(identifier: _identifier, vertices: _vertices);
   }
 }
 

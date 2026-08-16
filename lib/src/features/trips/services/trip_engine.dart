@@ -30,10 +30,11 @@ class TripEngine {
     // Load persisted state first to decide if we can restore
     TripState? restored;
     if (_store != null) {
-      restored = await _store!.load();
+      restored = await _store.load();
     }
 
-    final shouldRestore = restored != null &&
+    final shouldRestore =
+        restored != null &&
         !restored.ended &&
         (config.tripId == null || config.tripId == restored.tripId);
 
@@ -110,14 +111,16 @@ class TripEngine {
     final endedAt = DateTime.now().toUtc();
     final summary = state.toSummary(endedAt);
     if (summary != null) {
-      _controller.add(TripEvent(
-        type: TripEventType.tripEnd,
-        tripId: state.tripId,
-        timestamp: endedAt,
-        location: state.lastLocation,
-        summary: summary,
-        isMoving: false,
-      ));
+      _controller.add(
+        TripEvent(
+          type: TripEventType.tripEnd,
+          tripId: state.tripId,
+          timestamp: endedAt,
+          location: state.lastLocation,
+          summary: summary,
+          isMoving: false,
+        ),
+      );
     }
     await _store?.clear();
     return summary;
@@ -159,15 +162,23 @@ class TripEngine {
     }
 
     final previous = _pendingStartLocation!;
-    final distance =
-        LocationUtils.calculateDistance(previous.coords, location.coords);
+    final distance = LocationUtils.calculateDistance(
+      previous.coords,
+      location.coords,
+    );
     final speedKph = LocationUtils.calculateSpeedKph(
-        distance, location.timestamp.difference(previous.timestamp));
+      distance,
+      location.timestamp.difference(previous.timestamp),
+    );
 
     if (distance >= config.startDistanceMeters ||
         speedKph >= config.startSpeedKph) {
-      await _beginTrip(location, state,
-          startLocation: previous, initialDistance: distance);
+      await _beginTrip(
+        location,
+        state,
+        startLocation: previous,
+        initialDistance: distance,
+      );
       _pendingStartLocation = null;
       return;
     }
@@ -200,13 +211,15 @@ class TripEngine {
     _dwellEmitted = false;
     await _persistState(force: true);
 
-    _controller.add(TripEvent(
-      type: TripEventType.tripStart,
-      tripId: state.tripId,
-      timestamp: startedAt,
-      location: location,
-      isMoving: true,
-    ));
+    _controller.add(
+      TripEvent(
+        type: TripEventType.tripStart,
+        tripId: state.tripId,
+        timestamp: startedAt,
+        location: location,
+        isMoving: true,
+      ),
+    );
   }
 
   Future<void> _processUpdate(
@@ -221,16 +234,18 @@ class TripEngine {
     // Skip this update if timestamp is not newer than last location
     if (deltaTime.isNegative || deltaTime == Duration.zero) {
       // Emit diagnostic event for clock anomaly
-      _controller.add(TripEvent.diagnostic(
-        tripId: state.tripId,
-        message: 'Clock anomaly detected',
-        data: {
-          'lastTimestamp': lastLocation.timestamp.toIso8601String(),
-          'currentTimestamp': location.timestamp.toIso8601String(),
-          'deltaMs': deltaTime.inMilliseconds,
-          'action': 'skipped_update',
-        },
-      ));
+      _controller.add(
+        TripEvent.diagnostic(
+          tripId: state.tripId,
+          message: 'Clock anomaly detected',
+          data: {
+            'lastTimestamp': lastLocation.timestamp.toIso8601String(),
+            'currentTimestamp': location.timestamp.toIso8601String(),
+            'deltaMs': deltaTime.inMilliseconds,
+            'action': 'skipped_update',
+          },
+        ),
+      );
 
       // If clock jumped backwards significantly (>1 hour), reset the trip's
       // last location timestamp to the current location to allow recovery
@@ -247,17 +262,21 @@ class TripEngine {
           started: state.started,
           ended: state.ended,
         );
-        _controller.add(TripEvent.diagnostic(
-          tripId: state.tripId,
-          message: 'Trip state reset due to significant clock change',
-          data: {'newBaseline': location.timestamp.toIso8601String()},
-        ));
+        _controller.add(
+          TripEvent.diagnostic(
+            tripId: state.tripId,
+            message: 'Trip state reset due to significant clock change',
+            data: {'newBaseline': location.timestamp.toIso8601String()},
+          ),
+        );
       }
       return;
     }
 
-    final deltaDistance =
-        LocationUtils.calculateDistance(lastLocation.coords, location.coords);
+    final deltaDistance = LocationUtils.calculateDistance(
+      lastLocation.coords,
+      location.coords,
+    );
     final speedKph = LocationUtils.calculateSpeedKph(deltaDistance, deltaTime);
     final isMoving = location.isMoving ?? speedKph >= config.stationarySpeedKph;
 
@@ -309,13 +328,15 @@ class TripEngine {
       return;
     }
     _lastUpdateAt = location.timestamp;
-    _controller.add(TripEvent(
-      type: TripEventType.tripUpdate,
-      tripId: tripId,
-      timestamp: location.timestamp,
-      location: location,
-      isMoving: isMoving,
-    ));
+    _controller.add(
+      TripEvent(
+        type: TripEventType.tripUpdate,
+        tripId: tripId,
+        timestamp: location.timestamp,
+        location: location,
+        isMoving: isMoving,
+      ),
+    );
   }
 
   void _emitDwellIfNeeded(Location location, String tripId, TripConfig config) {
@@ -329,13 +350,15 @@ class TripEngine {
     if (location.timestamp.difference(stationarySince).inMinutes >=
         config.dwellMinutes) {
       _dwellEmitted = true;
-      _controller.add(TripEvent(
-        type: TripEventType.dwell,
-        tripId: tripId,
-        timestamp: location.timestamp,
-        location: location,
-        isMoving: false,
-      ));
+      _controller.add(
+        TripEvent(
+          type: TripEventType.dwell,
+          tripId: tripId,
+          timestamp: location.timestamp,
+          location: location,
+          isMoving: false,
+        ),
+      );
     }
   }
 
@@ -358,14 +381,16 @@ class TripEngine {
       return;
     }
     _lastDeviationAt = location.timestamp;
-    _controller.add(TripEvent(
-      type: TripEventType.routeDeviation,
-      tripId: tripId,
-      timestamp: location.timestamp,
-      location: location,
-      distanceFromRouteMeters: distance,
-      isMoving: true,
-    ));
+    _controller.add(
+      TripEvent(
+        type: TripEventType.routeDeviation,
+        tripId: tripId,
+        timestamp: location.timestamp,
+        location: location,
+        distanceFromRouteMeters: distance,
+        isMoving: true,
+      ),
+    );
   }
 
   Future<void> _maybeStopOnStationary(
@@ -386,23 +411,20 @@ class TripEngine {
   double _distanceToRouteMeters(Coords point, List<RoutePoint> route) {
     if (route.length < 2) {
       return LocationUtils.calculateDistance(
-          point,
-          Coords(
-            latitude: route.first.latitude,
-            longitude: route.first.longitude,
-            accuracy: 0,
-          ));
+        point,
+        Coords(
+          latitude: route.first.latitude,
+          longitude: route.first.longitude,
+          accuracy: 0,
+        ),
+      );
     }
 
     var minDistance = double.infinity;
     for (var i = 0; i < route.length - 1; i++) {
       final start = route[i];
       final end = route[i + 1];
-      final distance = _distanceToSegmentMeters(
-        point,
-        start,
-        end,
-      );
+      final distance = _distanceToSegmentMeters(point, start, end);
       if (distance < minDistance) {
         minDistance = distance;
       }
@@ -460,7 +482,8 @@ class TripEngine {
     final pointMinusStartY = py - sy;
     final pointMinusStartZ = pz - sz;
 
-    final t = (pointMinusStartX * segX +
+    final t =
+        (pointMinusStartX * segX +
             pointMinusStartY * segY +
             pointMinusStartZ * segZ) /
         lengthSquared;
@@ -505,7 +528,7 @@ class TripEngine {
     if (!force && _shouldThrottlePersist(state.lastLocation?.timestamp)) {
       return;
     }
-    await _store!.save(state);
+    await _store.save(state);
   }
 
   bool _shouldThrottlePersist(DateTime? timestamp) {

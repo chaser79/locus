@@ -124,20 +124,20 @@ class Location {
   }
 
   JsonMap toMap() => {
-        'uuid': uuid,
-        'timestamp': timestamp.toIso8601String(),
-        if (age != null) 'age': age,
-        if (event != null) 'event': event,
-        if (isMoving != null) 'is_moving': isMoving,
-        if (isHeartbeat != null) 'is_heartbeat': isHeartbeat,
-        'mock': isMock,
-        'coords': coords.toMap(),
-        if (activity != null) 'activity': activity!.toMap(),
-        if (battery != null) 'battery': battery!.toMap(),
-        if (geofence != null) 'geofence': geofence!.toMap(),
-        if (odometer != null) 'odometer': odometer,
-        if (extras != null) 'extras': extras,
-      };
+    'uuid': uuid,
+    'timestamp': timestamp.toIso8601String(),
+    if (age != null) 'age': age,
+    if (event != null) 'event': event,
+    if (isMoving != null) 'is_moving': isMoving,
+    if (isHeartbeat != null) 'is_heartbeat': isHeartbeat,
+    'mock': isMock,
+    'coords': coords.toMap(),
+    if (activity != null) 'activity': activity!.toMap(),
+    if (battery != null) 'battery': battery!.toMap(),
+    if (geofence != null) 'geofence': geofence!.toMap(),
+    if (odometer != null) 'odometer': odometer,
+    if (extras != null) 'extras': extras,
+  };
 
   @override
   bool operator ==(Object other) =>

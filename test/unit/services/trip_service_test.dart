@@ -28,9 +28,7 @@ void main() {
       });
 
       test('should start trip with trip id', () async {
-        const config = TripConfig(
-          tripId: 'trip-456',
-        );
+        const config = TripConfig(tripId: 'trip-456');
 
         await service.start(config);
 
@@ -167,10 +165,7 @@ void main() {
 
       test('should handle subscription errors', () async {
         Object? error;
-        final sub = service.onEvent(
-          (_) {},
-          onError: (e) => error = e,
-        );
+        final sub = service.onEvent((_) {}, onError: (e) => error = e);
 
         await sub.cancel();
         expect(error, isNull);

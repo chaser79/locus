@@ -16,11 +16,13 @@ Detailed iOS and Android setup instructions for the Locus SDK, including permiss
 
 ### Minimum Requirements
 
-- **Minimum SDK**: 21 (Android 5.0 Lollipop)
-- **Target SDK**: 33+ (Android 13+)
-- **Compile SDK**: 33+
-- **Gradle**: 7.0+
-- **Kotlin**: 1.7+
+- **Minimum SDK**: 26 (Android 8.0 Oreo)
+- **Target SDK**: Set by the host application; the Locus library does not override it
+- **Compile SDK**: 37+
+- **Gradle**: 9.5.0+
+- **Android Gradle Plugin**: 9.3.1+
+- **Kotlin**: 2.4.10+
+- **Java**: 17+
 
 ### 1. AndroidManifest.xml Permissions
 
@@ -74,13 +76,13 @@ Add required permissions to `android/app/src/main/AndroidManifest.xml`:
 
 ```kotlin
 buildscript {
-    ext.kotlin_version = '1.9.0'
+    ext.kotlin_version = '2.4.10'
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.0'
+        classpath 'com.android.tools.build:gradle:9.3.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -98,12 +100,12 @@ allprojects {
 ```kotlin
 android {
     namespace = "com.example.app"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.app"
-        minSdk = 21
-        targetSdk = 34
+        minSdk = 26
+        targetSdk = 36 // The host application owns the target SDK.
         versionCode = 1
         versionName = "1.0.0"
         
@@ -227,9 +229,9 @@ Locus requires Google Play Services. Check availability:
 
 ### Minimum Requirements
 
-- **Minimum iOS**: 11.0
-- **Xcode**: 14.0+
-- **Swift**: 5.0+
+- **Minimum iOS**: 14.0
+- **Xcode**: 15.0+
+- **Swift**: 5.9+
 - **CocoaPods**: 1.11+
 
 ### 1. Info.plist Permissions
@@ -298,33 +300,33 @@ Add:
 **ios/Podfile**:
 
 ```ruby
-platform :ios, '11.0'
-
-# Uncomment if using Swift
-use_frameworks!
+platform :ios, '14.0'
 
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
-
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-  
-  # CocoaPods post-install hook
-  post_install do |installer|
-    installer.pods_project.targets.each do |target|
-      flutter_additional_ios_build_settings(target)
-      
-      target.build_configurations.each do |config|
-        # Set minimum deployment target
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '11.0'
-        
-        # Enable bitcode (optional)
-        config.build_settings['ENABLE_BITCODE'] = 'NO'
-      end
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    # locus:permission-handler-macros:start
+    target.build_configurations.each do |config|
+      definitions = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+      definitions.delete_if { |definition| definition.to_s.start_with?('PERMISSION_LOCATION=') }
+      definitions << 'PERMISSION_LOCATION=1'
+      definitions.delete_if { |definition| definition.to_s.start_with?('PERMISSION_SENSORS=') }
+      definitions << 'PERMISSION_SENSORS=1'
     end
+    # locus:permission-handler-macros:end
   end
 end
 ```
+
+These compile-time definitions are required by `permission_handler`.
+Without them, `Locus.requestPermission()` reports denial without presenting the
+iOS location or motion permission flow.
 
 Run after editing:
 ```bash
@@ -412,7 +414,7 @@ iOS 15+ provides a temporary location permission button:
 In Xcode, configure build settings:
 
 **Runner → Build Settings**:
-- **iOS Deployment Target**: 11.0 or higher
+- **iOS Deployment Target**: 14.0 or higher
 - **Swift Language Version**: 5.x
 - **Enable Bitcode**: No
 - **Architectures**: arm64 (remove armv7 for iOS 11+)
@@ -433,6 +435,7 @@ This command:
 - ✅ Adds required permissions to AndroidManifest.xml
 - ✅ Adds usage descriptions to Info.plist
 - ✅ Configures background modes (iOS)
+- ✅ Enables the iOS location and motion permission handlers
 - ✅ Verifies Gradle configuration
 - ✅ Checks for common issues
 
@@ -463,20 +466,20 @@ Fix issues based on output.
 
 | Component | Minimum Version | Recommended |
 |-----------|----------------|-------------|
-| Gradle | 7.0 | 8.1+ |
-| Android Gradle Plugin | 7.0.0 | 8.1+ |
-| Kotlin | 1.7.0 | 1.9+ |
-| compileSdk | 31 | 34 |
-| minSdk | 21 | 21 |
-| targetSdk | 31 | 34 |
-| Google Play Services Location | 20.0.0 | 21.0.1 |
-| AndroidX Core | 1.6.0 | 1.12+ |
+| Gradle | 9.5.0 | 9.5.0+ |
+| Android Gradle Plugin | 9.3.1 | 9.3.1+ |
+| Kotlin | 2.4.10 | 2.4.10+ |
+| compileSdk | 37 | 37+ |
+| minSdk | 26 | 26+ |
+| targetSdk | Host-controlled | Host-controlled |
+| Google Play Services Location | 21.4.0 | 21.4.0 |
+| AndroidX Core | 1.19.0 | 1.19.0 |
 
 ### iOS
 
 | Component | Minimum Version | Recommended |
 |-----------|----------------|-------------|
-| iOS | 11.0 | 15.0+ |
+| iOS | 14.0 | 15.0+ |
 | Xcode | 12.0 | 15.0+ |
 | Swift | 5.0 | 5.9+ |
 | CocoaPods | 1.10 | 1.14+ |
@@ -485,8 +488,8 @@ Fix issues based on output.
 
 | Component | Minimum Version | Recommended |
 |-----------|----------------|-------------|
-| Flutter | 3.0.0 | 3.16+ |
-| Dart | 2.17.0 | 3.2+ |
+| Flutter | 3.24.0 | 3.47.0 |
+| Dart | 3.8.0 | 3.13.0 |
 
 ---
 
@@ -604,7 +607,7 @@ if (!granted) {
 }
 ```
 
-#### Background tracking stops after app kill
+#### Background tracking stops after recents removal or ordinary process death
 
 **Cause**: `stopOnTerminate: true` (default).
 
@@ -612,10 +615,16 @@ if (!granted) {
 ```dart
 await Locus.ready(ConfigPresets.balanced.copyWith(
   stopOnTerminate: false,
-  startOnBoot: true,
+  startOnBoot: true, // Android reboot recovery only
   foregroundService: true, // Android
 ));
 ```
+
+This does not bypass Android Task Manager stop, Android system-settings
+force-stop, or iOS user force-quit. Locus consumes Android explicit-stop history
+on the next eligible launch and keeps tracking off until the host calls
+`Locus.start()` again. iOS requires the user to open the app after force-quit. See the
+[lifecycle matrices](../guides/headless-execution.md#android-lifecycle-matrix).
 
 #### High battery drain
 

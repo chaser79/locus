@@ -269,21 +269,21 @@ class SyncPolicy {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'onWifi': onWifi.name,
-        'onCellular': onCellular.name,
-        'onMetered': onMetered.name,
-        'onOffline': onOffline.name,
-        'onCharging': onCharging.name,
-        'batchSize': batchSize,
-        'batchIntervalMs': batchInterval.inMilliseconds,
-        'lowBatteryThreshold': lowBatteryThreshold,
-        'lowBatteryBehavior': lowBatteryBehavior.name,
-        'minSyncIntervalMs': minSyncInterval.inMilliseconds,
-        if (maxLocationAge != null)
-          'maxLocationAgeMs': maxLocationAge!.inMilliseconds,
-        'preferWifi': preferWifi,
-        'foregroundOnly': foregroundOnly,
-      };
+    'onWifi': onWifi.name,
+    'onCellular': onCellular.name,
+    'onMetered': onMetered.name,
+    'onOffline': onOffline.name,
+    'onCharging': onCharging.name,
+    'batchSize': batchSize,
+    'batchIntervalMs': batchInterval.inMilliseconds,
+    'lowBatteryThreshold': lowBatteryThreshold,
+    'lowBatteryBehavior': lowBatteryBehavior.name,
+    'minSyncIntervalMs': minSyncInterval.inMilliseconds,
+    if (maxLocationAge != null)
+      'maxLocationAgeMs': maxLocationAge!.inMilliseconds,
+    'preferWifi': preferWifi,
+    'foregroundOnly': foregroundOnly,
+  };
 }
 
 /// Sync behavior options.
@@ -353,21 +353,19 @@ class SyncDecision {
   );
 
   /// Sync should be deferred.
-  static SyncDecision defer(String reason, {Duration? delay}) => SyncDecision(
-        shouldSync: false,
-        reason: reason,
-        delay: delay,
-      );
+  static SyncDecision defer(String reason, {Duration? delay}) =>
+      SyncDecision(shouldSync: false, reason: reason, delay: delay);
 
   /// Sync with batching.
   static SyncDecision batch(int size, {Duration? delay}) => SyncDecision(
-        shouldSync: true,
-        reason: 'Batched sync',
-        batchLimit: size,
-        delay: delay,
-      );
+    shouldSync: true,
+    reason: 'Batched sync',
+    batchLimit: size,
+    delay: delay,
+  );
 
   @override
-  String toString() => 'SyncDecision(sync: $shouldSync, reason: $reason, '
+  String toString() =>
+      'SyncDecision(sync: $shouldSync, reason: $reason, '
       'batch: $batchLimit, delay: $delay)';
 }

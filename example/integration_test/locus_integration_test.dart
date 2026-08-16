@@ -11,13 +11,16 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Locus SDK Initialization', () {
-    testWidgets('ready() initializes the SDK and returns state',
-        (tester) async {
-      final state = await Locus.ready(const Config(
-        desiredAccuracy: DesiredAccuracy.high,
-        distanceFilter: 10,
-        logLevel: LogLevel.debug,
-      ));
+    testWidgets('ready() initializes the SDK and returns state', (
+      tester,
+    ) async {
+      final state = await Locus.ready(
+        const Config(
+          desiredAccuracy: DesiredAccuracy.high,
+          distanceFilter: 10,
+          logLevel: LogLevel.debug,
+        ),
+      );
 
       expect(state, isNotNull);
       expect(state.enabled, isFalse);
@@ -52,10 +55,9 @@ void main() {
       final granted = await Locus.requestPermission();
       if (!granted) return; // Skip if no permission
 
-      await Locus.ready(const Config(
-        desiredAccuracy: DesiredAccuracy.high,
-        distanceFilter: 10,
-      ));
+      await Locus.ready(
+        const Config(desiredAccuracy: DesiredAccuracy.high, distanceFilter: 10),
+      );
 
       // Start tracking
       final startState = await Locus.start();
@@ -66,23 +68,27 @@ void main() {
       expect(stopState.enabled, isFalse);
     });
 
-    testWidgets('getCurrentPosition() returns location when permission granted',
-        (tester) async {
-      final granted = await Locus.requestPermission();
-      if (!granted) return;
+    testWidgets(
+      'getCurrentPosition() returns location when permission granted',
+      (tester) async {
+        final granted = await Locus.requestPermission();
+        if (!granted) return;
 
-      await Locus.ready(const Config(
-        desiredAccuracy: DesiredAccuracy.high,
-        distanceFilter: 10,
-      ));
+        await Locus.ready(
+          const Config(
+            desiredAccuracy: DesiredAccuracy.high,
+            distanceFilter: 10,
+          ),
+        );
 
-      final location = await Locus.location.getCurrentPosition();
+        final location = await Locus.location.getCurrentPosition();
 
-      expect(location.coords.accuracy, greaterThanOrEqualTo(0));
-      expect(location.coords.latitude, inInclusiveRange(-90, 90));
-      expect(location.coords.longitude, inInclusiveRange(-180, 180));
-      expect(location.timestamp, isNotNull);
-    });
+        expect(location.coords.accuracy, greaterThanOrEqualTo(0));
+        expect(location.coords.latitude, inInclusiveRange(-90, 90));
+        expect(location.coords.longitude, inInclusiveRange(-180, 180));
+        expect(location.timestamp, isNotNull);
+      },
+    );
 
     testWidgets('changePace() sets moving state', (tester) async {
       await Locus.ready(const Config());
@@ -107,22 +113,25 @@ void main() {
   });
 
   group('Geofencing', () {
-    testWidgets('addGeofence() and getGeofences() work correctly',
-        (tester) async {
+    testWidgets('addGeofence() and getGeofences() work correctly', (
+      tester,
+    ) async {
       await Locus.ready(const Config());
 
       // Clear existing geofences
       await Locus.geofencing.removeAll();
 
       // Add a test geofence
-      await Locus.geofencing.add(const Geofence(
-        identifier: 'test_geofence',
-        radius: 100,
-        latitude: 37.4219983,
-        longitude: -122.084,
-        notifyOnEntry: true,
-        notifyOnExit: true,
-      ));
+      await Locus.geofencing.add(
+        const Geofence(
+          identifier: 'test_geofence',
+          radius: 100,
+          latitude: 37.4219983,
+          longitude: -122.084,
+          notifyOnEntry: true,
+          notifyOnExit: true,
+        ),
+      );
 
       final geofences = await Locus.geofencing.getAll();
       expect(geofences, isNotEmpty);
@@ -133,12 +142,14 @@ void main() {
       await Locus.ready(const Config());
       await Locus.geofencing.removeAll();
 
-      await Locus.geofencing.add(const Geofence(
-        identifier: 'exists_test',
-        radius: 50,
-        latitude: 40.0,
-        longitude: -74.0,
-      ));
+      await Locus.geofencing.add(
+        const Geofence(
+          identifier: 'exists_test',
+          radius: 50,
+          latitude: 40.0,
+          longitude: -74.0,
+        ),
+      );
 
       final exists = await Locus.geofencing.exists('exists_test');
       expect(exists, isTrue);
@@ -151,12 +162,14 @@ void main() {
       await Locus.ready(const Config());
       await Locus.geofencing.removeAll();
 
-      await Locus.geofencing.add(const Geofence(
-        identifier: 'to_remove',
-        radius: 50,
-        latitude: 40.0,
-        longitude: -74.0,
-      ));
+      await Locus.geofencing.add(
+        const Geofence(
+          identifier: 'to_remove',
+          radius: 50,
+          latitude: 40.0,
+          longitude: -74.0,
+        ),
+      );
 
       await Locus.geofencing.remove('to_remove');
       final exists = await Locus.geofencing.exists('to_remove');
@@ -169,11 +182,23 @@ void main() {
 
       await Locus.geofencing.addAll(const [
         Geofence(
-            identifier: 'multi_1', radius: 50, latitude: 40, longitude: -74),
+          identifier: 'multi_1',
+          radius: 50,
+          latitude: 40,
+          longitude: -74,
+        ),
         Geofence(
-            identifier: 'multi_2', radius: 50, latitude: 41, longitude: -75),
+          identifier: 'multi_2',
+          radius: 50,
+          latitude: 41,
+          longitude: -75,
+        ),
         Geofence(
-            identifier: 'multi_3', radius: 50, latitude: 42, longitude: -76),
+          identifier: 'multi_3',
+          radius: 50,
+          latitude: 42,
+          longitude: -76,
+        ),
       ]);
 
       final geofences = await Locus.geofencing.getAll();
@@ -212,9 +237,7 @@ void main() {
 
   group('Location Storage', () {
     testWidgets('getLocations() returns stored locations', (tester) async {
-      await Locus.ready(const Config(
-        persistMode: PersistMode.all,
-      ));
+      await Locus.ready(const Config(persistMode: PersistMode.all));
 
       final locations = await Locus.location.getLocations(limit: 10);
       expect(locations, isA<List<Location>>());
@@ -234,10 +257,9 @@ void main() {
       await Locus.ready(const Config());
 
       // Start a trip
-      await Locus.trips.start(const TripConfig(
-        startOnMoving: false,
-        updateIntervalSeconds: 30,
-      ));
+      await Locus.trips.start(
+        const TripConfig(startOnMoving: false, updateIntervalSeconds: 30),
+      );
 
       // Get trip state
       final tripState = Locus.trips.getState();
@@ -253,9 +275,7 @@ void main() {
 
   group('Schedule', () {
     testWidgets('startSchedule() and stopSchedule() work', (tester) async {
-      await Locus.ready(const Config(
-        schedule: ['08:00-12:00', '13:00-18:00'],
-      ));
+      await Locus.ready(const Config(schedule: ['08:00-12:00', '13:00-18:00']));
 
       await Locus.startSchedule();
       var state = await Locus.getState();
@@ -330,15 +350,12 @@ void main() {
     testWidgets('setTrackingProfiles() configures profiles', (tester) async {
       await Locus.ready(const Config());
 
-      await Locus.setTrackingProfiles(
-        {
-          TrackingProfile.offDuty: ConfigPresets.lowPower,
-          TrackingProfile.standby: ConfigPresets.balanced,
-          TrackingProfile.enRoute: ConfigPresets.tracking,
-          TrackingProfile.arrived: ConfigPresets.trail,
-        },
-        initialProfile: TrackingProfile.standby,
-      );
+      await Locus.setTrackingProfiles({
+        TrackingProfile.offDuty: ConfigPresets.lowPower,
+        TrackingProfile.standby: ConfigPresets.balanced,
+        TrackingProfile.enRoute: ConfigPresets.tracking,
+        TrackingProfile.arrived: ConfigPresets.trail,
+      }, initialProfile: TrackingProfile.standby);
 
       expect(Locus.currentTrackingProfile, equals(TrackingProfile.standby));
     });
@@ -346,13 +363,10 @@ void main() {
     testWidgets('setTrackingProfile() switches profile', (tester) async {
       await Locus.ready(const Config());
 
-      await Locus.setTrackingProfiles(
-        {
-          TrackingProfile.offDuty: ConfigPresets.lowPower,
-          TrackingProfile.enRoute: ConfigPresets.tracking,
-        },
-        initialProfile: TrackingProfile.offDuty,
-      );
+      await Locus.setTrackingProfiles({
+        TrackingProfile.offDuty: ConfigPresets.lowPower,
+        TrackingProfile.enRoute: ConfigPresets.tracking,
+      }, initialProfile: TrackingProfile.offDuty);
 
       await Locus.setTrackingProfile(TrackingProfile.enRoute);
       expect(Locus.currentTrackingProfile, equals(TrackingProfile.enRoute));

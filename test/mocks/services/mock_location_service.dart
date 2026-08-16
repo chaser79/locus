@@ -211,7 +211,8 @@ class MockLocationService implements LocationService {
     final dLat = (lat2 - lat1) * 0.017453292519943295; // Convert to radians
     final dLon = (lon2 - lon1) * 0.017453292519943295;
 
-    final a = (dLat / 2).sin() * (dLat / 2).sin() +
+    final a =
+        (dLat / 2).sin() * (dLat / 2).sin() +
         (lat1 * 0.017453292519943295).cos() *
             (lat2 * 0.017453292519943295).cos() *
             (dLon / 2).sin() *
@@ -226,10 +227,7 @@ class MockLocationService implements LocationService {
     void Function(Location) callback, {
     Function? onError,
   }) {
-    return _locationController.stream.listen(
-      callback,
-      onError: onError,
-    );
+    return _locationController.stream.listen(callback, onError: onError);
   }
 
   @override
@@ -237,10 +235,7 @@ class MockLocationService implements LocationService {
     void Function(Location) callback, {
     Function? onError,
   }) {
-    return _motionChangeController.stream.listen(
-      callback,
-      onError: onError,
-    );
+    return _motionChangeController.stream.listen(callback, onError: onError);
   }
 
   @override
@@ -248,10 +243,7 @@ class MockLocationService implements LocationService {
     void Function(Location) callback, {
     Function? onError,
   }) {
-    return _heartbeatController.stream.listen(
-      callback,
-      onError: onError,
-    );
+    return _heartbeatController.stream.listen(callback, onError: onError);
   }
 
   /// Disposes of resources.

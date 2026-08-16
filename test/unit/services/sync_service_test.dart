@@ -67,10 +67,7 @@ void main() {
 
     group('evaluatePolicy', () {
       test('should evaluate sync conditions', () async {
-        const policy = SyncPolicy(
-          lowBatteryThreshold: 20,
-          preferWifi: true,
-        );
+        const policy = SyncPolicy(lowBatteryThreshold: 20, preferWifi: true);
 
         final decision = await service.evaluatePolicy(policy: policy);
 
@@ -99,10 +96,7 @@ void main() {
       test('should accept idempotency key', () async {
         final payload = {'event': 'test'};
 
-        await service.enqueue(
-          payload,
-          idempotencyKey: 'unique-key-123',
-        );
+        await service.enqueue(payload, idempotencyKey: 'unique-key-123');
 
         expect(mockLocus.methodCalls, contains('enqueue'));
       });
@@ -166,11 +160,7 @@ void main() {
         final events = <HttpEvent>[];
         final sub = service.events.listen(events.add);
 
-        const event = HttpEvent(
-          status: 200,
-          ok: true,
-          responseText: 'OK',
-        );
+        const event = HttpEvent(status: 200, ok: true, responseText: 'OK');
         mockLocus.emitHttpEvent(event);
 
         await Future.delayed(Duration.zero);
@@ -223,7 +213,9 @@ void main() {
     group('callbacks', () {
       test('should set sync body builder', () async {
         Future<Map<String, dynamic>> builder(
-            List<Location> locations, Map<String, dynamic> extras) async {
+          List<Location> locations,
+          Map<String, dynamic> extras,
+        ) async {
           return {'custom': 'data', 'count': locations.length};
         }
 
@@ -278,15 +270,16 @@ void main() {
       });
 
       test(
-          'refreshDynamicHeaders calls the stored callback and returns headers',
-          () async {
-        final expectedHeaders = {'Authorization': 'Bearer fresh-token'};
-        LocusSync.setForegroundHeadersCallback(() async => expectedHeaders);
+        'refreshDynamicHeaders calls the stored callback and returns headers',
+        () async {
+          final expectedHeaders = {'Authorization': 'Bearer fresh-token'};
+          LocusSync.setForegroundHeadersCallback(() async => expectedHeaders);
 
-        final result = await LocusSync.refreshDynamicHeaders();
+          final result = await LocusSync.refreshDynamicHeaders();
 
-        expect(result, equals(expectedHeaders));
-      });
+          expect(result, equals(expectedHeaders));
+        },
+      );
 
       test('refreshDynamicHeaders returns null when no callback set', () async {
         final result = await LocusSync.refreshDynamicHeaders();
@@ -306,7 +299,8 @@ void main() {
 
       test('setForegroundHeadersCallback(null) clears the callback', () async {
         LocusSync.setForegroundHeadersCallback(
-            () async => {'Authorization': 'Bearer token'});
+          () async => {'Authorization': 'Bearer token'},
+        );
         LocusSync.setForegroundHeadersCallback(null);
 
         final result = await LocusSync.refreshDynamicHeaders();
@@ -322,11 +316,7 @@ void main() {
           received = event;
         });
 
-        const event = HttpEvent(
-          status: 200,
-          ok: true,
-          responseText: 'OK',
-        );
+        const event = HttpEvent(status: 200, ok: true, responseText: 'OK');
         mockLocus.emitHttpEvent(event);
 
         await Future.delayed(Duration.zero);

@@ -27,8 +27,10 @@ class LocusFeatures {
       LocusStreams.disableSpoofDetection();
     }
 
-    await LocusChannels.methods
-        .invokeMethod('setSpoofDetection', config.toMap());
+    await LocusChannels.methods.invokeMethod(
+      'setSpoofDetection',
+      config.toMap(),
+    );
   }
 
   static SpoofDetectionConfig? get spoofDetectionConfig =>

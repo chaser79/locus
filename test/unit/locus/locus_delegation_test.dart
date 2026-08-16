@@ -81,10 +81,9 @@ void main() {
     await Locus.trips.start(const TripConfig());
     await Locus.trips.stop();
 
-    await Locus.setTrackingProfiles(
-      {TrackingProfile.standby: const Config()},
-      enableAutomation: true,
-    );
+    await Locus.setTrackingProfiles({
+      TrackingProfile.standby: const Config(),
+    }, enableAutomation: true);
     await Locus.setTrackingProfile(TrackingProfile.enRoute);
     Locus.startTrackingAutomation();
     Locus.stopTrackingAutomation();

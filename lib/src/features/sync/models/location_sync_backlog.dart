@@ -31,13 +31,13 @@ class LocationSyncBacklogGroup {
   final int pendingLocationCount;
 
   JsonMap toMap() => {
-        'ownerId': ownerId,
-        'driverId': driverId,
-        'taskId': taskId,
-        'trackingSessionId': trackingSessionId,
-        if (startedAt != null) 'startedAt': startedAt!.toIso8601String(),
-        'pendingLocationCount': pendingLocationCount,
-      };
+    'ownerId': ownerId,
+    'driverId': driverId,
+    'taskId': taskId,
+    'trackingSessionId': trackingSessionId,
+    if (startedAt != null) 'startedAt': startedAt!.toIso8601String(),
+    'pendingLocationCount': pendingLocationCount,
+  };
 }
 
 class LocationSyncBacklog {
@@ -84,13 +84,13 @@ class LocationSyncBacklog {
   final List<LocationSyncBacklogGroup> groups;
 
   JsonMap toMap() => {
-        'pendingLocationCount': pendingLocationCount,
-        'pendingBatchCount': pendingBatchCount,
-        'isPaused': isPaused,
-        'quarantinedLocationCount': quarantinedLocationCount,
-        if (lastSuccessAt != null)
-          'lastSuccessAt': lastSuccessAt!.toIso8601String(),
-        if (lastFailureReason != null) 'lastFailureReason': lastFailureReason,
-        'groups': groups.map((group) => group.toMap()).toList(growable: false),
-      };
+    'pendingLocationCount': pendingLocationCount,
+    'pendingBatchCount': pendingBatchCount,
+    'isPaused': isPaused,
+    'quarantinedLocationCount': quarantinedLocationCount,
+    if (lastSuccessAt != null)
+      'lastSuccessAt': lastSuccessAt!.toIso8601String(),
+    if (lastFailureReason != null) 'lastFailureReason': lastFailureReason,
+    'groups': groups.map((group) => group.toMap()).toList(growable: false),
+  };
 }

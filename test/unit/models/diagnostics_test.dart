@@ -21,7 +21,7 @@ void main() {
     final command = RemoteCommand.fromMap({
       'id': 'cmd-1',
       'type': 'syncQueue',
-      'payload': {'value': 10}
+      'payload': {'value': 10},
     });
 
     expect(command.id, 'cmd-1');

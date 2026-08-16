@@ -41,17 +41,11 @@ android/local.properties
 android/gradle-app.setting
 android/.idea/
 android/captures/
-android/gradlew
-android/gradlew.bat
-android/gradle/wrapper/gradle-wrapper.jar
 android/gradle/wrapper/gradle-wrapper.properties
 *.jks
 key.properties
-**/android/**/gradle-wrapper.jar
 **/android/.gradle
 **/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
 
@@ -115,8 +109,12 @@ yarn-error.log*
 /.agent
 .mcp.json
 
-# SwiftPM build cache. iOS build is driven by CocoaPods (locus.podspec);
-# the top-level ios/Package.swift exists only so SourceKit-LSP / IDE
-# indexers can resolve internal types when files are opened standalone.
+# SwiftPM build cache for the top-level native helper-test/indexing package.
+# Production Flutter builds use either CocoaPods or ios/locus/Package.swift.
 ios/.build/
 ios/Package.resolved
+/docs/planning
+.local-agent.json
+
+# local-agent-setup: personal/machine-local agent overrides (gitignored)
+AGENTS.override.md

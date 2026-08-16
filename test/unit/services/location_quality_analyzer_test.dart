@@ -12,12 +12,7 @@ Location _locationAt({
   return Location(
     uuid: timestamp.microsecondsSinceEpoch.toString(),
     timestamp: timestamp,
-    coords: Coords(
-      latitude: lat,
-      longitude: lng,
-      accuracy: accuracy,
-      speed: 0,
-    ),
+    coords: Coords(latitude: lat, longitude: lng, accuracy: accuracy, speed: 0),
   );
 }
 
@@ -53,11 +48,13 @@ void main() {
 
     final now = DateTime.utc(2025, 1, 1, 0, 0, 0);
     controller.add(_locationAt(timestamp: now, lat: 0, lng: 0));
-    controller.add(_locationAt(
-      timestamp: now.add(const Duration(seconds: 1)),
-      lat: 0,
-      lng: 0,
-    ));
+    controller.add(
+      _locationAt(
+        timestamp: now.add(const Duration(seconds: 1)),
+        lat: 0,
+        lng: 0,
+      ),
+    );
 
     final results = await stream.take(2).toList();
     await controller.close();

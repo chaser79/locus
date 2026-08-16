@@ -352,7 +352,7 @@ Locus.dataSync.setSyncBodyBuilder((locations, extras) async {
 
 ### Headless Sync Body Builder
 
-For background sync when app is terminated:
+For OS-eligible background sync while the Flutter UI engine is absent:
 
 ```dart
 @pragma('vm:entry-point')

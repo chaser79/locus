@@ -48,11 +48,13 @@ class AdaptiveTrackingConfig {
       enabled: map['enabled'] as bool? ?? true,
       speedTiers: map['speedTiers'] is Map
           ? SpeedTiers.fromMap(
-              Map<String, dynamic>.from(map['speedTiers'] as Map))
+              Map<String, dynamic>.from(map['speedTiers'] as Map),
+            )
           : const SpeedTiers(),
       batteryThresholds: map['batteryThresholds'] is Map
           ? BatteryThresholds.fromMap(
-              Map<String, dynamic>.from(map['batteryThresholds'] as Map))
+              Map<String, dynamic>.from(map['batteryThresholds'] as Map),
+            )
           : const BatteryThresholds(),
       activityOptimization: map['activityOptimization'] as bool? ?? true,
       stationaryGpsOff: map['stationaryGpsOff'] as bool? ?? true,
@@ -205,10 +207,10 @@ class AdaptiveTrackingConfig {
       if (hasExceededDelay) {
         final heartbeat = smartHeartbeat
             ? (batteryLevel == BatteryLevel.low
-                ? maxHeartbeatInterval.inSeconds
-                : ((maxHeartbeatInterval.inSeconds +
-                        minHeartbeatInterval.inSeconds) ~/
-                    2))
+                  ? maxHeartbeatInterval.inSeconds
+                  : ((maxHeartbeatInterval.inSeconds +
+                            minHeartbeatInterval.inSeconds) ~/
+                        2))
             : minHeartbeatInterval.inSeconds;
         return AdaptiveSettings(
           distanceFilter: 50,
@@ -355,20 +357,20 @@ class AdaptiveTrackingConfig {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'enabled': enabled,
-        'speedTiers': speedTiers.toMap(),
-        'batteryThresholds': batteryThresholds.toMap(),
-        'activityOptimization': activityOptimization,
-        'stationaryGpsOff': stationaryGpsOff,
-        'stationaryDelayMs': stationaryDelay.inMilliseconds,
-        'minAccuracyMeters': minAccuracyMeters,
-        'filterDuplicates': filterDuplicates,
-        'duplicateDistanceMeters': duplicateDistanceMeters,
-        'geofenceOptimization': geofenceOptimization,
-        'smartHeartbeat': smartHeartbeat,
-        'maxHeartbeatIntervalMs': maxHeartbeatInterval.inMilliseconds,
-        'minHeartbeatIntervalMs': minHeartbeatInterval.inMilliseconds,
-      };
+    'enabled': enabled,
+    'speedTiers': speedTiers.toMap(),
+    'batteryThresholds': batteryThresholds.toMap(),
+    'activityOptimization': activityOptimization,
+    'stationaryGpsOff': stationaryGpsOff,
+    'stationaryDelayMs': stationaryDelay.inMilliseconds,
+    'minAccuracyMeters': minAccuracyMeters,
+    'filterDuplicates': filterDuplicates,
+    'duplicateDistanceMeters': duplicateDistanceMeters,
+    'geofenceOptimization': geofenceOptimization,
+    'smartHeartbeat': smartHeartbeat,
+    'maxHeartbeatIntervalMs': maxHeartbeatInterval.inMilliseconds,
+    'minHeartbeatIntervalMs': minHeartbeatInterval.inMilliseconds,
+  };
 }
 
 /// Speed-based update interval tiers.
@@ -424,7 +426,8 @@ class SpeedTiers {
     return SpeedTiers(
       stationary: map['stationary'] is Map
           ? SpeedTier.fromMap(
-              Map<String, dynamic>.from(map['stationary'] as Map))
+              Map<String, dynamic>.from(map['stationary'] as Map),
+            )
           : const SpeedTier(
               name: 'stationary',
               minSpeedKph: 0,
@@ -569,12 +572,12 @@ class SpeedTiers {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'stationary': stationary.toMap(),
-        'walking': walking.toMap(),
-        'city': city.toMap(),
-        'suburban': suburban.toMap(),
-        'highway': highway.toMap(),
-      };
+    'stationary': stationary.toMap(),
+    'walking': walking.toMap(),
+    'city': city.toMap(),
+    'suburban': suburban.toMap(),
+    'highway': highway.toMap(),
+  };
 }
 
 /// Configuration for a single speed tier.
@@ -624,13 +627,13 @@ class SpeedTier {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'name': name,
-        'minSpeedKph': minSpeedKph,
-        'maxSpeedKph': maxSpeedKph,
-        'updateInterval': updateInterval,
-        'distanceFilter': distanceFilter,
-        'accuracy': accuracy.name,
-      };
+    'name': name,
+    'minSpeedKph': minSpeedKph,
+    'maxSpeedKph': maxSpeedKph,
+    'updateInterval': updateInterval,
+    'distanceFilter': distanceFilter,
+    'accuracy': accuracy.name,
+  };
 }
 
 /// Battery level thresholds for optimization.
@@ -676,9 +679,9 @@ class BatteryThresholds {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'lowThreshold': lowThreshold,
-        'criticalThreshold': criticalThreshold,
-      };
+    'lowThreshold': lowThreshold,
+    'criticalThreshold': criticalThreshold,
+  };
 }
 
 /// Battery level categories.
@@ -721,15 +724,16 @@ class AdaptiveSettings {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'distanceFilter': distanceFilter,
-        'desiredAccuracy': desiredAccuracy.name,
-        'heartbeatInterval': heartbeatInterval,
-        'gpsEnabled': gpsEnabled,
-        'reason': reason,
-      };
+    'distanceFilter': distanceFilter,
+    'desiredAccuracy': desiredAccuracy.name,
+    'heartbeatInterval': heartbeatInterval,
+    'gpsEnabled': gpsEnabled,
+    'reason': reason,
+  };
 
   @override
-  String toString() => 'AdaptiveSettings(filter: ${distanceFilter}m, '
+  String toString() =>
+      'AdaptiveSettings(filter: ${distanceFilter}m, '
       'accuracy: ${desiredAccuracy.name}, '
       'heartbeat: ${heartbeatInterval}s, '
       'gps: $gpsEnabled, '

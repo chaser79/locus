@@ -81,10 +81,7 @@ abstract class LocationService {
   ///
   /// [date] - Specific date to summarize. Uses today if not provided.
   /// [query] - Custom query for filtering locations.
-  Future<LocationSummary> getSummary({
-    DateTime? date,
-    LocationQuery? query,
-  });
+  Future<LocationSummary> getSummary({DateTime? date, LocationQuery? query});
 
   /// Changes the motion state (moving/stationary).
   ///

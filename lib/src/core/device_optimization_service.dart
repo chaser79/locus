@@ -25,8 +25,9 @@ class DeviceOptimizationService {
     if (!Platform.isAndroid) {
       return false;
     }
-    final result = await LocusChannels.methods
-        .invokeMethod('isIgnoringBatteryOptimizations');
+    final result = await LocusChannels.methods.invokeMethod(
+      'isIgnoringBatteryOptimizations',
+    );
     return result == true;
   }
 
@@ -50,16 +51,18 @@ class DeviceOptimizationService {
     return {
       'android':
           'Doze and App Standby may restrict background work; OEMs can add '
-              'aggressive task killers that require manual exemptions.',
-      'ios': 'Background execution is limited; tasks may be suspended within '
+          'aggressive task killers that require manual exemptions.',
+      'ios':
+          'Background execution is limited; tasks may be suspended within '
           'minutes when not actively tracking location.',
     };
   }
 
   static Future<String?> _readManufacturer() async {
     try {
-      return await LocusChannels.methods
-          .invokeMethod<String>('getManufacturer');
+      return await LocusChannels.methods.invokeMethod<String>(
+        'getManufacturer',
+      );
     } catch (_) {
       // Channel unreachable (e.g., plugin not registered in a headless engine).
       // Caller treats null as "unknown manufacturer" and falls back to a

@@ -1,24 +1,19 @@
 PODS:
-  - device_info_plus (0.0.1):
-    - Flutter
   - Flutter (1.0.0)
   - integration_test (0.0.1):
     - Flutter
-  - locus (2.3.1):
+  - locus (2.4.0):
     - Flutter
-  - permission_handler_apple (9.3.0):
+  - permission_handler_apple (9.4.8):
     - Flutter
 
 DEPENDENCIES:
-  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - locus (from `.symlinks/plugins/locus/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
 
 EXTERNAL SOURCES:
-  device_info_plus:
-    :path: ".symlinks/plugins/device_info_plus/ios"
   Flutter:
     :path: Flutter
   integration_test:
@@ -29,12 +24,11 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
 
 SPEC CHECKSUMS:
-  device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
-  locus: 426f8bbaa5b1986ee84883f35a5e735d6fd36e07
-  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+  locus: 979306da1052da41cb49f087730f334b7a105428
+  permission_handler_apple: 92d754bbaa7361d436db2d6c3c1c2a0fdcec462e
 
-PODFILE CHECKSUM: c24c27344913105c54b95f33f73882923a0bd103
+PODFILE CHECKSUM: 768b4a918a83e6e6160609012b51a2f498d61a44
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.17.0

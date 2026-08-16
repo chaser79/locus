@@ -34,10 +34,7 @@ void main() {
       'triggerActivities': ['walking', 'running'],
       'url': 'https://example.com/api',
       'headers': {'Authorization': 'Bearer token'},
-      'notification': {
-        'title': 'Tracking',
-        'text': 'Active',
-      },
+      'notification': {'title': 'Tracking', 'text': 'Active'},
       'backgroundPermissionRationale': {
         'title': 'Permission needed',
         'message': 'Please grant location access.',
@@ -49,8 +46,10 @@ void main() {
     expect(config.distanceFilter, 25.0);
     expect(config.autoSync, true);
     expect(config.logLevel, LogLevel.debug);
-    expect(
-        config.triggerActivities, [ActivityType.walking, ActivityType.running]);
+    expect(config.triggerActivities, [
+      ActivityType.walking,
+      ActivityType.running,
+    ]);
     expect(config.url, 'https://example.com/api');
     expect(config.headers, {'Authorization': 'Bearer token'});
     expect(config.notification?.title, 'Tracking');
@@ -181,8 +180,11 @@ void main() {
   group('compressRequests', () {
     test('defaults to true and round-trips through toMap/fromMap', () {
       const defaults = Config();
-      expect(defaults.compressRequests, isTrue,
-          reason: 'gzip request compression must be on by default');
+      expect(
+        defaults.compressRequests,
+        isTrue,
+        reason: 'gzip request compression must be on by default',
+      );
 
       final map = defaults.toMap();
       expect(map['compressRequests'], isTrue);

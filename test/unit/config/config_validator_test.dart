@@ -86,7 +86,9 @@ void main() {
         final result = ConfigValidator.validate(config);
         expect(result.isValid, isFalse);
         expect(
-            result.errors.any((e) => e.field == 'heartbeatInterval'), isTrue);
+          result.errors.any((e) => e.field == 'heartbeatInterval'),
+          isTrue,
+        );
       });
 
       test('very small positive value is warning', () {
@@ -94,7 +96,9 @@ void main() {
         final result = ConfigValidator.validate(config);
         expect(result.isValid, isTrue);
         expect(
-            result.warnings.any((w) => w.field == 'heartbeatInterval'), isTrue);
+          result.warnings.any((w) => w.field == 'heartbeatInterval'),
+          isTrue,
+        );
       });
     });
 
@@ -199,7 +203,9 @@ void main() {
         final result = ConfigValidator.validate(config);
         expect(result.isValid, isFalse);
         expect(
-            result.errors.any((e) => e.field == 'maxRecordsToPersist'), isTrue);
+          result.errors.any((e) => e.field == 'maxRecordsToPersist'),
+          isTrue,
+        );
       });
     });
 
@@ -209,7 +215,9 @@ void main() {
         final result = ConfigValidator.validate(config);
         expect(result.isValid, isTrue);
         expect(
-            result.warnings.any((w) => w.field == 'stopOnTerminate'), isTrue);
+          result.warnings.any((w) => w.field == 'stopOnTerminate'),
+          isTrue,
+        );
       });
 
       test('startOnBoot without enableHeadless is warning', () {

@@ -36,18 +36,18 @@ class BatteryStats {
 
   /// Creates an empty stats object.
   const BatteryStats.empty()
-      : gpsOnTimePercent = 0,
-        locationUpdatesCount = 0,
-        syncRequestsCount = 0,
-        averageAccuracyMeters = 0,
-        trackingDurationMinutes = 0,
-        estimatedDrainPercent = null,
-        optimizationLevel = OptimizationLevel.none,
-        timeByState = const {},
-        currentBatteryLevel = null,
-        isCharging = null,
-        accuracyDowngradeCount = 0,
-        gpsDisabledCount = 0;
+    : gpsOnTimePercent = 0,
+      locationUpdatesCount = 0,
+      syncRequestsCount = 0,
+      averageAccuracyMeters = 0,
+      trackingDurationMinutes = 0,
+      estimatedDrainPercent = null,
+      optimizationLevel = OptimizationLevel.none,
+      timeByState = const {},
+      currentBatteryLevel = null,
+      isCharging = null,
+      accuracyDowngradeCount = 0,
+      gpsDisabledCount = 0;
 
   /// Creates from a map.
   factory BatteryStats.fromMap(JsonMap map) {
@@ -57,8 +57,9 @@ class BatteryStats {
       for (final entry in timeByStateRaw.entries) {
         final seconds = entry.value as num?;
         if (seconds != null) {
-          timeByState[entry.key.toString()] =
-              Duration(seconds: seconds.toInt());
+          timeByState[entry.key.toString()] = Duration(
+            seconds: seconds.toInt(),
+          );
         }
       }
     }
@@ -152,25 +153,22 @@ class BatteryStats {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'gpsOnTimePercent': gpsOnTimePercent,
-        'locationUpdatesCount': locationUpdatesCount,
-        'syncRequestsCount': syncRequestsCount,
-        'averageAccuracyMeters': averageAccuracyMeters,
-        'trackingDurationMinutes': trackingDurationMinutes,
-        if (estimatedDrainPercent != null)
-          'estimatedDrainPercent': estimatedDrainPercent,
-        if (estimatedDrainPerHour != null)
-          'estimatedDrainPerHour': estimatedDrainPerHour,
-        'optimizationLevel': optimizationLevel.name,
-        'timeByState': timeByState.map(
-          (k, v) => MapEntry(k, v.inSeconds),
-        ),
-        if (currentBatteryLevel != null)
-          'currentBatteryLevel': currentBatteryLevel,
-        if (isCharging != null) 'isCharging': isCharging,
-        'accuracyDowngradeCount': accuracyDowngradeCount,
-        'gpsDisabledCount': gpsDisabledCount,
-      };
+    'gpsOnTimePercent': gpsOnTimePercent,
+    'locationUpdatesCount': locationUpdatesCount,
+    'syncRequestsCount': syncRequestsCount,
+    'averageAccuracyMeters': averageAccuracyMeters,
+    'trackingDurationMinutes': trackingDurationMinutes,
+    if (estimatedDrainPercent != null)
+      'estimatedDrainPercent': estimatedDrainPercent,
+    if (estimatedDrainPerHour != null)
+      'estimatedDrainPerHour': estimatedDrainPerHour,
+    'optimizationLevel': optimizationLevel.name,
+    'timeByState': timeByState.map((k, v) => MapEntry(k, v.inSeconds)),
+    if (currentBatteryLevel != null) 'currentBatteryLevel': currentBatteryLevel,
+    if (isCharging != null) 'isCharging': isCharging,
+    'accuracyDowngradeCount': accuracyDowngradeCount,
+    'gpsDisabledCount': gpsDisabledCount,
+  };
 
   @override
   String toString() {
@@ -333,8 +331,9 @@ class BatteryBenchmark {
       gpsOnPercent: duration.inSeconds > 0
           ? (_gpsOnTime.inSeconds / duration.inSeconds) * 100
           : 0,
-      averageAccuracy:
-          _locationUpdates > 0 ? _totalAccuracy / _locationUpdates : 0,
+      averageAccuracy: _locationUpdates > 0
+          ? _totalAccuracy / _locationUpdates
+          : 0,
       timeByState: Map.unmodifiable(_timeByState),
     );
   }
@@ -382,15 +381,15 @@ class BenchmarkResult {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'durationMinutes': duration.inMinutes,
-        'drainPercent': drainPercent,
-        'drainPerHour': drainPerHour,
-        'locationUpdates': locationUpdates,
-        'syncRequests': syncRequests,
-        'gpsOnPercent': gpsOnPercent,
-        'averageAccuracy': averageAccuracy,
-        'timeByState': timeByState.map((k, v) => MapEntry(k, v.inSeconds)),
-      };
+    'durationMinutes': duration.inMinutes,
+    'drainPercent': drainPercent,
+    'drainPerHour': drainPerHour,
+    'locationUpdates': locationUpdates,
+    'syncRequests': syncRequests,
+    'gpsOnPercent': gpsOnPercent,
+    'averageAccuracy': averageAccuracy,
+    'timeByState': timeByState.map((k, v) => MapEntry(k, v.inSeconds)),
+  };
 
   @override
   String toString() {

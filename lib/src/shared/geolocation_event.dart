@@ -5,10 +5,7 @@ import 'package:locus/src/models.dart';
 
 /// A generic geolocation event with typed payload.
 class GeolocationEvent<T> {
-  const GeolocationEvent({
-    required this.type,
-    required this.data,
-  });
+  const GeolocationEvent({required this.type, required this.data});
 
   /// The type of event.
   final EventType type;
@@ -136,10 +133,7 @@ class GeolocationEvent<T> {
       case EventType.enabledChange:
       case EventType.geofencesChange:
       case EventType.unknown:
-        return GeolocationEvent<dynamic>(
-          type: type,
-          data: payload,
-        );
+        return GeolocationEvent<dynamic>(type: type, data: payload);
     }
   }
 }

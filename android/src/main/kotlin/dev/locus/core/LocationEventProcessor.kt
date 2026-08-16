@@ -11,13 +11,18 @@ class LocationEventProcessor(
 ) {
     fun dispatch(eventName: String, payload: Map<String, Any>) {
         Log.d("locus.EventProcessor", ">>> dispatch called: eventName=$eventName")
+        val privacyGuardEnabled = config.privacyModeEnabled
         val event = mapOf(
             "type" to eventName,
             "data" to payload
         )
-        eventDispatcher.sendEvent(event)
+        eventDispatcher.sendEvent(
+            event,
+            containsRawLocation = true,
+            privacyGuardEnabled = privacyGuardEnabled,
+        )
 
-        if (config.privacyModeEnabled) {
+        if (privacyGuardEnabled) {
             Log.d("locus.EventProcessor", ">>> Location NOT stored/synced - privacy mode is ENABLED")
             return
         }

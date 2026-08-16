@@ -1,13 +1,14 @@
 package dev.locus.activity
 
-import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.google.android.gms.location.ActivityRecognition
 import com.google.android.gms.location.ActivityRecognitionClient
 import dev.locus.core.ConfigManager
@@ -46,9 +47,17 @@ class MotionManager(
         this.listener = listener
     }
 
-    @SuppressLint("MissingPermission")
     fun start() {
         if (config.disableMotionActivityUpdates) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACTIVITY_RECOGNITION,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w(TAG, "Activity recognition permission not granted; motion updates disabled")
+            return
+        }
 
         val pendingIntent = createActivityPendingIntent()
         activityPendingIntent = pendingIntent
@@ -65,11 +74,19 @@ class MotionManager(
         cancelStopTimeout()
         cancelMotionTrigger()
 
-        activityPendingIntent?.let { pendingIntent ->
+        val pendingIntent = activityPendingIntent ?: return
+        activityPendingIntent = null
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACTIVITY_RECOGNITION,
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             activityClient.removeActivityUpdates(pendingIntent)
-            activityPendingIntent = null
-            Log.i(TAG, "Activity recognition stopped")
+        } else {
+            Log.w(TAG, "Activity recognition permission revoked before cleanup")
         }
+        Log.i(TAG, "Activity recognition stopped")
     }
 
     fun setPace(moving: Boolean) {

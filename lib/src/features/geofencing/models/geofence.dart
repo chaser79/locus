@@ -158,16 +158,16 @@ class Geofence {
       longitude <= 180;
 
   JsonMap toMap() => {
-        'identifier': identifier,
-        'radius': radius,
-        'latitude': latitude,
-        'longitude': longitude,
-        'notifyOnEntry': notifyOnEntry,
-        'notifyOnExit': notifyOnExit,
-        'notifyOnDwell': notifyOnDwell,
-        if (loiteringDelay != null) 'loiteringDelay': loiteringDelay,
-        if (extras != null) 'extras': extras,
-      };
+    'identifier': identifier,
+    'radius': radius,
+    'latitude': latitude,
+    'longitude': longitude,
+    'notifyOnEntry': notifyOnEntry,
+    'notifyOnExit': notifyOnExit,
+    'notifyOnDwell': notifyOnDwell,
+    if (loiteringDelay != null) 'loiteringDelay': loiteringDelay,
+    if (extras != null) 'extras': extras,
+  };
 
   @override
   String toString() =>

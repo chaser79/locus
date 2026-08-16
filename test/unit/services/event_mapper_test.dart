@@ -6,7 +6,7 @@ void main() {
     final event = GeolocationEvent.fromMap({
       'type': 'activitychange',
       'data': {
-        'activity': {'type': 'walking', 'confidence': 55}
+        'activity': {'type': 'walking', 'confidence': 55},
       },
     });
 
@@ -22,11 +22,7 @@ void main() {
       'data': {
         'uuid': 'abc',
         'timestamp': DateTime.utc(2025, 1, 1).toIso8601String(),
-        'coords': {
-          'latitude': 1.0,
-          'longitude': 2.0,
-          'accuracy': 3.0,
-        }
+        'coords': {'latitude': 1.0, 'longitude': 2.0, 'accuracy': 3.0},
       },
     });
 

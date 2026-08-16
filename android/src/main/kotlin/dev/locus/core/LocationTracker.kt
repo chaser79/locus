@@ -18,7 +18,8 @@ class LocationTracker(
 ) {
     private val heartbeatScheduler = HeartbeatScheduler()
     private var lastLocation: Location? = null
-    private var enabled = false
+    private var runtimeState = TrackingRuntimeState.STOPPED
+    private val pendingStartCallbacks = mutableListOf<(Boolean) -> Unit>()
 
     init {
         locationClient.setListener(object : LocationClient.LocationClientListener {
@@ -45,14 +46,14 @@ class LocationTracker(
         })
     }
 
-    fun isEnabled(): Boolean = enabled
+    fun isEnabled(): Boolean = runtimeState == TrackingRuntimeState.RUNNING
 
     fun isMoving(): Boolean = motionManager.isMoving
 
     fun getLastLocation(): Location? = lastLocation
 
     fun buildState(): Map<String, Any> = buildMap {
-        put("enabled", enabled)
+        put("enabled", isEnabled())
         put("isMoving", motionManager.isMoving)
         put("odometer", stateManager.odometerValue)
         lastLocation?.let { location ->
@@ -64,30 +65,70 @@ class LocationTracker(
         return payloadBuilder.build(location, eventName)
     }
 
-    fun applyConfig(configMap: Map<String, Any>?) {
-        trackingConfigApplier.apply(configMap, enabled)
+    fun applyConfig(configMap: Map<String, Any>?): Boolean {
+        return trackingConfigApplier.apply(configMap, isEnabled())
     }
 
     @SuppressLint("MissingPermission")
-    fun startTracking() {
-        if (enabled) return
+    internal fun startTracking(
+        origin: TrackingStartOrigin = TrackingStartOrigin.STANDARD,
+        onComplete: (Boolean) -> Unit = {},
+    ) {
+        when (runtimeState) {
+            TrackingRuntimeState.RUNNING -> {
+                onComplete(true)
+                return
+            }
+            TrackingRuntimeState.STARTING -> {
+                pendingStartCallbacks += onComplete
+                return
+            }
+            TrackingRuntimeState.STOPPED -> Unit
+        }
 
-        if (!trackingLifecycleController.start()) {
+        // Persist intent before starting the foreground service. Its start
+        // command validates this bit so a stale queued command cannot revive
+        // tracking after stop, and a current command cannot race this write.
+        if (!config.setTrackingActive(true)) {
+            onComplete(false)
             return
         }
 
-        enabled = true
-        config.setTrackingActive(true)
-        startHeartbeat()
+        runtimeState = TrackingRuntimeState.STARTING
+        pendingStartCallbacks += onComplete
+        trackingLifecycleController.start(origin) lifecycle@{ started ->
+            if (runtimeState != TrackingRuntimeState.STARTING) return@lifecycle
+
+            runtimeState = if (started) {
+                startHeartbeat()
+                TrackingRuntimeState.RUNNING
+            } else {
+                if (!config.setTrackingActive(false)) {
+                    locationUpdateProcessor.handleError(
+                        "Tracking startup failed and desired state could not be cleared",
+                    )
+                }
+                TrackingRuntimeState.STOPPED
+            }
+
+            completeStarts(started)
+        }
     }
 
-    fun stopTracking() {
-        if (!enabled) return
+    internal fun stopTracking(): Boolean {
+        // Runtime teardown is unconditional. A storage failure must never keep
+        // sensors or the foreground service alive merely because durable state
+        // could not be cleared.
+        val persisted = config.setTrackingActive(false)
+        forceStopRuntime()
+        return persisted
+    }
 
-        enabled = false
-        config.setTrackingActive(false)
+    internal fun forceStopRuntime() {
+        runtimeState = TrackingRuntimeState.STOPPED
         trackingLifecycleController.stop()
         stopHeartbeat()
+        completeStarts(false)
     }
 
     fun changePace(moving: Boolean) {
@@ -106,7 +147,7 @@ class LocationTracker(
 
     fun startHeartbeat() {
         heartbeatScheduler.start(config.heartbeatIntervalSeconds) {
-            if (enabled) {
+            if (isEnabled()) {
                 lastLocation?.let { emitLocationEvent(it, "heartbeat") }
             }
         }
@@ -122,7 +163,7 @@ class LocationTracker(
      */
     fun restartHeartbeat() {
         heartbeatScheduler.restart(config.heartbeatIntervalSeconds) {
-            if (enabled) {
+            if (isEnabled()) {
                 lastLocation?.let { emitLocationEvent(it, "heartbeat") }
             }
         }
@@ -131,6 +172,12 @@ class LocationTracker(
     private fun emitLocationEvent(location: Location, eventName: String) {
         val payload = payloadBuilder.build(location, eventName)
         eventProcessor.dispatch(eventName, payload)
+    }
+
+    private fun completeStarts(success: Boolean) {
+        val callbacks = pendingStartCallbacks.toList()
+        pendingStartCallbacks.clear()
+        callbacks.forEach { it(success) }
     }
 
     /**
@@ -143,4 +190,10 @@ class LocationTracker(
         stopTracking()
         trackingLifecycleController.shutdown()
     }
+}
+
+internal enum class TrackingRuntimeState {
+    STOPPED,
+    STARTING,
+    RUNNING,
 }

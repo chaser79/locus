@@ -45,19 +45,17 @@ void main() {
     });
 
     test('benchmark captures drain and activity counts', () async {
-      mockLocus.setPowerState(const PowerState(
-        batteryLevel: 80,
-        isCharging: false,
-      ));
+      mockLocus.setPowerState(
+        const PowerState(batteryLevel: 80, isCharging: false),
+      );
 
       await service.startBenchmark();
       service.recordBenchmarkLocationUpdate(accuracy: 12.5);
       service.recordBenchmarkSync();
 
-      mockLocus.setPowerState(const PowerState(
-        batteryLevel: 75,
-        isCharging: false,
-      ));
+      mockLocus.setPowerState(
+        const PowerState(batteryLevel: 75, isCharging: false),
+      );
 
       final result = await service.stopBenchmark();
 

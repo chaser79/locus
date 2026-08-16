@@ -35,11 +35,13 @@ void main() {
       final events = <TripEvent>[];
       final sub = service.events.listen(events.add);
 
-      mockLocus.emitTripEvent(TripEvent(
-        type: TripEventType.tripUpdate,
-        tripId: 'trip-123',
-        timestamp: DateTime.now(),
-      ));
+      mockLocus.emitTripEvent(
+        TripEvent(
+          type: TripEventType.tripUpdate,
+          tripId: 'trip-123',
+          timestamp: DateTime.now(),
+        ),
+      );
 
       await Future.delayed(Duration.zero);
       expect(events.length, 1);

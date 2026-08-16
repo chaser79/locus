@@ -5,10 +5,11 @@ import 'dart:math';
 // --- Mocks ---
 
 class Coords {
-  const Coords(
-      {required this.latitude,
-      required this.longitude,
-      required this.accuracy});
+  const Coords({
+    required this.latitude,
+    required this.longitude,
+    required this.accuracy,
+  });
   final double latitude;
   final double longitude;
   final double accuracy;
@@ -24,7 +25,8 @@ class LocationUtils {
   static double calculateDistance(Coords a, Coords b) {
     const p = 0.017453292519943295;
     const c = cos;
-    final aVal = 0.5 -
+    final aVal =
+        0.5 -
         c((b.latitude - a.latitude) * p) / 2 +
         c(a.latitude * p) *
             c(b.latitude * p) *
@@ -78,8 +80,10 @@ class LegacyVectorMath {
   }
 
   Coords _fromVector(List<double> vector) {
-    final lat =
-        atan2(vector[2], sqrt(vector[0] * vector[0] + vector[1] * vector[1]));
+    final lat = atan2(
+      vector[2],
+      sqrt(vector[0] * vector[0] + vector[1] * vector[1]),
+    );
     final lng = atan2(vector[1], vector[0]);
     return Coords(
       latitude: lat * 180.0 / pi,
@@ -146,7 +150,10 @@ class OptimizedVectorMath {
       return LocationUtils.calculateDistance(
         point,
         Coords(
-            latitude: start.latitude, longitude: start.longitude, accuracy: 0),
+          latitude: start.latitude,
+          longitude: start.longitude,
+          accuracy: 0,
+        ),
       );
     }
 
@@ -155,7 +162,8 @@ class OptimizedVectorMath {
     final pointMinusStartY = py - sy;
     final pointMinusStartZ = pz - sz;
 
-    final t = (pointMinusStartX * segX +
+    final t =
+        (pointMinusStartX * segX +
             pointMinusStartY * segY +
             pointMinusStartZ * segZ) /
         lengthSquared;
@@ -216,7 +224,7 @@ void main() {
 
   final improvement =
       stopwatch1.elapsedMilliseconds - stopwatch2.elapsedMilliseconds;
-  final percent =
-      (improvement / stopwatch1.elapsedMilliseconds * 100).toStringAsFixed(1);
+  final percent = (improvement / stopwatch1.elapsedMilliseconds * 100)
+      .toStringAsFixed(1);
   print('Improvement: ${improvement}ms ($percent%)');
 }

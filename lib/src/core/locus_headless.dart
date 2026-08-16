@@ -37,7 +37,8 @@ void headlessDispatcher() {
   // events. Without this, the native HeadlessService may invoke
   // 'headlessEvent' before this handler is registered, losing the event.
   unawaited(
-      LocusChannels.headless.invokeMethod<void>('dispatcher#initialized'));
+    LocusChannels.headless.invokeMethod<void>('dispatcher#initialized'),
+  );
 }
 
 Future<void> _handleHeadlessEvent(dynamic call) async {
@@ -47,8 +48,9 @@ Future<void> _handleHeadlessEvent(dynamic call) async {
     return;
   }
   final handle = CallbackHandle.fromRawHandle(rawHandle);
-  final callback = PluginUtilities.getCallbackFromHandle(handle) as Future<void>
-      Function(HeadlessEvent)?;
+  final callback =
+      PluginUtilities.getCallbackFromHandle(handle)
+          as Future<void> Function(HeadlessEvent)?;
   if (callback == null) {
     return;
   }
@@ -59,7 +61,8 @@ Future<void> _handleHeadlessEvent(dynamic call) async {
       await callback(HeadlessEvent.fromMap(decoded));
     } else if (rawEvent is Map) {
       await callback(
-          HeadlessEvent.fromMap(Map<String, dynamic>.from(rawEvent)));
+        HeadlessEvent.fromMap(Map<String, dynamic>.from(rawEvent)),
+      );
     }
   } catch (error, stack) {
     _log.eventSevere('headless_event_dispatch_failed', const {}, error, stack);
@@ -104,9 +107,11 @@ class LocusHeadless {
   /// - The callback is a closure, not a top-level function
   /// - The callback is missing `@pragma('vm:entry-point')`
   static Future<bool> registerHeadlessTask(
-      HeadlessEventCallback callback) async {
-    final dispatcherHandle =
-        PluginUtilities.getCallbackHandle(headlessDispatcher);
+    HeadlessEventCallback callback,
+  ) async {
+    final dispatcherHandle = PluginUtilities.getCallbackHandle(
+      headlessDispatcher,
+    );
     final callbackHandle = PluginUtilities.getCallbackHandle(callback);
 
     if (dispatcherHandle == null || callbackHandle == null) {
@@ -118,13 +123,11 @@ class LocusHeadless {
       return false;
     }
 
-    final result = await LocusChannels.methods.invokeMethod(
-      'registerHeadlessTask',
-      {
-        'dispatcher': dispatcherHandle.toRawHandle(),
-        'callback': callbackHandle.toRawHandle(),
-      },
-    );
+    final result = await LocusChannels.methods
+        .invokeMethod('registerHeadlessTask', {
+          'dispatcher': dispatcherHandle.toRawHandle(),
+          'callback': callbackHandle.toRawHandle(),
+        });
 
     if (result != true) {
       _log.eventWarning('headless_register_native_returned_false', const {
@@ -138,8 +141,9 @@ class LocusHeadless {
 
   /// Starts a background task and returns its ID.
   static Future<int> startBackgroundTask() async {
-    final result =
-        await LocusChannels.methods.invokeMethod('startBackgroundTask');
+    final result = await LocusChannels.methods.invokeMethod(
+      'startBackgroundTask',
+    );
     if (result is num) {
       return result.toInt();
     }

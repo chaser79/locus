@@ -12,8 +12,8 @@ class GeofenceWorkflow {
   final bool requireSequence;
 
   JsonMap toMap() => {
-        'id': id,
-        'requireSequence': requireSequence,
-        'steps': steps.map((step) => step.toMap()).toList(),
-      };
+    'id': id,
+    'requireSequence': requireSequence,
+    'steps': steps.map((step) => step.toMap()).toList(),
+  };
 }

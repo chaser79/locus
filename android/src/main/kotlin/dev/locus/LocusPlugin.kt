@@ -7,6 +7,9 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import dev.locus.core.LocusContainer
+import dev.locus.core.TrackingRecoveryOrigin
+import dev.locus.service.AndroidForegroundServiceGateway
+import dev.locus.service.AndroidHeadlessServiceGateway
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -73,10 +76,18 @@ class LocusPlugin : FlutterPlugin,
     private var eventChannel: EventChannel? = null
     private var isListenerRegistered = false
     private var bridgeBound = false
+    private val engineBindingOwner = Any()
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        val c = LocusContainer.acquire(binding.applicationContext)
+        val c = LocusContainer.acquire(
+            binding.applicationContext,
+            AndroidForegroundServiceGateway(binding.applicationContext),
+            AndroidHeadlessServiceGateway(binding.applicationContext),
+        )
         container = c
+        c.reconcilePersistedTrackingState(TrackingRecoveryOrigin.FLUTTER_ENGINE) { action ->
+            Log.d(TAG, "Engine-attach tracking reconciliation completed: $action")
+        }
 
         methodChannel = MethodChannel(binding.binaryMessenger, METHOD_CHANNEL).also {
             it.setMethodCallHandler(this)
@@ -100,8 +111,8 @@ class LocusPlugin : FlutterPlugin,
         val c = container
         if (c != null) {
             if (bridgeBound) {
-                c.setBridge(null)
-                c.eventDispatcher.setEventSink(null)
+                c.clearBridge(engineBindingOwner)
+                c.eventDispatcher.clearEventSink(engineBindingOwner)
                 bridgeBound = false
             }
             if (isListenerRegistered) {
@@ -118,12 +129,13 @@ class LocusPlugin : FlutterPlugin,
         // Route incoming events through this sink. EventDispatcher falls back
         // to HeadlessDispatcher automatically when the sink is null, so
         // background isolates needn't subscribe.
-        c.eventDispatcher.setEventSink(sink)
+        c.eventDispatcher.setEventSink(engineBindingOwner, sink)
         // Route outbound invokeMethod calls (buildSyncBody, validatePreSync,
         // refreshDynamicHeaders) through this engine's MethodChannel. Last-
         // writer-wins: if two engines subscribe, the latest one owns these
-        // callbacks. In practice only the UI engine ever subscribes here.
-        c.setBridge(buildBridge())
+        // callbacks. If it cancels, the registry restores the most recent
+        // engine that is still subscribed.
+        c.setBridge(engineBindingOwner, buildBridge())
         bridgeBound = true
         // Replay latest connectivity + power-save state so Dart doesn't wait
         // for the next change.
@@ -133,8 +145,8 @@ class LocusPlugin : FlutterPlugin,
     override fun onCancel(arguments: Any?) {
         val c = container ?: return
         if (bridgeBound) {
-            c.setBridge(null)
-            c.eventDispatcher.setEventSink(null)
+            c.clearBridge(engineBindingOwner)
+            c.eventDispatcher.clearEventSink(engineBindingOwner)
             bridgeBound = false
         }
     }
@@ -165,8 +177,8 @@ class LocusPlugin : FlutterPlugin,
     //  DartBridge — routes outbound calls through this plugin's channels.
     //  The bridge holds captures of `sink`, `methodChannel`, and `mainHandler`
     //  that are valid for the lifetime of this plugin's engine. When the
-    //  engine detaches, [setBridge(null)] installs a `null` bridge and events
-    //  fall back to HeadlessDispatcher.
+    //  engine detaches, its owner token releases the bridge and events fall
+    //  back to HeadlessDispatcher unless a newer engine has claimed it.
     // -------------------------------------------------------------------------
 
     private fun buildBridge(): LocusContainer.DartBridge {
@@ -244,21 +256,9 @@ class LocusPlugin : FlutterPlugin,
                     callback(null)
                     return
                 }
-                var responded = false
-                val timeout = Runnable {
-                    if (!responded) {
-                        responded = true
-                        Log.w(TAG, "refreshDynamicHeaders timed out after 10s")
-                        callback(null)
-                    }
-                }
-                handler.postDelayed(timeout, 10_000L)
                 handler.post {
                     ch.invokeMethod("refreshDynamicHeaders", null, object : MethodChannel.Result {
                         override fun success(result: Any?) {
-                            if (responded) return
-                            responded = true
-                            handler.removeCallbacks(timeout)
                             @Suppress("UNCHECKED_CAST")
                             val headers = (result as? Map<*, *>)?.entries?.mapNotNull { entry ->
                                 val key = entry.key?.toString() ?: return@mapNotNull null
@@ -268,16 +268,10 @@ class LocusPlugin : FlutterPlugin,
                             callback(headers)
                         }
                         override fun error(code: String, message: String?, details: Any?) {
-                            if (responded) return
-                            responded = true
-                            handler.removeCallbacks(timeout)
                             Log.e(TAG, "refreshDynamicHeaders error: $code - $message")
                             callback(null)
                         }
                         override fun notImplemented() {
-                            if (responded) return
-                            responded = true
-                            handler.removeCallbacks(timeout)
                             callback(null)
                         }
                     })

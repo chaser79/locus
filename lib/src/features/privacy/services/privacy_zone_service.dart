@@ -42,9 +42,9 @@ class PrivacyZoneService {
     Future<void> Function(List<PrivacyZone>)? onPersist,
     int? seed,
     bool includePrivacyMetadata = false,
-  })  : _onPersist = onPersist,
-        _includePrivacyMetadata = includePrivacyMetadata,
-        _random = seed != null ? math.Random(seed) : math.Random();
+  }) : _onPersist = onPersist,
+       _includePrivacyMetadata = includePrivacyMetadata,
+       _random = seed != null ? math.Random(seed) : math.Random();
 
   /// In-memory storage of privacy zones.
   final Map<String, PrivacyZone> _zones = {};
@@ -85,10 +85,12 @@ class PrivacyZoneService {
     final isNew = !_zones.containsKey(zone.identifier);
     _zones[zone.identifier] = zone;
 
-    _zoneChangesController.add(PrivacyZoneEvent(
-      type: isNew ? PrivacyZoneEventType.added : PrivacyZoneEventType.updated,
-      zone: zone,
-    ));
+    _zoneChangesController.add(
+      PrivacyZoneEvent(
+        type: isNew ? PrivacyZoneEventType.added : PrivacyZoneEventType.updated,
+        zone: zone,
+      ),
+    );
 
     await _persist();
   }
@@ -98,7 +100,8 @@ class PrivacyZoneService {
     for (final zone in zones) {
       if (!zone.isValid) {
         throw ArgumentError(
-            'Invalid privacy zone configuration: ${zone.identifier}');
+          'Invalid privacy zone configuration: ${zone.identifier}',
+        );
       }
     }
 
@@ -106,10 +109,14 @@ class PrivacyZoneService {
       final isNew = !_zones.containsKey(zone.identifier);
       _zones[zone.identifier] = zone;
 
-      _zoneChangesController.add(PrivacyZoneEvent(
-        type: isNew ? PrivacyZoneEventType.added : PrivacyZoneEventType.updated,
-        zone: zone,
-      ));
+      _zoneChangesController.add(
+        PrivacyZoneEvent(
+          type: isNew
+              ? PrivacyZoneEventType.added
+              : PrivacyZoneEventType.updated,
+          zone: zone,
+        ),
+      );
     }
 
     await _persist();
@@ -120,10 +127,9 @@ class PrivacyZoneService {
     final zone = _zones.remove(identifier);
     if (zone == null) return false;
 
-    _zoneChangesController.add(PrivacyZoneEvent(
-      type: PrivacyZoneEventType.removed,
-      zone: zone,
-    ));
+    _zoneChangesController.add(
+      PrivacyZoneEvent(type: PrivacyZoneEventType.removed, zone: zone),
+    );
 
     await _persist();
     return true;
@@ -135,10 +141,9 @@ class PrivacyZoneService {
     _zones.clear();
 
     for (final zone in removed) {
-      _zoneChangesController.add(PrivacyZoneEvent(
-        type: PrivacyZoneEventType.removed,
-        zone: zone,
-      ));
+      _zoneChangesController.add(
+        PrivacyZoneEvent(type: PrivacyZoneEventType.removed, zone: zone),
+      );
     }
 
     await _persist();
@@ -159,10 +164,9 @@ class PrivacyZoneService {
 
     _zones[zone.identifier] = zone.copyWith(updatedAt: DateTime.now());
 
-    _zoneChangesController.add(PrivacyZoneEvent(
-      type: PrivacyZoneEventType.updated,
-      zone: zone,
-    ));
+    _zoneChangesController.add(
+      PrivacyZoneEvent(type: PrivacyZoneEventType.updated, zone: zone),
+    );
 
     await _persist();
     return true;
@@ -209,8 +213,9 @@ class PrivacyZoneService {
     }
 
     // Check for exclude action (takes precedence)
-    final hasExclude =
-        matchedZones.any((z) => z.action == PrivacyZoneAction.exclude);
+    final hasExclude = matchedZones.any(
+      (z) => z.action == PrivacyZoneAction.exclude,
+    );
 
     if (hasExclude) {
       return PrivacyZoneResult(
@@ -282,7 +287,8 @@ class PrivacyZoneService {
     // 1 degree latitude ≈ 111,000 meters
     // 1 degree longitude varies by latitude
     final latOffset = (distance * math.cos(angle)) / 111000;
-    final lngOffset = (distance * math.sin(angle)) /
+    final lngOffset =
+        (distance * math.sin(angle)) /
         (111000 * math.cos(location.coords.latitude * math.pi / 180));
 
     final newLat = (location.coords.latitude + latOffset).clamp(-90.0, 90.0);
@@ -332,7 +338,7 @@ class PrivacyZoneService {
   /// Persists zones if callback is set.
   Future<void> _persist() async {
     if (_onPersist != null) {
-      await _onPersist!(zones);
+      await _onPersist(zones);
     }
   }
 
@@ -343,25 +349,15 @@ class PrivacyZoneService {
 }
 
 /// Event types for privacy zone changes.
-enum PrivacyZoneEventType {
-  added,
-  updated,
-  removed,
-}
+enum PrivacyZoneEventType { added, updated, removed }
 
 /// Event emitted when a privacy zone changes.
 class PrivacyZoneEvent {
-  const PrivacyZoneEvent({
-    required this.type,
-    required this.zone,
-  });
+  const PrivacyZoneEvent({required this.type, required this.zone});
   final PrivacyZoneEventType type;
   final PrivacyZone zone;
 
-  JsonMap toMap() => {
-        'type': type.name,
-        'zone': zone.toMap(),
-      };
+  JsonMap toMap() => {'type': type.name, 'zone': zone.toMap()};
 
   @override
   String toString() => 'PrivacyZoneEvent(${type.name}: ${zone.identifier})';

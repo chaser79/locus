@@ -20,16 +20,18 @@ void main() {
   });
 
   group('SyncMetricsRecorder.record', () {
-    test('success with recordsSent advances pointsSent and stamps lastSuccess',
-        () async {
-      recorder.record(const HttpEvent(status: 200, ok: true, recordsSent: 7));
-      final snap = await registry.metrics.snapshot();
-      expect(snap.pointsSent, 7);
-      expect(snap.syncAttemptsTotal, 1);
-      expect(snap.syncAttemptsFailed, 0);
-      expect(snap.lastSuccessAt, isNotNull);
-      expect(snap.lastFailureAt, isNull);
-    });
+    test(
+      'success with recordsSent advances pointsSent and stamps lastSuccess',
+      () async {
+        recorder.record(const HttpEvent(status: 200, ok: true, recordsSent: 7));
+        final snap = await registry.metrics.snapshot();
+        expect(snap.pointsSent, 7);
+        expect(snap.syncAttemptsTotal, 1);
+        expect(snap.syncAttemptsFailed, 0);
+        expect(snap.lastSuccessAt, isNotNull);
+        expect(snap.lastFailureAt, isNull);
+      },
+    );
 
     test('success without recordsSent defaults to zero and warns', () async {
       // A success without an explicit count is treated as zero so a
@@ -74,16 +76,17 @@ void main() {
     });
 
     test(
-        'zero recordsSent on success is a no-op for pointsSent but counts attempt',
-        () async {
-      // Success that flushed nothing (defensive): registry's recordSent treats
-      // count >= 0 as a valid attempt and increments syncAttemptsTotal.
-      recorder.record(const HttpEvent(status: 200, ok: true, recordsSent: 0));
-      final snap = await registry.metrics.snapshot();
-      expect(snap.pointsSent, 0);
-      expect(snap.syncAttemptsTotal, 1);
-      expect(snap.lastSuccessAt, isNotNull);
-    });
+      'zero recordsSent on success is a no-op for pointsSent but counts attempt',
+      () async {
+        // Success that flushed nothing (defensive): registry's recordSent treats
+        // count >= 0 as a valid attempt and increments syncAttemptsTotal.
+        recorder.record(const HttpEvent(status: 200, ok: true, recordsSent: 0));
+        final snap = await registry.metrics.snapshot();
+        expect(snap.pointsSent, 0);
+        expect(snap.syncAttemptsTotal, 1);
+        expect(snap.lastSuccessAt, isNotNull);
+      },
+    );
   });
 
   group('SyncMetricsRecorder.attachTo', () {
@@ -123,22 +126,27 @@ void main() {
       await second.close();
     });
 
-    test('detach cancels the subscription so further events are ignored',
-        () async {
-      final controller = StreamController<HttpEvent>();
-      recorder.attachTo(controller.stream);
+    test(
+      'detach cancels the subscription so further events are ignored',
+      () async {
+        final controller = StreamController<HttpEvent>();
+        recorder.attachTo(controller.stream);
 
-      controller.add(const HttpEvent(status: 200, ok: true, recordsSent: 2));
-      await Future<void>.delayed(Duration.zero);
-      await recorder.detach();
-      controller.add(const HttpEvent(status: 200, ok: true, recordsSent: 99));
-      await Future<void>.delayed(Duration.zero);
+        controller.add(const HttpEvent(status: 200, ok: true, recordsSent: 2));
+        await Future<void>.delayed(Duration.zero);
+        await recorder.detach();
+        controller.add(const HttpEvent(status: 200, ok: true, recordsSent: 99));
+        await Future<void>.delayed(Duration.zero);
 
-      final snap = await registry.metrics.snapshot();
-      expect(snap.pointsSent, 2,
-          reason: 'events emitted after detach must not advance counters');
-      await controller.close();
-    });
+        final snap = await registry.metrics.snapshot();
+        expect(
+          snap.pointsSent,
+          2,
+          reason: 'events emitted after detach must not advance counters',
+        );
+        await controller.close();
+      },
+    );
   });
 
   group('HttpEvent serialization', () {

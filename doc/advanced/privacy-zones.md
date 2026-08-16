@@ -54,6 +54,21 @@ PrivacyZone.create(
 )
 ```
 
+### Background and headless delivery
+
+Privacy-zone geometry is owned by Dart. While a live UI engine is attached,
+native location events pass through Dart so matching points can be excluded or
+obfuscated before host listeners receive them. Geofence transitions are kept,
+but an excluded nested location is removed and an obfuscated one replaces the
+raw coordinates.
+
+When no UI engine is available, Locus fails closed: if any enabled privacy zone
+is registered, native location-bearing headless events are suppressed until
+Dart restores or explicitly releases the privacy guard. Non-location lifecycle
+and error events continue normally. This intentionally favors privacy over
+headless location delivery because native code does not have the zone geometry
+needed to decide whether a raw point is safe.
+
 ## Managing Privacy Zones
 
 ```dart

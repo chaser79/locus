@@ -1,6 +1,12 @@
 # Headless Execution Guide
 
-Headless execution allows your Flutter/Dart code to run in the background even when your app is terminated. This guide explains how to implement, debug, and optimize headless background tasks with Locus.
+Headless execution allows eligible native events to invoke Flutter/Dart code
+while the UI engine is absent. This guide explains how to implement, debug, and
+optimize headless background tasks with Locus. Android Task Manager stop and
+system-settings force-stop are user-requested terminal states that an SDK cannot
+bypass. Locus clears their tracking intent on the next eligible launch and does
+not resume until the host explicitly starts tracking; see the
+[Android lifecycle matrix](../guides/headless-execution.md#android-lifecycle-matrix).
 
 ## Table of Contents
 
@@ -20,17 +26,18 @@ Headless execution allows your Flutter/Dart code to run in the background even w
 ## What is Headless Execution?
 
 Headless execution allows Dart code to run in the background when:
-- Your app is terminated (killed by user or OS)
+- The UI engine is absent or Android ordinarily reclaims the app process
 - A geofence event occurs while app is not running
 - A location update is received in the background
-- Device reboots and tracking needs to resume
+- A configured boot callback is eligible after device reboot
 
-Traditional Flutter apps can't execute Dart code when terminated. Headless mode creates a separate Dart isolate in the background to handle events.
+Flutter code cannot execute when no engine is active. For eligible native
+events, headless mode creates a separate Dart isolate to handle the event.
 
 ### Architecture
 
 ```
-App Terminated
+UI Engine Absent
      ↓
 Native Event (Location, Geofence, Boot)
      ↓
@@ -51,7 +58,7 @@ Engine Destroyed (after idle timeout)
 
 ### Use Headless Mode For:
 
-✅ **Processing background location updates** when app is killed
+✅ **Processing eligible background location updates** while the UI engine is absent
 ✅ **Handling geofence enter/exit events** in background
 ✅ **Custom sync logic** that needs to run without app
 ✅ **Logging or analytics** for background events
@@ -78,9 +85,9 @@ If your use case is covered by built-in features, prefer those:
 
 ### Android
 
-✅ **Full support** via `HeadlessService` (JobIntentService)
-- Runs after app termination
-- Survives device reboot (with `startOnBoot: true`)
+✅ **Supported** via `HeadlessService` (JobIntentService)
+- Runs after eligible UI detach or ordinary process termination
+- Receives boot events when all boot prerequisites are satisfied
 - Background location updates
 - Geofence events
 - Motion changes
@@ -88,10 +95,11 @@ If your use case is covered by built-in features, prefer those:
 ### iOS
 
 ⚠️ **Limited support** due to iOS restrictions
-- Background location updates work if app was running recently
+- Significant-change/region events may relaunch after ordinary OS termination
 - Geofence events work in background
 - Limited execution time
-- May not survive app termination for extended periods
+- User force-quit suppresses relaunch until the app is opened again
+- `startOnBoot` is Android-only
 
 ---
 
@@ -155,7 +163,7 @@ void _handleMotionChange(HeadlessEvent event) {
 }
 
 void _handleBoot(HeadlessEvent event) {
-  print('[Headless] Device rebooted, tracking resumed');
+  print('[Headless] Device reboot event received');
 }
 ```
 
@@ -174,7 +182,7 @@ void main() async {
   await Locus.ready(ConfigPresets.balanced.copyWith(
     enableHeadless: true,
     stopOnTerminate: false,
-    startOnBoot: true,
+    startOnBoot: true, // Android-only
   ));
   
   runApp(MyApp());
@@ -186,8 +194,8 @@ void main() async {
 ```dart
 await Locus.ready(ConfigPresets.balanced.copyWith(
   enableHeadless: true,
-  stopOnTerminate: false,    // Continue after app is killed
-  startOnBoot: true,         // Resume after reboot
+  stopOnTerminate: false,    // Preserve tracking after a recents swipe
+  startOnBoot: true,         // Android-only boot callback eligibility
   foregroundService: true,   // Required on Android
 ));
 ```
@@ -269,7 +277,7 @@ void headlessCallback(HeadlessEvent event) {
     case 'boot':
       _logEvent('boot', {
         'timestamp': timestamp,
-        'message': 'Tracking resumed after reboot',
+        'message': 'Boot event received',
       });
       break;
   }
@@ -389,8 +397,9 @@ Avoid triggering headless callbacks too frequently.
 ### iOS Restrictions
 
 iOS heavily restricts background processing:
-- Limited execution after app termination
-- May not receive events if app hasn't run recently
+- Limited execution after an OS-eligible process termination
+- Eligible Core Location relaunch requires Always authorization and background mode
+- User force-quit suppresses relaunch until a manual app open
 - Background app refresh must be enabled
 - System may throttle or deny background execution
 
@@ -433,7 +442,7 @@ adb shell dumpsys activity services | grep HeadlessService
 
 **Test Headless Callback:**
 1. Start app
-2. Kill app (swipe away from recent apps)
+2. Swipe the task from recents with `stopOnTerminate: false`
 3. Trigger event (move location, enter geofence)
 4. Check logcat for headless logs
 
@@ -559,8 +568,9 @@ Future<void> _sendToServer(Location location) async {
 ### 5. Test Thoroughly
 
 Test scenarios:
-- App killed by user
-- Device reboot
+- UI detach and recents swipe for both `stopOnTerminate` values
+- Ordinary OS process death, Task Manager stop, and force-stop as separate cases
+- Device reboot with all boot prerequisites satisfied
 - Low battery
 - Poor network connectivity
 - Multiple rapid events

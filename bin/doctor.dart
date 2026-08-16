@@ -6,7 +6,9 @@
 ///   `dart run locus:doctor [options]`
 ///
 /// Options:
-///   --fix    Attempt to automatically fix issues
+///   --fix        Attempt to automatically fix issues
+///   --activity   Require activity recognition configuration (default)
+///   --no-activity Skip activity recognition configuration
 ///   --version    Show version
 ///   -h, --help    Show this help message
 
@@ -15,12 +17,18 @@ library;
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:locus/src/cli/ios_permission_macros.dart';
 
-const _version = '2.3.1';
+const _version = '2.4.0';
 
 void main(List<String> args) async {
   final parser = ArgParser()
     ..addFlag('fix', defaultsTo: false, help: 'Attempt to fix issues')
+    ..addFlag(
+      'activity',
+      defaultsTo: true,
+      help: 'Require activity recognition configuration',
+    )
     ..addFlag('version', abbr: 'v', negatable: false, help: 'Show version')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show help');
 
@@ -51,6 +59,7 @@ void main(List<String> args) async {
   }
 
   final shouldFix = results['fix'] as bool;
+  final includeActivity = results['activity'] as bool;
 
   stdout.writeln('''
 ╔══════════════════════════════════════════════════════════════╗
@@ -62,12 +71,18 @@ void main(List<String> args) async {
   var fixedCount = 0;
 
   // Check Android configuration
-  final androidIssues = await _checkAndroid(shouldFix);
+  final androidIssues = await _checkAndroid(
+    shouldFix,
+    includeActivity: includeActivity,
+  );
   issueCount += androidIssues.$1;
   fixedCount += androidIssues.$2;
 
   // Check iOS configuration
-  final iosIssues = await _checkIos(shouldFix);
+  final iosIssues = await _checkIos(
+    shouldFix,
+    includeActivity: includeActivity,
+  );
   issueCount += iosIssues.$1;
   fixedCount += iosIssues.$2;
 
@@ -76,34 +91,46 @@ void main(List<String> args) async {
 
   // Summary
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '║  ────────────────────────────────────────────────────────────║');
+    '║  ────────────────────────────────────────────────────────────║',
+  );
 
   if (issueCount == 0) {
     stdout.writeln(
-        '║  ✅ All checks passed! Your project is ready.                 ║');
+      '║  ✅ All checks passed! Your project is ready.                 ║',
+    );
   } else if (shouldFix && fixedCount > 0) {
     stdout.writeln(
-        '║  🔧 Fixed $fixedCount issue(s). ${issueCount - fixedCount} remaining.                          ║');
+      '║  🔧 Fixed $fixedCount issue(s). ${issueCount - fixedCount} remaining.                          ║',
+    );
   } else {
     stdout.writeln(
-        '║  ⚠️  Found $issueCount issue(s). Run with --fix to auto-repair.      ║');
+      '║  ⚠️  Found $issueCount issue(s). Run with --fix to auto-repair.      ║',
+    );
   }
 
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '╚══════════════════════════════════════════════════════════════╝');
+    '╚══════════════════════════════════════════════════════════════╝',
+  );
 
   exit(issueCount > fixedCount ? 1 : 0);
 }
 
-Future<(int, int)> _checkAndroid(bool shouldFix) async {
+Future<(int, int)> _checkAndroid(
+  bool shouldFix, {
+  required bool includeActivity,
+}) async {
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '║  Checking Android configuration...                            ║');
+    '║  Checking Android configuration...                            ║',
+  );
 
   var issues = 0;
   var fixed = 0;
@@ -122,20 +149,25 @@ Future<(int, int)> _checkAndroid(bool shouldFix) async {
   var modified = false;
 
   // Required permissions
-  final requiredPermissions = [
+  final requiredPermissions = <(String, String)>[
     ('ACCESS_FINE_LOCATION', 'android.permission.ACCESS_FINE_LOCATION'),
     ('ACCESS_COARSE_LOCATION', 'android.permission.ACCESS_COARSE_LOCATION'),
     (
       'ACCESS_BACKGROUND_LOCATION',
-      'android.permission.ACCESS_BACKGROUND_LOCATION'
+      'android.permission.ACCESS_BACKGROUND_LOCATION',
     ),
     ('FOREGROUND_SERVICE', 'android.permission.FOREGROUND_SERVICE'),
     (
       'FOREGROUND_SERVICE_LOCATION',
-      'android.permission.FOREGROUND_SERVICE_LOCATION'
+      'android.permission.FOREGROUND_SERVICE_LOCATION',
     ),
-    ('ACTIVITY_RECOGNITION', 'android.permission.ACTIVITY_RECOGNITION'),
   ];
+  if (includeActivity) {
+    requiredPermissions.add((
+      'ACTIVITY_RECOGNITION',
+      'android.permission.ACTIVITY_RECOGNITION',
+    ));
+  }
 
   for (final (name, permission) in requiredPermissions) {
     if (content.contains(permission)) {
@@ -149,7 +181,8 @@ Future<(int, int)> _checkAndroid(bool shouldFix) async {
         if (insertPoint != -1) {
           final permissionTag =
               '    <uses-permission android:name="$permission" />\n';
-          content = content.substring(0, insertPoint) +
+          content =
+              content.substring(0, insertPoint) +
               permissionTag +
               content.substring(insertPoint);
           modified = true;
@@ -222,11 +255,16 @@ Future<bool> _checkMinSdkVersion() async {
   return true;
 }
 
-Future<(int, int)> _checkIos(bool shouldFix) async {
+Future<(int, int)> _checkIos(
+  bool shouldFix, {
+  required bool includeActivity,
+}) async {
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '║  Checking iOS configuration...                                ║');
+    '║  Checking iOS configuration...                                ║',
+  );
 
   var issues = 0;
   var fixed = 0;
@@ -245,14 +283,19 @@ Future<(int, int)> _checkIos(bool shouldFix) async {
   var modified = false;
 
   // Required keys
-  final requiredKeys = [
+  final requiredKeys = <(String, String)>[
     ('NSLocationWhenInUseUsageDescription', 'This app needs location access.'),
     (
       'NSLocationAlwaysAndWhenInUseUsageDescription',
-      'This app needs background location.'
+      'This app needs background location.',
     ),
-    ('NSMotionUsageDescription', 'This app uses motion to detect activity.'),
   ];
+  if (includeActivity) {
+    requiredKeys.add((
+      'NSMotionUsageDescription',
+      'This app uses motion to detect activity.',
+    ));
+  }
 
   for (final (key, defaultValue) in requiredKeys) {
     if (content.contains('<key>$key</key>')) {
@@ -264,11 +307,13 @@ Future<(int, int)> _checkIos(bool shouldFix) async {
       if (shouldFix) {
         final insertPoint = content.lastIndexOf('</dict>');
         if (insertPoint != -1) {
-          final keyValue = '''
+          final keyValue =
+              '''
 \t<key>$key</key>
 \t<string>$defaultValue</string>
 ''';
-          content = content.substring(0, insertPoint) +
+          content =
+              content.substring(0, insertPoint) +
               keyValue +
               content.substring(insertPoint);
           modified = true;
@@ -288,8 +333,10 @@ Future<(int, int)> _checkIos(bool shouldFix) async {
 
     if (shouldFix) {
       if (content.contains('<key>UIBackgroundModes</key>')) {
-        final arrayStart =
-            content.indexOf('<array>', content.indexOf('UIBackgroundModes'));
+        final arrayStart = content.indexOf(
+          '<array>',
+          content.indexOf('UIBackgroundModes'),
+        );
         if (arrayStart != -1) {
           final insertPoint = arrayStart + '<array>'.length;
           content =
@@ -307,7 +354,8 @@ Future<(int, int)> _checkIos(bool shouldFix) async {
 \t\t<string>location</string>
 \t</array>
 ''';
-          content = content.substring(0, insertPoint) +
+          content =
+              content.substring(0, insertPoint) +
               bgModes +
               content.substring(insertPoint);
           modified = true;
@@ -320,6 +368,43 @@ Future<(int, int)> _checkIos(bool shouldFix) async {
 
   if (modified) {
     plistFile.writeAsStringSync(content);
+  }
+
+  const podfilePath = 'ios/Podfile';
+  final podfile = File(podfilePath);
+  if (!podfile.existsSync()) {
+    _printCheck('iOS permission handlers', false, 'Podfile not found');
+    issues++;
+  } else {
+    final podfileContent = podfile.readAsStringSync();
+    if (hasIosPermissionMacros(
+      podfileContent,
+      includeSensors: includeActivity,
+    )) {
+      _printCheck('iOS permission handlers', true);
+    } else {
+      _printCheck(
+        'iOS permission handlers',
+        false,
+        includeActivity ? 'Location or sensors disabled' : 'Location disabled',
+      );
+      issues++;
+      if (shouldFix) {
+        final configured = addIosPermissionMacros(
+          podfileContent,
+          includeSensors: includeActivity,
+        );
+        if (configured != null) {
+          podfile.writeAsStringSync(configured);
+          fixed++;
+          _printFix(
+            includeActivity
+                ? 'Enabled iOS location and motion handlers'
+                : 'Enabled iOS location handler',
+          );
+        }
+      }
+    }
   }
 
   // Check iOS deployment target
@@ -338,8 +423,9 @@ Future<void> _checkIosDeploymentTarget() async {
   }
 
   final content = podfile.readAsStringSync();
-  final match =
-      RegExp(r"platform\s*:ios\s*,\s*'(\d+\.\d+)'").firstMatch(content);
+  final match = RegExp(
+    r"platform\s*:ios\s*,\s*'(\d+\.\d+)'",
+  ).firstMatch(content);
 
   if (match != null) {
     final version = double.tryParse(match.group(1) ?? '0') ?? 0;
@@ -347,7 +433,10 @@ Future<void> _checkIosDeploymentTarget() async {
       _printCheck('iOS deployment target is ${match.group(1)} (>= 14.0)', true);
     } else {
       _printCheck(
-          'iOS deployment target is ${match.group(1)}', false, 'Needs >= 14.0');
+        'iOS deployment target is ${match.group(1)}',
+        false,
+        'Needs >= 14.0',
+      );
     }
   } else {
     _printCheck('iOS deployment target', true, 'Using project default');
@@ -356,9 +445,11 @@ Future<void> _checkIosDeploymentTarget() async {
 
 Future<void> _checkPackage() async {
   stdout.writeln(
-      '║                                                               ║');
+    '║                                                               ║',
+  );
   stdout.writeln(
-      '║  Checking package configuration...                            ║');
+    '║  Checking package configuration...                            ║',
+  );
 
   // Check pubspec.yaml for locus dependency
   final pubspecFile = File('pubspec.yaml');

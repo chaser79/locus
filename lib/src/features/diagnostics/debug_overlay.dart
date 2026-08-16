@@ -261,9 +261,7 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
       bottom: _getBottom(),
       left: _getLeft(),
       right: _getRight(),
-      child: SafeArea(
-        child: _buildOverlay(),
-      ),
+      child: SafeArea(child: _buildOverlay()),
     );
   }
 
@@ -450,11 +448,7 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
         Row(
           children: [
             Expanded(
-              child: _buildStatusChip(
-                'Tracking',
-                _isEnabled,
-                Icons.gps_fixed,
-              ),
+              child: _buildStatusChip('Tracking', _isEnabled, Icons.gps_fixed),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -476,19 +470,12 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
       decoration: BoxDecoration(
         color: active ? Colors.green.withAlpha(51) : Colors.red.withAlpha(51),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: active ? Colors.green : Colors.red,
-          width: 1,
-        ),
+        border: Border.all(color: active ? Colors.green : Colors.red, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 14,
-            color: active ? Colors.green : Colors.red,
-          ),
+          Icon(icon, size: 14, color: active ? Colors.green : Colors.red),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
@@ -573,10 +560,7 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
               const Spacer(),
               Text(
                 '${activity.confidence}%',
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 11,
-                ),
+                style: const TextStyle(color: Colors.white54, fontSize: 11),
               ),
             ],
           ),
@@ -648,20 +632,14 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
           ),
           const SizedBox(height: 4),
           if (stats != null) ...[
-            _buildInfoRow(
-              'Optimization',
-              stats.optimizationLevel.name,
-            ),
+            _buildInfoRow('Optimization', stats.optimizationLevel.name),
             _buildInfoRow(
               'GPS On',
               '${stats.gpsOnTimePercent.toStringAsFixed(1)}%',
             ),
           ],
           if (runway != null) ...[
-            _buildInfoRow(
-              'Runway',
-              _formatDuration(runway.duration),
-            ),
+            _buildInfoRow('Runway', _formatDuration(runway.duration)),
             _buildInfoRow(
               'Confidence',
               '${(runway.confidence * 100).toInt()}%',
@@ -714,11 +692,7 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
               _pendingSyncCount > 0 ? Colors.amber : Colors.green,
             ),
             const SizedBox(width: 12),
-            _buildMiniStat(
-              'Success',
-              '$_syncSuccessCount',
-              Colors.green,
-            ),
+            _buildMiniStat('Success', '$_syncSuccessCount', Colors.green),
             const SizedBox(width: 12),
             _buildMiniStat(
               'Failed',
@@ -729,10 +703,7 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
         ),
         const SizedBox(height: 4),
         if (total > 0)
-          _buildInfoRow(
-            'Success Rate',
-            '${successRate.toStringAsFixed(1)}%',
-          ),
+          _buildInfoRow('Success Rate', '${successRate.toStringAsFixed(1)}%'),
       ],
     );
   }
@@ -748,13 +719,7 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white54,
-            fontSize: 9,
-          ),
-        ),
+        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 9)),
       ],
     );
   }
@@ -775,10 +740,7 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
             const SizedBox(width: 8),
             Text(
               '$_geofenceCount active',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
           ],
         ),
@@ -804,20 +766,11 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
           '${(_odometer / 1000).toStringAsFixed(2)} km',
         ),
         _buildInfoRow('Locations', '$_locationCount'),
-        _buildInfoRow(
-          'Loc/min',
-          locationsPerMinute.toStringAsFixed(1),
-        ),
+        _buildInfoRow('Loc/min', locationsPerMinute.toStringAsFixed(1)),
         if (trackingDuration.inMinutes > 0)
-          _buildInfoRow(
-            'Tracking',
-            _formatDuration(trackingDuration),
-          ),
+          _buildInfoRow('Tracking', _formatDuration(trackingDuration)),
         if (_lastLocation != null)
-          _buildInfoRow(
-            'Last Update',
-            _formatTime(_lastLocation!.timestamp),
-          ),
+          _buildInfoRow('Last Update', _formatTime(_lastLocation!.timestamp)),
       ],
     );
   }
@@ -828,32 +781,36 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
       children: [
         _buildSectionTitle('Recent (${_locations.length})'),
         const SizedBox(height: 8),
-        ...(_locations.take(5).map((loc) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: [
-                  Text(
-                    _formatTime(loc.timestamp),
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 9,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${loc.coords.latitude.toStringAsFixed(4)}, ${loc.coords.longitude.toStringAsFixed(4)}',
+        ...(_locations
+            .take(5)
+            .map(
+              (loc) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Text(
+                      _formatTime(loc.timestamp),
                       style: const TextStyle(
-                        color: Colors.white70,
+                        color: Colors.white54,
                         fontSize: 9,
                         fontFamily: 'monospace',
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${loc.coords.latitude.toStringAsFixed(4)}, ${loc.coords.longitude.toStringAsFixed(4)}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 9,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ))),
+            )),
       ],
     );
   }
@@ -921,10 +878,7 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 9,
-              ),
+              style: const TextStyle(color: Colors.white54, fontSize: 9),
             ),
           ],
         ),
@@ -951,10 +905,7 @@ class _LocusDebugOverlayState extends State<LocusDebugOverlay> {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white54,
-              fontSize: 11,
-            ),
+            style: const TextStyle(color: Colors.white54, fontSize: 11),
           ),
           const Spacer(),
           Text(

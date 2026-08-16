@@ -54,11 +54,13 @@ class LocusTrip {
 
   static Stream<Location> _tripLocationStream() {
     return LocusStreams.events
-        .where((event) =>
-            event.type == EventType.location ||
-            event.type == EventType.motionChange ||
-            event.type == EventType.heartbeat ||
-            event.type == EventType.schedule)
+        .where(
+          (event) =>
+              event.type == EventType.location ||
+              event.type == EventType.motionChange ||
+              event.type == EventType.heartbeat ||
+              event.type == EventType.schedule,
+        )
         .map((event) => event.data)
         .where((data) => data is Location)
         .cast<Location>();

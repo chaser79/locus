@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name="dev.locus.core.RecoveryTestActivity"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+        <receiver
+            android:name="dev.locus.core.RecoveryTestReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+    </application>
+</manifest>

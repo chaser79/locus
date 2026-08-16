@@ -41,12 +41,12 @@ class SyncHealthMonitor {
     required this.unrecoverableThreshold,
     LocusReliabilityRegistry? registry,
     DateTime Function()? clock,
-  })  : assert(
-          stalledThreshold < unrecoverableThreshold,
-          'stalledThreshold must be smaller than unrecoverableThreshold',
-        ),
-        _registry = registry ?? LocusReliabilityRegistry.instance,
-        _clock = clock ?? DateTime.now {
+  }) : assert(
+         stalledThreshold < unrecoverableThreshold,
+         'stalledThreshold must be smaller than unrecoverableThreshold',
+       ),
+       _registry = registry ?? LocusReliabilityRegistry.instance,
+       _clock = clock ?? DateTime.now {
     // Anchor the fallback baseline at construction. A new install with a
     // bad token has no `_lastSuccessAt` and would otherwise be unable to
     // escalate `SyncUnrecoverable` even after 30 minutes of failed
@@ -135,23 +135,27 @@ class SyncHealthMonitor {
     if (since >= unrecoverableThreshold &&
         _state != SyncHealthState.unrecoverable) {
       _state = SyncHealthState.unrecoverable;
-      _registry.emit(SyncUnrecoverable(
-        sinceLastSuccess: since,
-        consecutiveFailures: _consecutiveFailures,
-        lastHttpStatus: _lastHttpStatus,
-        occurredAt: now,
-      ));
+      _registry.emit(
+        SyncUnrecoverable(
+          sinceLastSuccess: since,
+          consecutiveFailures: _consecutiveFailures,
+          lastHttpStatus: _lastHttpStatus,
+          occurredAt: now,
+        ),
+      );
       return;
     }
 
     if (since >= stalledThreshold && _state == SyncHealthState.healthy) {
       _state = SyncHealthState.stalled;
-      _registry.emit(SyncStalled(
-        sinceLastSuccess: since,
-        consecutiveFailures: _consecutiveFailures,
-        lastHttpStatus: _lastHttpStatus,
-        occurredAt: now,
-      ));
+      _registry.emit(
+        SyncStalled(
+          sinceLastSuccess: since,
+          consecutiveFailures: _consecutiveFailures,
+          lastHttpStatus: _lastHttpStatus,
+          occurredAt: now,
+        ),
+      );
     }
   }
 

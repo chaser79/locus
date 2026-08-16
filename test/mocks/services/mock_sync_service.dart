@@ -71,8 +71,9 @@ class MockSyncService implements SyncService {
     if (_isPaused) {
       _isPaused = false;
       _pauseReason = null;
-      _pauseChangesController
-          .add(const SyncPauseState(isPaused: false, reason: null));
+      _pauseChangesController.add(
+        const SyncPauseState(isPaused: false, reason: null),
+      );
     }
     return true;
   }
@@ -94,8 +95,9 @@ class MockSyncService implements SyncService {
     if (_isPaused) return;
     _isPaused = true;
     _pauseReason = 'app';
-    _pauseChangesController
-        .add(const SyncPauseState(isPaused: true, reason: 'app'));
+    _pauseChangesController.add(
+      const SyncPauseState(isPaused: true, reason: 'app'),
+    );
   }
 
   @override

@@ -1,6 +1,10 @@
 # Geofencing
 
-Locus provides a high-performance native geofencing system that works even when the app is terminated or in the background. It supports both **circular geofences** (radius-based) and **polygon geofences** (arbitrary shapes).
+Locus provides a high-performance native geofencing system that can receive
+OS-eligible events while the Flutter UI engine is absent or the app is in the
+background. Android force-stop and iOS user force-quit remain platform-owned
+stop boundaries. Locus supports both **circular geofences** (radius-based) and
+**polygon geofences** (arbitrary shapes).
 
 ## Circular Geofences
 

@@ -148,17 +148,16 @@ class PowerState {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'batteryLevel': batteryLevel,
-        'isCharging': isCharging,
-        'chargingType': chargingType.name,
-        'isPowerSaveMode': isPowerSaveMode,
-        'isDozeMode': isDozeMode,
-        'isBatteryOptimizationExempt': isBatteryOptimizationExempt,
-        if (timeToFullCharge != null)
-          'timeToFullChargeSeconds': timeToFullCharge!.inSeconds,
-        if (timeRemaining != null)
-          'timeRemainingSeconds': timeRemaining!.inSeconds,
-      };
+    'batteryLevel': batteryLevel,
+    'isCharging': isCharging,
+    'chargingType': chargingType.name,
+    'isPowerSaveMode': isPowerSaveMode,
+    'isDozeMode': isDozeMode,
+    'isBatteryOptimizationExempt': isBatteryOptimizationExempt,
+    if (timeToFullCharge != null)
+      'timeToFullChargeSeconds': timeToFullCharge!.inSeconds,
+    if (timeRemaining != null) 'timeRemainingSeconds': timeRemaining!.inSeconds,
+  };
 
   @override
   String toString() {
@@ -235,11 +234,11 @@ class PowerStateChangeEvent {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'previous': previous.toMap(),
-        'current': current.toMap(),
-        'changeType': changeType.name,
-        'timestamp': timestamp.toIso8601String(),
-      };
+    'previous': previous.toMap(),
+    'current': current.toMap(),
+    'changeType': changeType.name,
+    'timestamp': timestamp.toIso8601String(),
+  };
 }
 
 /// Types of power state changes.
@@ -290,12 +289,12 @@ class PowerOptimizationSuggestion {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'level': level.name,
-        'reason': reason,
-        'canUseHighAccuracy': canUseHighAccuracy,
-        'canUseCellular': canUseCellular,
-        'suggestedHeartbeatMultiplier': suggestedHeartbeatMultiplier,
-      };
+    'level': level.name,
+    'reason': reason,
+    'canUseHighAccuracy': canUseHighAccuracy,
+    'canUseCellular': canUseCellular,
+    'suggestedHeartbeatMultiplier': suggestedHeartbeatMultiplier,
+  };
 }
 
 /// Optimization suggestion levels.

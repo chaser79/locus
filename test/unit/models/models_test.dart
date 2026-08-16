@@ -40,11 +40,7 @@ void main() {
       'location': {
         'uuid': 'loc-2',
         'timestamp': DateTime.utc(2025, 2, 1).toIso8601String(),
-        'coords': {
-          'latitude': 40.0,
-          'longitude': -70.0,
-          'accuracy': 6.0,
-        },
+        'coords': {'latitude': 40.0, 'longitude': -70.0, 'accuracy': 6.0},
       },
     });
 
@@ -53,9 +49,7 @@ void main() {
   });
 
   test('provider change defaults to unknown values', () {
-    final event = ProviderChangeEvent.fromMap({
-      'enabled': false,
-    });
+    final event = ProviderChangeEvent.fromMap({'enabled': false});
 
     expect(event.availability, ProviderAvailability.unknown);
     expect(event.authorizationStatus, AuthorizationStatus.unknown);
@@ -80,7 +74,7 @@ void main() {
 
   test('headless event uses fallback type', () {
     final event = HeadlessEvent.fromMap({
-      'data': {'value': 1}
+      'data': {'value': 1},
     });
     expect(event.name, 'unknown');
     expect(event.data, {'value': 1});
@@ -90,11 +84,7 @@ void main() {
     final location = Location(
       uuid: 'loc-3',
       timestamp: DateTime.utc(2025, 3, 1),
-      coords: const Coords(
-        latitude: 10.5,
-        longitude: 20.5,
-        accuracy: 4.2,
-      ),
+      coords: const Coords(latitude: 10.5, longitude: 20.5, accuracy: 4.2),
       isMoving: true,
       isHeartbeat: false,
       extras: const {'note': 'sample'},
@@ -114,11 +104,7 @@ void main() {
       'location': {
         'uuid': 'loc-4',
         'timestamp': DateTime.utc(2025, 3, 2).toIso8601String(),
-        'coords': {
-          'latitude': 11.0,
-          'longitude': 21.0,
-          'accuracy': 5.0,
-        },
+        'coords': {'latitude': 11.0, 'longitude': 21.0, 'accuracy': 5.0},
       },
     });
 
@@ -208,7 +194,7 @@ void main() {
         'longitude': -122.0,
         'extras': {
           'key': 'value',
-          'nested': {'a': 1}
+          'nested': {'a': 1},
         },
       });
       expect(geofence.extras, isNotNull);

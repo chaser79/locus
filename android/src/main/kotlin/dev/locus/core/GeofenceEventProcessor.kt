@@ -28,8 +28,9 @@ class GeofenceEventProcessor(
     fun handle(obj: JSONObject) {
         val event = buildGeofenceEvent(obj) ?: return
         val locationPayload = extractLocationPayload(event)
+        val privacyGuardEnabled = config.privacyModeEnabled
 
-        locationPayload?.let { payload ->
+        if (!privacyGuardEnabled) locationPayload?.let { payload ->
             if (PersistencePolicy.shouldPersist(config, "geofence")) {
                 stateManager.storeLocationPayload(payload, config.maxDaysToPersist, config.maxRecordsToPersist)
             }
@@ -42,7 +43,11 @@ class GeofenceEventProcessor(
             }
         }
 
-        eventDispatcher.sendEvent(event)
+        eventDispatcher.sendEvent(
+            event,
+            containsRawLocation = locationPayload != null,
+            privacyGuardEnabled = privacyGuardEnabled,
+        )
     }
 
     private fun buildGeofenceEvent(obj: JSONObject): Map<String, Any>? {

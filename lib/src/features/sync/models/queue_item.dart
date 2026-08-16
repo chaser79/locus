@@ -37,12 +37,12 @@ class QueueItem {
   final String? type;
 
   JsonMap toMap() => {
-        'id': id,
-        'createdAt': createdAt.toIso8601String(),
-        'payload': payload,
-        'retryCount': retryCount,
-        if (nextRetryAt != null) 'nextRetryAt': nextRetryAt!.toIso8601String(),
-        if (idempotencyKey != null) 'idempotencyKey': idempotencyKey,
-        if (type != null) 'type': type,
-      };
+    'id': id,
+    'createdAt': createdAt.toIso8601String(),
+    'payload': payload,
+    'retryCount': retryCount,
+    if (nextRetryAt != null) 'nextRetryAt': nextRetryAt!.toIso8601String(),
+    if (idempotencyKey != null) 'idempotencyKey': idempotencyKey,
+    if (type != null) 'type': type,
+  };
 }

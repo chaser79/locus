@@ -204,39 +204,40 @@ void main() {
 
     group('Using Base Test Classes', () {
       // Example of using serviceTest group helper
-      serviceTestGroup<LocationServiceImpl>(
-        'LocationServiceImpl',
-        (getMock, getService) {
-          test('returns empty summary when no locations', () async {
-            final service = getService();
-            final summary = await service.getSummary();
+      serviceTestGroup<LocationServiceImpl>('LocationServiceImpl', (
+        getMock,
+        getService,
+      ) {
+        test('returns empty summary when no locations', () async {
+          final service = getService();
+          final summary = await service.getSummary();
 
-            expect(summary.locationCount, 0);
-            expect(summary.totalDistanceMeters, 0);
-          });
+          expect(summary.locationCount, 0);
+          expect(summary.totalDistanceMeters, 0);
+        });
 
-          test('calculates summary correctly', () async {
-            final mock = getMock();
-            final service = getService();
+        test('calculates summary correctly', () async {
+          final mock = getMock();
+          final service = getService();
 
-            // Emit locations
-            mock.emitLocation(LocationFixtures.sanFrancisco(
+          // Emit locations
+          mock.emitLocation(
+            LocationFixtures.sanFrancisco(
               timestamp: DateTime(2026, 1, 1, 10, 0),
-            ));
-            mock.emitLocation(LocationFixtures.sanFrancisco(
+            ),
+          );
+          mock.emitLocation(
+            LocationFixtures.sanFrancisco(
               timestamp: DateTime(2026, 1, 1, 10, 5),
               isMoving: true,
-            ));
+            ),
+          );
 
-            final summary = await service.getSummary(
-              date: DateTime(2026, 1, 1),
-            );
+          final summary = await service.getSummary(date: DateTime(2026, 1, 1));
 
-            expect(summary.locationCount, 2);
-          });
-        },
-        createService: (mock) => LocationServiceImpl(() => mock),
-      );
+          expect(summary.locationCount, 2);
+        });
+      }, createService: (mock) => LocationServiceImpl(() => mock));
     });
   });
 }

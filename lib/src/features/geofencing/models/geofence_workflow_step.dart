@@ -14,9 +14,9 @@ class GeofenceWorkflowStep {
   final int cooldownSeconds;
 
   JsonMap toMap() => {
-        'id': id,
-        'geofenceIdentifier': geofenceIdentifier,
-        'action': action.name,
-        'cooldownSeconds': cooldownSeconds,
-      };
+    'id': id,
+    'geofenceIdentifier': geofenceIdentifier,
+    'action': action.name,
+    'cooldownSeconds': cooldownSeconds,
+  };
 }

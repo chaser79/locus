@@ -25,11 +25,11 @@ class LogEntry {
   final String? tag;
 
   JsonMap toMap() => {
-        'timestamp': timestamp.millisecondsSinceEpoch,
-        'level': level,
-        'message': message,
-        if (tag != null) 'tag': tag,
-      };
+    'timestamp': timestamp.millisecondsSinceEpoch,
+    'level': level,
+    'message': message,
+    if (tag != null) 'tag': tag,
+  };
 
   static int _parseTimestampMs(Object? raw) {
     if (raw is int) {

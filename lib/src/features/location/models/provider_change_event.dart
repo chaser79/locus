@@ -35,10 +35,10 @@ class ProviderChangeEvent {
   final LocationAccuracyAuthorization accuracyAuthorization;
 
   JsonMap toMap() => {
-        'enabled': enabled,
-        if (status != null) 'status': status,
-        'availability': availability.name,
-        'authorizationStatus': authorizationStatus.name,
-        'accuracyAuthorization': accuracyAuthorization.name,
-      };
+    'enabled': enabled,
+    if (status != null) 'status': status,
+    'availability': availability.name,
+    'authorizationStatus': authorizationStatus.name,
+    'accuracyAuthorization': accuracyAuthorization.name,
+  };
 }

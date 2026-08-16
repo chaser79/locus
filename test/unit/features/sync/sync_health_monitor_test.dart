@@ -35,11 +35,11 @@ void main() {
   });
 
   SyncHealthMonitor newMonitor() => SyncHealthMonitor(
-        stalledThreshold: const Duration(minutes: 1),
-        unrecoverableThreshold: const Duration(minutes: 30),
-        registry: registry,
-        clock: clock.call,
-      );
+    stalledThreshold: const Duration(minutes: 1),
+    unrecoverableThreshold: const Duration(minutes: 30),
+    registry: registry,
+    clock: clock.call,
+  );
 
   group('SyncHealthMonitor', () {
     test('starts healthy with no last-success baseline', () {
@@ -78,24 +78,26 @@ void main() {
       expect(monitor.consecutiveFailures, 1);
     });
 
-    test('failure crossing stalled threshold emits SyncStalled exactly once',
-        () async {
-      final monitor = newMonitor();
-      monitor.recordSuccess();
-      clock.advance(const Duration(seconds: 65));
-      monitor.recordFailure(httpStatus: 503);
-      // Another failure later in the same band should not re-emit.
-      clock.advance(const Duration(seconds: 30));
-      monitor.recordFailure(httpStatus: 503);
-      await Future<void>.delayed(Duration.zero);
+    test(
+      'failure crossing stalled threshold emits SyncStalled exactly once',
+      () async {
+        final monitor = newMonitor();
+        monitor.recordSuccess();
+        clock.advance(const Duration(seconds: 65));
+        monitor.recordFailure(httpStatus: 503);
+        // Another failure later in the same band should not re-emit.
+        clock.advance(const Duration(seconds: 30));
+        monitor.recordFailure(httpStatus: 503);
+        await Future<void>.delayed(Duration.zero);
 
-      expect(events, hasLength(1));
-      final stalled = events.single as SyncStalled;
-      expect(stalled.consecutiveFailures, 1);
-      expect(stalled.lastHttpStatus, 503);
-      expect(stalled.sinceLastSuccess, const Duration(seconds: 65));
-      expect(monitor.state, SyncHealthState.stalled);
-    });
+        expect(events, hasLength(1));
+        final stalled = events.single as SyncStalled;
+        expect(stalled.consecutiveFailures, 1);
+        expect(stalled.lastHttpStatus, 503);
+        expect(stalled.sinceLastSuccess, const Duration(seconds: 65));
+        expect(monitor.state, SyncHealthState.stalled);
+      },
+    );
 
     test('crossing unrecoverable threshold emits SyncUnrecoverable', () async {
       final monitor = newMonitor();
@@ -118,83 +120,91 @@ void main() {
       expect(monitor.state, SyncHealthState.unrecoverable);
     });
 
-    test('recordSuccess after stalled returns to healthy and re-arms emission',
-        () async {
-      final monitor = newMonitor();
-      monitor.recordSuccess();
-      clock.advance(const Duration(minutes: 2));
-      monitor.recordFailure();
-      await Future<void>.delayed(Duration.zero);
-      expect(monitor.state, SyncHealthState.stalled);
+    test(
+      'recordSuccess after stalled returns to healthy and re-arms emission',
+      () async {
+        final monitor = newMonitor();
+        monitor.recordSuccess();
+        clock.advance(const Duration(minutes: 2));
+        monitor.recordFailure();
+        await Future<void>.delayed(Duration.zero);
+        expect(monitor.state, SyncHealthState.stalled);
 
-      clock.advance(const Duration(seconds: 5));
-      monitor.recordSuccess();
-      expect(monitor.state, SyncHealthState.healthy);
-      expect(monitor.consecutiveFailures, 0);
+        clock.advance(const Duration(seconds: 5));
+        monitor.recordSuccess();
+        expect(monitor.state, SyncHealthState.healthy);
+        expect(monitor.consecutiveFailures, 0);
 
-      clock.advance(const Duration(minutes: 2));
-      monitor.recordFailure();
-      await Future<void>.delayed(Duration.zero);
-      expect(events.whereType<SyncStalled>(), hasLength(2));
-    });
+        clock.advance(const Duration(minutes: 2));
+        monitor.recordFailure();
+        await Future<void>.delayed(Duration.zero);
+        expect(events.whereType<SyncStalled>(), hasLength(2));
+      },
+    );
 
-    test('evaluate() escalates stalled → unrecoverable without a new failure',
-        () async {
-      final monitor = newMonitor();
-      monitor.recordSuccess();
-      clock.advance(const Duration(minutes: 2));
-      monitor.recordFailure();
-      await Future<void>.delayed(Duration.zero);
-      expect(monitor.state, SyncHealthState.stalled);
+    test(
+      'evaluate() escalates stalled → unrecoverable without a new failure',
+      () async {
+        final monitor = newMonitor();
+        monitor.recordSuccess();
+        clock.advance(const Duration(minutes: 2));
+        monitor.recordFailure();
+        await Future<void>.delayed(Duration.zero);
+        expect(monitor.state, SyncHealthState.stalled);
 
-      clock.advance(const Duration(minutes: 30));
-      monitor.evaluate();
-      await Future<void>.delayed(Duration.zero);
-      expect(monitor.state, SyncHealthState.unrecoverable);
-      expect(events.last, isA<SyncUnrecoverable>());
-    });
+        clock.advance(const Duration(minutes: 30));
+        monitor.evaluate();
+        await Future<void>.delayed(Duration.zero);
+        expect(monitor.state, SyncHealthState.unrecoverable);
+        expect(events.last, isA<SyncUnrecoverable>());
+      },
+    );
 
-    test('never-succeeded process escalates from first failure baseline',
-        () async {
-      // A fresh install with a bad token never produces a `recordSuccess`.
-      // Pre-fix `evaluate` early-returned on a null `_lastSuccessAt` so the
-      // unrecoverable threshold could not fire; post-fix it falls back to
-      // `_firstFailureAt` (and ultimately `_startedAt`).
-      final monitor = newMonitor();
-      monitor.recordFailure(httpStatus: 401);
-      // Same instant as the first failure: zero elapsed, no escalation.
-      expect(monitor.state, SyncHealthState.healthy);
+    test(
+      'never-succeeded process escalates from first failure baseline',
+      () async {
+        // A fresh install with a bad token never produces a `recordSuccess`.
+        // Pre-fix `evaluate` early-returned on a null `_lastSuccessAt` so the
+        // unrecoverable threshold could not fire; post-fix it falls back to
+        // `_firstFailureAt` (and ultimately `_startedAt`).
+        final monitor = newMonitor();
+        monitor.recordFailure(httpStatus: 401);
+        // Same instant as the first failure: zero elapsed, no escalation.
+        expect(monitor.state, SyncHealthState.healthy);
 
-      // Cross stalled threshold (1 min) — first failure was 1 min ago.
-      clock.advance(const Duration(minutes: 1, seconds: 1));
-      monitor.evaluate();
-      await Future<void>.delayed(Duration.zero);
-      expect(monitor.state, SyncHealthState.stalled);
-      expect(events.whereType<SyncStalled>(), hasLength(1));
+        // Cross stalled threshold (1 min) — first failure was 1 min ago.
+        clock.advance(const Duration(minutes: 1, seconds: 1));
+        monitor.evaluate();
+        await Future<void>.delayed(Duration.zero);
+        expect(monitor.state, SyncHealthState.stalled);
+        expect(events.whereType<SyncStalled>(), hasLength(1));
 
-      // Cross unrecoverable threshold (30 min) — total 30 min, 1 sec from
-      // the first failure.
-      clock.advance(const Duration(minutes: 29));
-      monitor.evaluate();
-      await Future<void>.delayed(Duration.zero);
-      expect(monitor.state, SyncHealthState.unrecoverable);
-      expect(events.whereType<SyncUnrecoverable>(), hasLength(1));
-    });
+        // Cross unrecoverable threshold (30 min) — total 30 min, 1 sec from
+        // the first failure.
+        clock.advance(const Duration(minutes: 29));
+        monitor.evaluate();
+        await Future<void>.delayed(Duration.zero);
+        expect(monitor.state, SyncHealthState.unrecoverable);
+        expect(events.whereType<SyncUnrecoverable>(), hasLength(1));
+      },
+    );
 
-    test('never-failed never-succeeded process escalates from process start',
-        () async {
-      // Even with zero failures observed, a process that has been alive
-      // for >= unrecoverableThreshold and has never recorded a success can
-      // be evaluated to unrecoverable. This protects against a wedged
-      // sync that never even attempts (e.g. permanently-disabled network)
-      // — the heartbeat keeps calling `evaluate` and eventually trips.
-      final monitor = newMonitor();
-      clock.advance(const Duration(minutes: 30, seconds: 1));
-      monitor.evaluate();
-      await Future<void>.delayed(Duration.zero);
-      expect(monitor.state, SyncHealthState.unrecoverable);
-      expect(events.whereType<SyncUnrecoverable>(), hasLength(1));
-    });
+    test(
+      'never-failed never-succeeded process escalates from process start',
+      () async {
+        // Even with zero failures observed, a process that has been alive
+        // for >= unrecoverableThreshold and has never recorded a success can
+        // be evaluated to unrecoverable. This protects against a wedged
+        // sync that never even attempts (e.g. permanently-disabled network)
+        // — the heartbeat keeps calling `evaluate` and eventually trips.
+        final monitor = newMonitor();
+        clock.advance(const Duration(minutes: 30, seconds: 1));
+        monitor.evaluate();
+        await Future<void>.delayed(Duration.zero);
+        expect(monitor.state, SyncHealthState.unrecoverable);
+        expect(events.whereType<SyncUnrecoverable>(), hasLength(1));
+      },
+    );
 
     test('recordSuccess clears the firstFailure baseline', () async {
       // After a recovery, the next failure streak must start its own clock
@@ -216,48 +226,54 @@ void main() {
       expect(events.whereType<SyncUnrecoverable>(), isEmpty);
     });
 
-    test('attachTo bridges HttpEvent stream into success/failure paths',
-        () async {
-      final controller = StreamController<HttpEvent>();
-      final monitor = newMonitor();
-      monitor.attachTo(controller.stream);
+    test(
+      'attachTo bridges HttpEvent stream into success/failure paths',
+      () async {
+        final controller = StreamController<HttpEvent>();
+        final monitor = newMonitor();
+        monitor.attachTo(controller.stream);
 
-      controller.add(const HttpEvent(status: 200, ok: true));
-      await Future<void>.delayed(Duration.zero);
-      expect(monitor.state, SyncHealthState.healthy);
+        controller.add(const HttpEvent(status: 200, ok: true));
+        await Future<void>.delayed(Duration.zero);
+        expect(monitor.state, SyncHealthState.healthy);
 
-      clock.advance(const Duration(minutes: 2));
-      controller.add(const HttpEvent(status: 500, ok: false));
-      await Future<void>.delayed(Duration.zero);
-      expect(monitor.state, SyncHealthState.stalled);
+        clock.advance(const Duration(minutes: 2));
+        controller.add(const HttpEvent(status: 500, ok: false));
+        await Future<void>.delayed(Duration.zero);
+        expect(monitor.state, SyncHealthState.stalled);
 
-      await monitor.detach();
-      await controller.close();
-    });
+        await monitor.detach();
+        await controller.close();
+      },
+    );
 
-    test('emitted SyncStalled carries auto-classified lastErrorClass',
-        () async {
-      final monitor = newMonitor();
-      monitor.recordSuccess();
-      clock.advance(const Duration(minutes: 2));
-      monitor.recordFailure(httpStatus: 401);
-      await Future<void>.delayed(Duration.zero);
-      final stalled = events.whereType<SyncStalled>().single;
-      expect(stalled.lastHttpStatus, 401);
-      expect(stalled.lastErrorClass, SyncErrorClass.auth);
-    });
+    test(
+      'emitted SyncStalled carries auto-classified lastErrorClass',
+      () async {
+        final monitor = newMonitor();
+        monitor.recordSuccess();
+        clock.advance(const Duration(minutes: 2));
+        monitor.recordFailure(httpStatus: 401);
+        await Future<void>.delayed(Duration.zero);
+        final stalled = events.whereType<SyncStalled>().single;
+        expect(stalled.lastHttpStatus, 401);
+        expect(stalled.lastErrorClass, SyncErrorClass.auth);
+      },
+    );
 
-    test('emitted SyncUnrecoverable carries auto-classified lastErrorClass',
-        () async {
-      final monitor = newMonitor();
-      monitor.recordSuccess();
-      clock.advance(const Duration(minutes: 31));
-      monitor.recordFailure(httpStatus: 503);
-      await Future<void>.delayed(Duration.zero);
-      final unrec = events.whereType<SyncUnrecoverable>().single;
-      expect(unrec.lastHttpStatus, 503);
-      expect(unrec.lastErrorClass, SyncErrorClass.server);
-    });
+    test(
+      'emitted SyncUnrecoverable carries auto-classified lastErrorClass',
+      () async {
+        final monitor = newMonitor();
+        monitor.recordSuccess();
+        clock.advance(const Duration(minutes: 31));
+        monitor.recordFailure(httpStatus: 503);
+        await Future<void>.delayed(Duration.zero);
+        final unrec = events.whereType<SyncUnrecoverable>().single;
+        expect(unrec.lastHttpStatus, 503);
+        expect(unrec.lastErrorClass, SyncErrorClass.server);
+      },
+    );
 
     test('transport-level error (status 0) classifies as network', () async {
       final monitor = newMonitor();
@@ -275,10 +291,12 @@ void main() {
       expect(classifySyncError(null), SyncErrorClass.network);
     });
 
-    test('0 → network (matches the platform-side transport error sentinel)',
-        () {
-      expect(classifySyncError(0), SyncErrorClass.network);
-    });
+    test(
+      '0 → network (matches the platform-side transport error sentinel)',
+      () {
+        expect(classifySyncError(0), SyncErrorClass.network);
+      },
+    );
 
     test('401 / 403 → auth', () {
       expect(classifySyncError(401), SyncErrorClass.auth);

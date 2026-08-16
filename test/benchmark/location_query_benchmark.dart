@@ -84,57 +84,70 @@ void main() {
 
     // Test 1: No filters (worst case for allocation)
     const noFilterQuery = LocationQuery();
-    final noFilterTime =
-        runQueryBenchmark(noFilterQuery, locations, iterations);
-    print(BenchmarkResults(
-      name: 'No filters',
-      locationCount: size,
-      iterations: iterations,
-      totalMicroseconds: noFilterTime,
-    ));
+    final noFilterTime = runQueryBenchmark(
+      noFilterQuery,
+      locations,
+      iterations,
+    );
+    print(
+      BenchmarkResults(
+        name: 'No filters',
+        locationCount: size,
+        iterations: iterations,
+        totalMicroseconds: noFilterTime,
+      ),
+    );
 
     // Test 2: With pagination (offset + limit) - triggers sublist copies
-    final paginatedQuery = LocationQuery(
-      offset: size ~/ 4,
-      limit: size ~/ 2,
+    final paginatedQuery = LocationQuery(offset: size ~/ 4, limit: size ~/ 2);
+    final paginatedTime = runQueryBenchmark(
+      paginatedQuery,
+      locations,
+      iterations,
     );
-    final paginatedTime =
-        runQueryBenchmark(paginatedQuery, locations, iterations);
-    print(BenchmarkResults(
-      name: 'With pagination',
-      locationCount: size,
-      iterations: iterations,
-      totalMicroseconds: paginatedTime,
-    ));
+    print(
+      BenchmarkResults(
+        name: 'With pagination',
+        locationCount: size,
+        iterations: iterations,
+        totalMicroseconds: paginatedTime,
+      ),
+    );
 
     // Test 3: With accuracy filter + pagination
-    const filteredQuery = LocationQuery(
-      minAccuracy: 50,
-      offset: 10,
-      limit: 50,
+    const filteredQuery = LocationQuery(minAccuracy: 50, offset: 10, limit: 50);
+    final filteredTime = runQueryBenchmark(
+      filteredQuery,
+      locations,
+      iterations,
     );
-    final filteredTime =
-        runQueryBenchmark(filteredQuery, locations, iterations);
-    print(BenchmarkResults(
-      name: 'Filtered + paginated',
-      locationCount: size,
-      iterations: iterations,
-      totalMicroseconds: filteredTime,
-    ));
+    print(
+      BenchmarkResults(
+        name: 'Filtered + paginated',
+        locationCount: size,
+        iterations: iterations,
+        totalMicroseconds: filteredTime,
+      ),
+    );
 
     // Test 4: With time range filter
     final timeFilterQuery = LocationQuery(
       from: DateTime(2024, 1, 15, 12, 0, 0).add(Duration(seconds: size * 2)),
       to: DateTime(2024, 1, 15, 12, 0, 0).add(Duration(seconds: size * 8)),
     );
-    final timeFilterTime =
-        runQueryBenchmark(timeFilterQuery, locations, iterations);
-    print(BenchmarkResults(
-      name: 'Time range filter',
-      locationCount: size,
-      iterations: iterations,
-      totalMicroseconds: timeFilterTime,
-    ));
+    final timeFilterTime = runQueryBenchmark(
+      timeFilterQuery,
+      locations,
+      iterations,
+    );
+    print(
+      BenchmarkResults(
+        name: 'Time range filter',
+        locationCount: size,
+        iterations: iterations,
+        totalMicroseconds: timeFilterTime,
+      ),
+    );
 
     print('');
   }

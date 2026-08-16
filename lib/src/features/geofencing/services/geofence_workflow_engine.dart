@@ -156,13 +156,15 @@ class GeofenceWorkflowEngine {
         final status = runtime.isCompleted
             ? GeofenceWorkflowStatus.completed
             : GeofenceWorkflowStatus.inProgress;
-        _controller.add(GeofenceWorkflowEvent(
-          workflowId: workflow.id,
-          status: status,
-          state: runtime.snapshot(),
-          step: step,
-          timestamp: DateTime.now().toUtc(),
-        ));
+        _controller.add(
+          GeofenceWorkflowEvent(
+            workflowId: workflow.id,
+            status: status,
+            state: runtime.snapshot(),
+            step: step,
+            timestamp: DateTime.now().toUtc(),
+          ),
+        );
         break; // Process one step per event per workflow
       }
     }
@@ -173,21 +175,23 @@ class GeofenceWorkflowEngine {
     GeofenceWorkflowStep step,
     String message,
   ) {
-    _controller.add(GeofenceWorkflowEvent(
-      workflowId: runtime.workflow.id,
-      status: GeofenceWorkflowStatus.violation,
-      state: runtime.snapshot(),
-      step: step,
-      timestamp: DateTime.now().toUtc(),
-      message: message,
-    ));
+    _controller.add(
+      GeofenceWorkflowEvent(
+        workflowId: runtime.workflow.id,
+        status: GeofenceWorkflowStatus.violation,
+        state: runtime.snapshot(),
+        step: step,
+        timestamp: DateTime.now().toUtc(),
+        message: message,
+      ),
+    );
   }
 }
 
 class _WorkflowRuntimeState {
   _WorkflowRuntimeState(this.workflow)
-      : currentIndex = 0,
-        completedStepIds = <String>{};
+    : currentIndex = 0,
+      completedStepIds = <String>{};
 
   final GeofenceWorkflow workflow;
   int currentIndex;
@@ -207,9 +211,11 @@ class _WorkflowRuntimeState {
 
   List<GeofenceWorkflowStep> matchingSteps(GeofenceEvent event) {
     return workflow.steps
-        .where((step) =>
-            step.geofenceIdentifier == event.geofence.identifier &&
-            step.action == event.action)
+        .where(
+          (step) =>
+              step.geofenceIdentifier == event.geofence.identifier &&
+              step.action == event.action,
+        )
         .toList();
   }
 

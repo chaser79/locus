@@ -129,10 +129,8 @@ Future<T> waitForFuture<T>(
 }) async {
   return future.timeout(
     timeout,
-    onTimeout: () => throw TimeoutException(
-      description ?? 'Future timed out',
-      timeout,
-    ),
+    onTimeout: () =>
+        throw TimeoutException(description ?? 'Future timed out', timeout),
   );
 }
 
@@ -274,10 +272,7 @@ Future<T> expectStreamEventFrom<T>(
 ///   duration: Duration(milliseconds: 500),
 /// );
 /// ```
-Stream<T> debounceStream<T>(
-  Stream<T> stream, {
-  required Duration duration,
-}) {
+Stream<T> debounceStream<T>(Stream<T> stream, {required Duration duration}) {
   final controller = StreamController<T>();
   Timer? debounceTimer;
   T? lastValue;

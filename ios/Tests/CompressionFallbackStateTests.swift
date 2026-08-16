@@ -1,5 +1,9 @@
 import XCTest
+#if canImport(Locus)
 @testable import Locus
+#elseif canImport(locus)
+@testable import locus
+#endif
 
 /// Pins the 415-fallback contract: a one-hour suppression window blocks
 /// gzipping while a misbehaving proxy is live, then auto-clears so the

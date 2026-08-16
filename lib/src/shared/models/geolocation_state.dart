@@ -53,13 +53,13 @@ class GeolocationState {
   }
 
   JsonMap toMap() => {
-        'enabled': enabled,
-        'isMoving': isMoving,
-        if (schedulerEnabled != null) 'schedulerEnabled': schedulerEnabled,
-        if (odometer != null) 'odometer': odometer,
-        if (location != null) 'location': location!.toMap(),
-        if (extras != null) 'extras': extras,
-      };
+    'enabled': enabled,
+    'isMoving': isMoving,
+    if (schedulerEnabled != null) 'schedulerEnabled': schedulerEnabled,
+    if (odometer != null) 'odometer': odometer,
+    if (location != null) 'location': location!.toMap(),
+    if (extras != null) 'extras': extras,
+  };
 
   @override
   String toString() =>

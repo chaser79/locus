@@ -27,7 +27,7 @@ import 'package:locus/src/observability/locus_reliability_registry.dart';
 /// side actually deletes rows on success.
 class SyncMetricsRecorder {
   SyncMetricsRecorder({LocusReliabilityRegistry? registry})
-      : _registry = registry ?? LocusReliabilityRegistry.instance;
+    : _registry = registry ?? LocusReliabilityRegistry.instance;
 
   final LocusReliabilityRegistry _registry;
   final _log = locusLogger('sync_metrics');

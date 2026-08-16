@@ -10,13 +10,9 @@ void main() {
       'location': {
         'uuid': 'loc-1',
         'timestamp': DateTime.utc(2025, 1, 2).toIso8601String(),
-        'coords': {
-          'latitude': 12.34,
-          'longitude': 56.78,
-          'accuracy': 5.0,
-        },
+        'coords': {'latitude': 12.34, 'longitude': 56.78, 'accuracy': 5.0},
         'activity': {'type': 'walking', 'confidence': 80},
-      }
+      },
     });
 
     expect(state.enabled, true);
@@ -30,8 +26,8 @@ void main() {
     final event = GeolocationEvent.fromMap({
       'type': 'activitychange',
       'data': {
-        'activity': {'type': 'running', 'confidence': 90}
-      }
+        'activity': {'type': 'running', 'confidence': 90},
+      },
     });
 
     expect(event.type, EventType.activityChange);

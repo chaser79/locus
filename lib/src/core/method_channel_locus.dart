@@ -46,9 +46,16 @@ class MethodChannelLocus implements LocusInterface {
     // [LocusInterface] surface with a method-channel-only API.
     _activeInstance = this;
     // Register services with LocusStreams for event processing. Privacy zone
-    // registration is fire-and-forget; errors are logged inside the helper.
+    // registration deliberately preserves the native guard until the host
+    // makes an explicit zone mutation. The new in-memory service is empty only
+    // because host-owned zones have not been restored yet.
     LocusStreams.setPolygonGeofenceService(_polygonGeofenceService);
-    unawaited(LocusStreams.setPrivacyZoneService(_privacyZoneService));
+    unawaited(
+      LocusStreams.setPrivacyZoneService(
+        _privacyZoneService,
+        synchronizeInitialState: false,
+      ),
+    );
 
     // Auto-install a SyncHealthMonitor that watches HTTP sync events and
     // emits SyncStalled/SyncUnrecoverable to LocusReliabilityRegistry. The
@@ -59,7 +66,8 @@ class MethodChannelLocus implements LocusInterface {
     );
     monitor.attachTo(httpStream);
     unawaited(
-        LocusReliabilityRegistry.instance.installSyncHealthMonitor(monitor));
+      LocusReliabilityRegistry.instance.installSyncHealthMonitor(monitor),
+    );
 
     // Auto-install a SyncMetricsRecorder so Locus.metrics.snapshot() reflects
     // real sync activity. It listens to the same httpStream as the health
@@ -69,7 +77,8 @@ class MethodChannelLocus implements LocusInterface {
     // subscription stays alive.
     final recorder = SyncMetricsRecorder()..attachTo(httpStream);
     unawaited(
-        LocusReliabilityRegistry.instance.installSyncMetricsRecorder(recorder));
+      LocusReliabilityRegistry.instance.installSyncMetricsRecorder(recorder),
+    );
 
     // Construct the silent-stop heartbeat but do NOT start it here.
     // Lifecycle ownership lives with `LocusLifecycle.ready` /
@@ -148,8 +157,10 @@ class MethodChannelLocus implements LocusInterface {
     final args = <String, dynamic>{};
     if (title != null) args['title'] = title;
     if (text != null) args['text'] = text;
-    final result = await LocusChannels.methods
-        .invokeMethod<bool>('updateNotification', args);
+    final result = await LocusChannels.methods.invokeMethod<bool>(
+      'updateNotification',
+      args,
+    );
     return result == true;
   }
 
@@ -299,23 +310,52 @@ class MethodChannelLocus implements LocusInterface {
   final PrivacyZoneService _privacyZoneService = PrivacyZoneService();
 
   @override
-  Future<void> addPrivacyZone(PrivacyZone zone) {
-    return _privacyZoneService.addZone(zone);
+  Future<void> addPrivacyZone(PrivacyZone zone) async {
+    if (!zone.isValid) {
+      // Keep validation and its public error shape owned by the service.
+      return _privacyZoneService.addZone(zone);
+    }
+    if (zone.enabled) {
+      // Establish the native guard before making the Dart zone active.
+      await LocusStreams.setNativePrivacyMode(true);
+    }
+    await _privacyZoneService.addZone(zone);
+    if (!zone.enabled) {
+      await _synchronizeNativePrivacyMode();
+    }
   }
 
   @override
-  Future<void> addPrivacyZones(List<PrivacyZone> zones) {
-    return _privacyZoneService.addZones(zones);
+  Future<void> addPrivacyZones(List<PrivacyZone> zones) async {
+    if (zones.any((zone) => !zone.isValid)) {
+      // Keep validation and its public error shape owned by the service.
+      return _privacyZoneService.addZones(zones);
+    }
+    if (zones.any((zone) => zone.enabled)) {
+      await LocusStreams.setNativePrivacyMode(true);
+    }
+    await _privacyZoneService.addZones(zones);
+    if (!zones.any((zone) => zone.enabled)) {
+      await _synchronizeNativePrivacyMode();
+    }
   }
 
   @override
-  Future<bool> removePrivacyZone(String identifier) {
-    return _privacyZoneService.removeZone(identifier);
+  Future<bool> removePrivacyZone(String identifier) async {
+    final removed = await _privacyZoneService.removeZone(identifier);
+    if (removed) {
+      await _synchronizeNativePrivacyMode();
+    }
+    return removed;
   }
 
   @override
-  Future<void> removeAllPrivacyZones() {
-    return _privacyZoneService.removeAllZones();
+  Future<void> removeAllPrivacyZones() async {
+    await _privacyZoneService.removeAllZones();
+    // This explicit operation is authoritative even when the service was
+    // already empty, so it is also the escape hatch for a retained cold-start
+    // privacy guard after the host intentionally removes all zones.
+    await LocusStreams.setNativePrivacyMode(false);
   }
 
   @override
@@ -329,9 +369,27 @@ class MethodChannelLocus implements LocusInterface {
   }
 
   @override
-  Future<bool> setPrivacyZoneEnabled(String identifier, bool enabled) {
-    return _privacyZoneService.setZoneEnabled(identifier, enabled);
+  Future<bool> setPrivacyZoneEnabled(String identifier, bool enabled) async {
+    if (_privacyZoneService.getZone(identifier) == null) {
+      return false;
+    }
+    if (enabled) {
+      await LocusStreams.setNativePrivacyMode(true);
+    }
+    final updated = await _privacyZoneService.setZoneEnabled(
+      identifier,
+      enabled,
+    );
+    if (updated && !enabled) {
+      await _synchronizeNativePrivacyMode();
+    }
+    return updated;
   }
+
+  Future<void> _synchronizeNativePrivacyMode() =>
+      LocusStreams.setNativePrivacyMode(
+        _privacyZoneService.enabledZones.isNotEmpty,
+      );
 
   @override
   Stream<PrivacyZoneEvent> get privacyZoneEvents =>
@@ -966,17 +1024,15 @@ class MethodChannelLocus implements LocusInterface {
   SpoofDetectionEvent? analyzeForSpoofing(
     Location location, {
     bool? isMockProvider,
-  }) =>
-      LocusFeatures.analyzeForSpoofing(
-        location,
-        isMockProvider: isMockProvider,
-      );
+  }) => LocusFeatures.analyzeForSpoofing(
+    location,
+    isMockProvider: isMockProvider,
+  );
 
   @override
   Future<void> startSignificantChangeMonitoring([
     SignificantChangeConfig config = const SignificantChangeConfig(),
-  ]) =>
-      LocusFeatures.startSignificantChangeMonitoring(config);
+  ]) => LocusFeatures.startSignificantChangeMonitoring(config);
 
   @override
   Future<void> stopSignificantChangeMonitoring() =>

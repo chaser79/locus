@@ -7,10 +7,7 @@ final _log = locusLogger('polygon_geofence.model');
 
 /// A geographic coordinate point (vertex) for polygon geofences.
 class GeoPoint {
-  const GeoPoint({
-    required this.latitude,
-    required this.longitude,
-  });
+  const GeoPoint({required this.latitude, required this.longitude});
 
   factory GeoPoint.fromMap(JsonMap map) {
     return GeoPoint(
@@ -32,10 +29,7 @@ class GeoPoint {
       longitude >= -180 &&
       longitude <= 180;
 
-  JsonMap toMap() => {
-        'latitude': latitude,
-        'longitude': longitude,
-      };
+  JsonMap toMap() => {'latitude': latitude, 'longitude': longitude};
 
   @override
   String toString() => 'GeoPoint($latitude, $longitude)';
@@ -285,7 +279,8 @@ class PolygonGeofence {
     final dLat = (lat2 - lat1) * math.pi / 180;
     final dLng = (lng2 - lng1) * math.pi / 180;
 
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(lat1 * math.pi / 180) *
             math.cos(lat2 * math.pi / 180) *
             math.sin(dLng / 2) *
@@ -297,14 +292,14 @@ class PolygonGeofence {
   }
 
   JsonMap toMap() => {
-        'identifier': identifier,
-        'vertices': vertices.map((v) => v.toMap()).toList(),
-        'notifyOnEntry': notifyOnEntry,
-        'notifyOnExit': notifyOnExit,
-        'notifyOnDwell': notifyOnDwell,
-        if (loiteringDelay != null) 'loiteringDelay': loiteringDelay,
-        if (extras != null) 'extras': extras,
-      };
+    'identifier': identifier,
+    'vertices': vertices.map((v) => v.toMap()).toList(),
+    'notifyOnEntry': notifyOnEntry,
+    'notifyOnExit': notifyOnExit,
+    'notifyOnDwell': notifyOnDwell,
+    if (loiteringDelay != null) 'loiteringDelay': loiteringDelay,
+    if (extras != null) 'extras': extras,
+  };
 
   /// Creates a copy with the given fields replaced.
   PolygonGeofence copyWith({
@@ -354,7 +349,8 @@ class PolygonGeofenceEvent {
   factory PolygonGeofenceEvent.fromMap(JsonMap map) {
     return PolygonGeofenceEvent(
       geofence: PolygonGeofence.fromMap(
-          Map<String, dynamic>.from(map['geofence'] as Map)),
+        Map<String, dynamic>.from(map['geofence'] as Map),
+      ),
       type: PolygonGeofenceEventType.values.firstWhere(
         (e) => e.name == map['type'],
         orElse: () => PolygonGeofenceEventType.enter,
@@ -362,7 +358,8 @@ class PolygonGeofenceEvent {
       timestamp: DateTime.parse(map['timestamp'] as String),
       triggerLocation: map['triggerLocation'] != null
           ? GeoPoint.fromMap(
-              Map<String, dynamic>.from(map['triggerLocation'] as Map))
+              Map<String, dynamic>.from(map['triggerLocation'] as Map),
+            )
           : null,
     );
   }
@@ -380,12 +377,11 @@ class PolygonGeofenceEvent {
   final GeoPoint? triggerLocation;
 
   JsonMap toMap() => {
-        'geofence': geofence.toMap(),
-        'type': type.name,
-        'timestamp': timestamp.toIso8601String(),
-        if (triggerLocation != null)
-          'triggerLocation': triggerLocation!.toMap(),
-      };
+    'geofence': geofence.toMap(),
+    'type': type.name,
+    'timestamp': timestamp.toIso8601String(),
+    if (triggerLocation != null) 'triggerLocation': triggerLocation!.toMap(),
+  };
 }
 
 /// Types of polygon geofence events.

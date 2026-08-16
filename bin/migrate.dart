@@ -59,16 +59,8 @@ class MigrateArgsParser {
       help: 'Show detailed output',
       defaultsTo: false,
     )
-    ..addFlag(
-      'skip-tests',
-      help: 'Skip test files',
-      defaultsTo: false,
-    )
-    ..addFlag(
-      'no-color',
-      help: 'Disable colored output',
-      defaultsTo: false,
-    )
+    ..addFlag('skip-tests', help: 'Skip test files', defaultsTo: false)
+    ..addFlag('no-color', help: 'Disable colored output', defaultsTo: false)
     ..addFlag(
       'help',
       abbr: 'h',
@@ -128,11 +120,7 @@ class MigrateCommandRunner extends Command<void> {
       help: 'Show detailed output',
       defaultsTo: false,
     );
-    argParser.addFlag(
-      'skip-tests',
-      help: 'Skip test files',
-      defaultsTo: false,
-    );
+    argParser.addFlag('skip-tests', help: 'Skip test files', defaultsTo: false);
     argParser.addFlag(
       'no-color',
       help: 'Disable colored output',
@@ -257,7 +245,7 @@ For more information, see:
 
 class StandaloneRunner extends CommandRunner<void> {
   StandaloneRunner()
-      : super('locus:migrate', 'Migrate Locus SDK from v1.x to v2.0') {
+    : super('locus:migrate', 'Migrate Locus SDK from v1.x to v2.0') {
     addCommand(MigrateCommandRunner());
   }
 

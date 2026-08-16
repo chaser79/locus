@@ -35,37 +35,38 @@ class BatteryRunway {
   const BatteryRunway.insufficientData({
     required this.currentLevel,
     this.isCharging = false,
-  })  : duration = Duration.zero,
-        lowPowerDuration = Duration.zero,
-        recommendation = 'Insufficient tracking data for estimation',
-        drainRatePerHour = null,
-        lowPowerDrainRatePerHour = null,
-        confidence = 0.0;
+  }) : duration = Duration.zero,
+       lowPowerDuration = Duration.zero,
+       recommendation = 'Insufficient tracking data for estimation',
+       drainRatePerHour = null,
+       lowPowerDrainRatePerHour = null,
+       confidence = 0.0;
 
   /// Creates an estimation for a charging device.
-  const BatteryRunway.charging({
-    required this.currentLevel,
-  })  : duration = const Duration(hours: 999),
-        lowPowerDuration = const Duration(hours: 999),
-        recommendation = 'Device is charging - unlimited tracking available',
-        isCharging = true,
-        drainRatePerHour = 0.0,
-        lowPowerDrainRatePerHour = 0.0,
-        confidence = 1.0;
+  const BatteryRunway.charging({required this.currentLevel})
+    : duration = const Duration(hours: 999),
+      lowPowerDuration = const Duration(hours: 999),
+      recommendation = 'Device is charging - unlimited tracking available',
+      isCharging = true,
+      drainRatePerHour = 0.0,
+      lowPowerDrainRatePerHour = 0.0,
+      confidence = 1.0;
 
   /// Creates from a map.
   factory BatteryRunway.fromMap(JsonMap map) {
     return BatteryRunway(
-      duration:
-          Duration(minutes: (map['durationMinutes'] as num?)?.toInt() ?? 0),
+      duration: Duration(
+        minutes: (map['durationMinutes'] as num?)?.toInt() ?? 0,
+      ),
       lowPowerDuration: Duration(
-          minutes: (map['lowPowerDurationMinutes'] as num?)?.toInt() ?? 0),
+        minutes: (map['lowPowerDurationMinutes'] as num?)?.toInt() ?? 0,
+      ),
       recommendation: map['recommendation'] as String? ?? '',
       currentLevel: (map['currentLevel'] as num?)?.toInt() ?? 0,
       isCharging: map['isCharging'] as bool? ?? false,
       drainRatePerHour: (map['drainRatePerHour'] as num?)?.toDouble(),
-      lowPowerDrainRatePerHour:
-          (map['lowPowerDrainRatePerHour'] as num?)?.toDouble(),
+      lowPowerDrainRatePerHour: (map['lowPowerDrainRatePerHour'] as num?)
+          ?.toDouble(),
       confidence: (map['confidence'] as num?)?.toDouble() ?? 0.0,
     );
   }
@@ -151,21 +152,21 @@ class BatteryRunway {
 
   /// Converts to a JSON-serializable map.
   JsonMap toMap() => {
-        'durationMinutes': duration.inMinutes,
-        'lowPowerDurationMinutes': lowPowerDuration.inMinutes,
-        'recommendation': recommendation,
-        'currentLevel': currentLevel,
-        'isCharging': isCharging,
-        if (drainRatePerHour != null) 'drainRatePerHour': drainRatePerHour,
-        if (lowPowerDrainRatePerHour != null)
-          'lowPowerDrainRatePerHour': lowPowerDrainRatePerHour,
-        'confidence': confidence,
-        'isCritical': isCritical,
-        'isLow': isLow,
-        'shouldSwitchToLowPower': shouldSwitchToLowPower,
-        'formattedDuration': formattedDuration,
-        'formattedLowPowerDuration': formattedLowPowerDuration,
-      };
+    'durationMinutes': duration.inMinutes,
+    'lowPowerDurationMinutes': lowPowerDuration.inMinutes,
+    'recommendation': recommendation,
+    'currentLevel': currentLevel,
+    'isCharging': isCharging,
+    if (drainRatePerHour != null) 'drainRatePerHour': drainRatePerHour,
+    if (lowPowerDrainRatePerHour != null)
+      'lowPowerDrainRatePerHour': lowPowerDrainRatePerHour,
+    'confidence': confidence,
+    'isCritical': isCritical,
+    'isLow': isLow,
+    'shouldSwitchToLowPower': shouldSwitchToLowPower,
+    'formattedDuration': formattedDuration,
+    'formattedLowPowerDuration': formattedLowPowerDuration,
+  };
 
   @override
   String toString() {
@@ -231,8 +232,8 @@ class BatteryRunwayCalculator {
     // Ensure drain rate is positive to avoid division issues
     final effectiveDrainRate =
         (drainRatePerHour != null && drainRatePerHour > 0)
-            ? drainRatePerHour
-            : defaultDrainRate;
+        ? drainRatePerHour
+        : defaultDrainRate;
     final lowPowerDrainRate = effectiveDrainRate * lowPowerMultiplier;
 
     // Calculate available battery (above reserve)

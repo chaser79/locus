@@ -44,22 +44,28 @@ void main() {
     final events = <GeofenceWorkflowEvent>[];
     engine.events.listen(events.add);
 
-    controller.add(GeolocationEvent<GeofenceEvent>(
-      type: EventType.geofence,
-      data: _event('dropoff', GeofenceAction.enter),
-    ));
+    controller.add(
+      GeolocationEvent<GeofenceEvent>(
+        type: EventType.geofence,
+        data: _event('dropoff', GeofenceAction.enter),
+      ),
+    );
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
     expect(events.first.status, GeofenceWorkflowStatus.violation);
 
-    controller.add(GeolocationEvent<GeofenceEvent>(
-      type: EventType.geofence,
-      data: _event('pickup', GeofenceAction.enter),
-    ));
-    controller.add(GeolocationEvent<GeofenceEvent>(
-      type: EventType.geofence,
-      data: _event('dropoff', GeofenceAction.enter),
-    ));
+    controller.add(
+      GeolocationEvent<GeofenceEvent>(
+        type: EventType.geofence,
+        data: _event('pickup', GeofenceAction.enter),
+      ),
+    );
+    controller.add(
+      GeolocationEvent<GeofenceEvent>(
+        type: EventType.geofence,
+        data: _event('dropoff', GeofenceAction.enter),
+      ),
+    );
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
     expect(
@@ -92,14 +98,18 @@ void main() {
     final events = <GeofenceWorkflowEvent>[];
     engine.events.listen(events.add);
 
-    controller.add(GeolocationEvent<GeofenceEvent>(
-      type: EventType.geofence,
-      data: _event('pickup', GeofenceAction.enter),
-    ));
-    controller.add(GeolocationEvent<GeofenceEvent>(
-      type: EventType.geofence,
-      data: _event('pickup', GeofenceAction.enter),
-    ));
+    controller.add(
+      GeolocationEvent<GeofenceEvent>(
+        type: EventType.geofence,
+        data: _event('pickup', GeofenceAction.enter),
+      ),
+    );
+    controller.add(
+      GeolocationEvent<GeofenceEvent>(
+        type: EventType.geofence,
+        data: _event('pickup', GeofenceAction.enter),
+      ),
+    );
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
     expect(

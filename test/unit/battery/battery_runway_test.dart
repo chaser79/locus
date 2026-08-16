@@ -119,14 +119,18 @@ void main() {
       final restored = BatteryRunway.fromMap(map);
 
       expect(restored.duration.inMinutes, original.duration.inMinutes);
-      expect(restored.lowPowerDuration.inMinutes,
-          original.lowPowerDuration.inMinutes);
+      expect(
+        restored.lowPowerDuration.inMinutes,
+        original.lowPowerDuration.inMinutes,
+      );
       expect(restored.recommendation, original.recommendation);
       expect(restored.currentLevel, original.currentLevel);
       expect(restored.isCharging, original.isCharging);
       expect(restored.drainRatePerHour, original.drainRatePerHour);
       expect(
-          restored.lowPowerDrainRatePerHour, original.lowPowerDrainRatePerHour);
+        restored.lowPowerDrainRatePerHour,
+        original.lowPowerDrainRatePerHour,
+      );
       expect(restored.confidence, original.confidence);
     });
   });

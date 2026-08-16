@@ -65,14 +65,12 @@ class SyncServiceImpl implements SyncService {
   @override
   Future<bool> registerHeadlessSyncBodyBuilder(
     Future<JsonMap> Function(SyncBodyContext context) builder,
-  ) =>
-      _instance.registerHeadlessSyncBodyBuilder(builder);
+  ) => _instance.registerHeadlessSyncBodyBuilder(builder);
 
   @override
   Future<void> setHeadersCallback(
     Future<Map<String, String>> Function()? callback,
-  ) =>
-      _instance.setHeadersCallback(callback);
+  ) => _instance.setHeadersCallback(callback);
 
   @override
   void clearHeadersCallback() => _instance.clearHeadersCallback();
@@ -84,14 +82,12 @@ class SyncServiceImpl implements SyncService {
   @override
   Future<void> registerHeadlessPreSyncValidator(
     HeadlessPreSyncValidator validator,
-  ) =>
-      _instance.registerHeadlessPreSyncValidator(validator);
+  ) => _instance.registerHeadlessPreSyncValidator(validator);
 
   @override
   Future<void> registerHeadlessHeadersCallback(
     HeadlessHeadersCallback callback,
-  ) =>
-      _instance.registerHeadlessHeadersCallback(callback);
+  ) => _instance.registerHeadlessHeadersCallback(callback);
 
   @override
   Future<LocationSyncBacklog> getBacklog() =>
@@ -106,8 +102,7 @@ class SyncServiceImpl implements SyncService {
     JsonMap payload, {
     String? type,
     String? idempotencyKey,
-  }) =>
-      _instance.enqueue(payload, type: type, idempotencyKey: idempotencyKey);
+  }) => _instance.enqueue(payload, type: type, idempotencyKey: idempotencyKey);
 
   @override
   Future<List<QueueItem>> getQueue({int? limit}) =>
@@ -127,13 +122,11 @@ class SyncServiceImpl implements SyncService {
   StreamSubscription<HttpEvent> onHttp(
     void Function(HttpEvent) callback, {
     Function? onError,
-  }) =>
-      _instance.onHttp(callback, onError: onError);
+  }) => _instance.onHttp(callback, onError: onError);
 
   @override
   StreamSubscription<ConnectivityChangeEvent> onConnectivityChange(
     void Function(ConnectivityChangeEvent) callback, {
     Function? onError,
-  }) =>
-      _instance.onConnectivityChange(callback, onError: onError);
+  }) => _instance.onConnectivityChange(callback, onError: onError);
 }

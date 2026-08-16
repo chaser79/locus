@@ -13,11 +13,7 @@ void main() {
         'timestamp': DateTime.now().toIso8601String(),
         'isMoving': false,
         'odometer': 0.0,
-        'coords': {
-          'latitude': 37.0,
-          'longitude': -122.0,
-          'accuracy': 10.0,
-        },
+        'coords': {'latitude': 37.0, 'longitude': -122.0, 'accuracy': 10.0},
       });
 
       expect(location.uuid, 'test');
@@ -271,10 +267,9 @@ void main() {
 
   group('SpoofDetector Edge Cases', () {
     test('handles first location gracefully', () {
-      final detector = SpoofDetector(const SpoofDetectionConfig(
-        enabled: true,
-        minFactorsForDetection: 1,
-      ));
+      final detector = SpoofDetector(
+        const SpoofDetectionConfig(enabled: true, minFactorsForDetection: 1),
+      );
 
       final location = _createLocation(lat: 37.0, lng: -122.0);
       final event = detector.analyze(location, isMockProvider: false);
@@ -283,10 +278,9 @@ void main() {
     });
 
     test('reset clears history', () {
-      final detector = SpoofDetector(const SpoofDetectionConfig(
-        enabled: true,
-        minFactorsForDetection: 1,
-      ));
+      final detector = SpoofDetector(
+        const SpoofDetectionConfig(enabled: true, minFactorsForDetection: 1),
+      );
 
       detector.analyze(_createLocation(lat: 37.0, lng: -122.0));
       detector.analyze(_createLocation(lat: 37.0, lng: -122.0));
@@ -304,12 +298,14 @@ void main() {
 
   group('ErrorRecoveryManager Edge Cases', () {
     test('respects maxRetryDelay cap', () async {
-      final manager = ErrorRecoveryManager(const ErrorRecoveryConfig(
-        retryDelay: Duration(seconds: 60),
-        retryBackoff: 10.0,
-        maxRetryDelay: Duration(minutes: 1),
-        logErrors: false,
-      ));
+      final manager = ErrorRecoveryManager(
+        const ErrorRecoveryConfig(
+          retryDelay: Duration(seconds: 60),
+          retryBackoff: 10.0,
+          maxRetryDelay: Duration(minutes: 1),
+          logErrors: false,
+        ),
+      );
 
       for (var i = 0; i < 10; i++) {
         await manager.handleError(LocusError.networkError());
@@ -322,10 +318,12 @@ void main() {
     });
 
     test('scheduleRetry cancels previous timer', () async {
-      final manager = ErrorRecoveryManager(const ErrorRecoveryConfig(
-        retryDelay: Duration(milliseconds: 100),
-        logErrors: false,
-      ));
+      final manager = ErrorRecoveryManager(
+        const ErrorRecoveryConfig(
+          retryDelay: Duration(milliseconds: 100),
+          logErrors: false,
+        ),
+      );
 
       var callCount = 0;
       manager.scheduleRetry(LocusErrorType.networkError, () => callCount++);
@@ -342,10 +340,12 @@ void main() {
   group('SignificantChangeManager Edge Cases', () {
     test('handles rapid location updates', () async {
       final manager = SignificantChangeManager();
-      manager.start(const SignificantChangeConfig(
-        minDisplacementMeters: 1000,
-        deferUntilMoved: false,
-      ));
+      manager.start(
+        const SignificantChangeConfig(
+          minDisplacementMeters: 1000,
+          deferUntilMoved: false,
+        ),
+      );
 
       final events = <SignificantChangeEvent>[];
       manager.events.listen(events.add);
@@ -407,19 +407,20 @@ void main() {
 
   group('SyncDecision', () {
     test('factory constructors create correct decisions', () {
-      const proceed = SyncDecision(
-        shouldSync: true,
-        reason: 'Test decision',
-      );
+      const proceed = SyncDecision(shouldSync: true, reason: 'Test decision');
       expect(proceed.shouldSync, true);
 
-      final deferred =
-          SyncDecision.defer('Low battery', delay: const Duration(minutes: 5));
+      final deferred = SyncDecision.defer(
+        'Low battery',
+        delay: const Duration(minutes: 5),
+      );
       expect(deferred.shouldSync, false);
       expect(deferred.reason, contains('Low battery'));
 
-      final batched =
-          SyncDecision.batch(50, delay: const Duration(seconds: 30));
+      final batched = SyncDecision.batch(
+        50,
+        delay: const Duration(seconds: 30),
+      );
       expect(batched.shouldSync, true);
       expect(batched.batchLimit, 50);
     });

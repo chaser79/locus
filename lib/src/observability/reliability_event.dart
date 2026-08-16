@@ -10,7 +10,7 @@ library;
 /// Base class for all reliability events emitted by the SDK.
 sealed class LocusReliabilityEvent {
   LocusReliabilityEvent({DateTime? occurredAt})
-      : occurredAt = occurredAt ?? DateTime.now().toUtc();
+    : occurredAt = occurredAt ?? DateTime.now().toUtc();
 
   /// Wall-clock UTC timestamp at which the event was raised.
   final DateTime occurredAt;
@@ -27,11 +27,8 @@ enum EvictionReason {
 
 /// Emitted when the SDK drops queued locations to keep storage bounded.
 final class PointsEvicted extends LocusReliabilityEvent {
-  PointsEvicted({
-    required this.count,
-    required this.reason,
-    super.occurredAt,
-  }) : assert(count > 0, 'PointsEvicted count must be positive');
+  PointsEvicted({required this.count, required this.reason, super.occurredAt})
+    : assert(count > 0, 'PointsEvicted count must be positive');
 
   /// Number of rows deleted in this eviction round.
   final int count;

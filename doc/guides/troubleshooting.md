@@ -257,16 +257,22 @@ await Locus.ready(ConfigPresets.balanced.copyWith(
 ));
 ```
 
-**4. App Task Removed**
+**4. Recents task removed or ordinary process death**
 
 Configure `stopOnTerminate`:
 
 ```dart
 await Locus.ready(ConfigPresets.balanced.copyWith(
-  stopOnTerminate: false, // Continue tracking after app is killed
-  startOnBoot: true,      // Restart on device reboot
+  stopOnTerminate: false, // Preserve intent across eligible lifecycle events
+  startOnBoot: true,      // Android reboot recovery only
 ));
 ```
+
+Android Task Manager stop, Android system-settings force-stop, and iOS user
+force-quit are explicit OS stop boundaries. They cannot be bypassed by an SDK;
+Android tracking remains off after the next eligible launch until the host
+explicitly calls `Locus.start()`. An iOS user force-quit requires the user to
+open the app again before any eligible recovery.
 
 #### iOS Solutions
 

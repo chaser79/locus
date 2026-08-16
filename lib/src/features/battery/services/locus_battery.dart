@@ -44,20 +44,20 @@ class LocusBattery {
     return LocusStreams.events
         .where((event) => event.type == EventType.powerSaveChange)
         .map((event) {
-      if (event.data is PowerStateChangeEvent) {
-        return event.data as PowerStateChangeEvent;
-      }
-      // Create synthetic event from power save boolean
-      final isPowerSave = event.data == true;
-      return PowerStateChangeEvent(
-        previous: PowerState.unknown,
-        current: PowerState(
-          batteryLevel: 50,
-          isCharging: false,
-          isPowerSaveMode: isPowerSave,
-        ),
-        changeType: PowerStateChangeType.powerSaveMode,
-      );
-    });
+          if (event.data is PowerStateChangeEvent) {
+            return event.data as PowerStateChangeEvent;
+          }
+          // Create synthetic event from power save boolean
+          final isPowerSave = event.data == true;
+          return PowerStateChangeEvent(
+            previous: PowerState.unknown,
+            current: PowerState(
+              batteryLevel: 50,
+              isCharging: false,
+              isPowerSaveMode: isPowerSave,
+            ),
+            changeType: PowerStateChangeType.powerSaveMode,
+          );
+        });
   }
 }

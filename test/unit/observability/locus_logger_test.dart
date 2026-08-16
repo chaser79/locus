@@ -22,8 +22,10 @@ void main() {
     });
 
     test('renders snake_case attributes after the name', () {
-      const event =
-          LocusEvent('points_evicted', {'count': 12, 'reason': 'count_limit'});
+      const event = LocusEvent('points_evicted', {
+        'count': 12,
+        'reason': 'count_limit',
+      });
       expect(event.toString(), 'points_evicted count=12 reason=count_limit');
     });
 

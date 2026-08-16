@@ -30,9 +30,9 @@ void main() {
     mock = _StatefulSyncMock();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('locus/methods'),
-      mock.handle,
-    );
+          const MethodChannel('locus/methods'),
+          mock.handle,
+        );
   });
 
   tearDown(() async {
@@ -44,49 +44,60 @@ void main() {
         .setMockMethodCallHandler(const MethodChannel('locus/methods'), null);
   });
 
-  test(
-      'Locus.dataSync.now() dispatches sync without requiring prior resume() '
+  test('Locus.dataSync.now() dispatches sync without requiring prior resume() '
       '(the #35 regression)', () async {
-    expect(Locus.dataSync.isPaused, isFalse,
-        reason:
-            'Dart cache must default to active — not-paused is the new contract');
+    expect(
+      Locus.dataSync.isPaused,
+      isFalse,
+      reason:
+          'Dart cache must default to active — not-paused is the new contract',
+    );
 
     final result = await Locus.dataSync.now();
 
     expect(result, isTrue);
-    expect(mock.calls, contains('sync'),
-        reason:
-            'Auto-pause used to short-circuit this before the platform channel ran');
-  });
-
-  test('pause() then resume() toggles the Dart cache and dispatches both calls',
-      () async {
-    expect(Locus.dataSync.isPaused, isFalse);
-
-    await Locus.dataSync.pause();
-    expect(Locus.dataSync.isPaused, isTrue);
-    expect(mock.calls, contains('pauseSync'));
-
-    await Locus.dataSync.resume();
-    expect(Locus.dataSync.isPaused, isFalse);
-    expect(mock.calls, contains('resumeSync'));
-  });
-
-  test('sync() is a no-op while paused and does not hit the platform channel',
-      () async {
-    await Locus.dataSync.pause();
-    mock.calls.clear();
-
-    final result = await Locus.dataSync.now();
-
-    expect(result, isFalse);
-    expect(mock.calls, isNot(contains('sync')),
-        reason:
-            'Dart-side short-circuit must prevent the channel call while paused');
+    expect(
+      mock.calls,
+      contains('sync'),
+      reason:
+          'Auto-pause used to short-circuit this before the platform channel ran',
+    );
   });
 
   test(
-      'cold-restart with native-persisted auth pause surfaces isPaused=true on '
+    'pause() then resume() toggles the Dart cache and dispatches both calls',
+    () async {
+      expect(Locus.dataSync.isPaused, isFalse);
+
+      await Locus.dataSync.pause();
+      expect(Locus.dataSync.isPaused, isTrue);
+      expect(mock.calls, contains('pauseSync'));
+
+      await Locus.dataSync.resume();
+      expect(Locus.dataSync.isPaused, isFalse);
+      expect(mock.calls, contains('resumeSync'));
+    },
+  );
+
+  test(
+    'sync() is a no-op while paused and does not hit the platform channel',
+    () async {
+      await Locus.dataSync.pause();
+      mock.calls.clear();
+
+      final result = await Locus.dataSync.now();
+
+      expect(result, isFalse);
+      expect(
+        mock.calls,
+        isNot(contains('sync')),
+        reason:
+            'Dart-side short-circuit must prevent the channel call while paused',
+      );
+    },
+  );
+
+  test('cold-restart with native-persisted auth pause surfaces isPaused=true on '
       'getLocationSyncBacklog (native is source of truth)', () async {
     // Simulate a fresh process where the native SyncManager read a persisted
     // sync_pause_reason of "http_401" on init and therefore starts paused.
@@ -94,9 +105,12 @@ void main() {
 
     final backlog = await Locus.dataSync.getBacklog();
 
-    expect(backlog.isPaused, isTrue,
-        reason:
-            'Native contract: persisted 401 from prior process must be visible after relaunch');
+    expect(
+      backlog.isPaused,
+      isTrue,
+      reason:
+          'Native contract: persisted 401 from prior process must be visible after relaunch',
+    );
 
     // Dart cache default is false; this is fine — it's cosmetic until resume()
     // or the first pause-side method call rehydrates it. The authoritative
@@ -104,24 +118,29 @@ void main() {
   });
 
   test(
-      'resume() clears native pause by invoking resumeSync, unblocking subsequent '
-      'sync() calls', () async {
-    // Start from a "native-paused" state (as if the last process ended with 401).
-    mock.nativePaused = true;
-    await Locus.dataSync
-        .pause(); // also set Dart cache so this test is realistic
-    mock.calls.clear();
+    'resume() clears native pause by invoking resumeSync, unblocking subsequent '
+    'sync() calls',
+    () async {
+      // Start from a "native-paused" state (as if the last process ended with 401).
+      mock.nativePaused = true;
+      await Locus.dataSync
+          .pause(); // also set Dart cache so this test is realistic
+      mock.calls.clear();
 
-    await Locus.dataSync.resume();
-    expect(mock.calls, contains('resumeSync'));
-    expect(mock.nativePaused, isFalse,
-        reason: 'resumeSync must actually unpause the native side');
+      await Locus.dataSync.resume();
+      expect(mock.calls, contains('resumeSync'));
+      expect(
+        mock.nativePaused,
+        isFalse,
+        reason: 'resumeSync must actually unpause the native side',
+      );
 
-    mock.calls.clear();
-    final result = await Locus.dataSync.now();
-    expect(result, isTrue);
-    expect(mock.calls, contains('sync'));
-  });
+      mock.calls.clear();
+      final result = await Locus.dataSync.now();
+      expect(result, isTrue);
+      expect(mock.calls, contains('sync'));
+    },
+  );
 
   group('Reactive pause-state stream', () {
     late MockLocus mockLocus;
@@ -136,8 +155,7 @@ void main() {
       await mockLocus.dispose();
     });
 
-    test(
-        'pause() emits a SyncPauseState(isPaused: true, reason: "app") on '
+    test('pause() emits a SyncPauseState(isPaused: true, reason: "app") on '
         'pauseChanges and updates pauseReason synchronously', () async {
       final events = <SyncPauseState>[];
       final sub = service.pauseChanges.listen(events.add);
@@ -158,8 +176,7 @@ void main() {
       await sub.cancel();
     });
 
-    test(
-        'resume() emits a SyncPauseState(isPaused: false) and clears the '
+    test('resume() emits a SyncPauseState(isPaused: false) and clears the '
         'reason', () async {
       await service.pause();
       final events = <SyncPauseState>[];
@@ -178,30 +195,33 @@ void main() {
     });
 
     test(
-        'simulated native 401 auto-pause propagates via emitSyncPauseChange — '
-        'UI subscribers observe isAuthFailure without having called pause()',
-        () async {
-      final events = <SyncPauseState>[];
-      final sub = service.pauseChanges.listen(events.add);
+      'simulated native 401 auto-pause propagates via emitSyncPauseChange — '
+      'UI subscribers observe isAuthFailure without having called pause()',
+      () async {
+        final events = <SyncPauseState>[];
+        final sub = service.pauseChanges.listen(events.add);
 
-      // Simulate the native side receiving a 401 mid-session and pushing the
-      // new state over the event channel. The Dart cache must update without
-      // the host app doing anything.
-      mockLocus.emitSyncPauseChange(
-        const SyncPauseState(isPaused: true, reason: 'http_401'),
-      );
-      await Future<void>.delayed(Duration.zero);
+        // Simulate the native side receiving a 401 mid-session and pushing the
+        // new state over the event channel. The Dart cache must update without
+        // the host app doing anything.
+        mockLocus.emitSyncPauseChange(
+          const SyncPauseState(isPaused: true, reason: 'http_401'),
+        );
+        await Future<void>.delayed(Duration.zero);
 
-      expect(service.isPaused, isTrue);
-      expect(service.pauseReason, 'http_401');
-      expect(events.last.isAuthFailure, isTrue,
-          reason: 'isAuthFailure must distinguish 401/403 from "app" pauses');
+        expect(service.isPaused, isTrue);
+        expect(service.pauseReason, 'http_401');
+        expect(
+          events.last.isAuthFailure,
+          isTrue,
+          reason: 'isAuthFailure must distinguish 401/403 from "app" pauses',
+        );
 
-      await sub.cancel();
-    });
+        await sub.cancel();
+      },
+    );
 
-    test(
-        'repeated pause() calls are idempotent — only one event fires and '
+    test('repeated pause() calls are idempotent — only one event fires and '
         'state does not churn', () async {
       final events = <SyncPauseState>[];
       final sub = service.pauseChanges.listen(events.add);
@@ -211,9 +231,12 @@ void main() {
       await service.pause();
       await Future<void>.delayed(Duration.zero);
 
-      expect(events, hasLength(1),
-          reason:
-              'Duplicate pause() should be a no-op and emit exactly once to avoid UI flicker');
+      expect(
+        events,
+        hasLength(1),
+        reason:
+            'Duplicate pause() should be a no-op and emit exactly once to avoid UI flicker',
+      );
 
       await sub.cancel();
     });

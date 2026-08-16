@@ -13,9 +13,9 @@ class GeofenceWorkflowState {
   final bool completed;
 
   JsonMap toMap() => {
-        'workflowId': workflowId,
-        'currentIndex': currentIndex,
-        'completedStepIds': completedStepIds,
-        'completed': completed,
-      };
+    'workflowId': workflowId,
+    'currentIndex': currentIndex,
+    'completedStepIds': completedStepIds,
+    'completed': completed,
+  };
 }

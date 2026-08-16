@@ -37,10 +37,10 @@ class GeofenceEvent {
   final Location? location;
 
   JsonMap toMap() => {
-        'geofence': geofence.toMap(),
-        'action': action.name,
-        if (location != null) 'location': location!.toMap(),
-      };
+    'geofence': geofence.toMap(),
+    'action': action.name,
+    if (location != null) 'location': location!.toMap(),
+  };
 
   @override
   String toString() => 'GeofenceEvent(${action.name}: ${geofence.identifier})';

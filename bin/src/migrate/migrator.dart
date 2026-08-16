@@ -21,14 +21,14 @@ class AppliedChange {
   final String? failureReason;
 
   Map<String, dynamic> toJson() => {
-        'filePath': filePath,
-        'line': line,
-        'patternId': patternId,
-        'original': original,
-        'replacement': replacement,
-        'success': success,
-        'failureReason': failureReason,
-      };
+    'filePath': filePath,
+    'line': line,
+    'patternId': patternId,
+    'original': original,
+    'replacement': replacement,
+    'success': success,
+    'failureReason': failureReason,
+  };
 }
 
 class MigrationResult {
@@ -50,26 +50,24 @@ class MigrationResult {
   int get filesModified => appliedChanges.map((c) => c.filePath).toSet().length;
 
   Map<String, dynamic> toJson() => {
-        'dryRun': dryRun,
-        'timestamp': timestamp.toIso8601String(),
-        'backupPath': backupPath,
-        'summary': {
-          'totalMatches': analysis.totalMatches,
-          'successfulChanges': successfulChanges,
-          'failedChanges': failedChanges,
-          'filesModified': filesModified,
-        },
-        'analysis': analysis.toJson(),
-        'appliedChanges': appliedChanges.map((c) => c.toJson()).toList(),
-      };
+    'dryRun': dryRun,
+    'timestamp': timestamp.toIso8601String(),
+    'backupPath': backupPath,
+    'summary': {
+      'totalMatches': analysis.totalMatches,
+      'successfulChanges': successfulChanges,
+      'failedChanges': failedChanges,
+      'filesModified': filesModified,
+    },
+    'analysis': analysis.toJson(),
+    'appliedChanges': appliedChanges.map((c) => c.toJson()).toList(),
+  };
 }
 
 class MigrationMigrator {
-  MigrationMigrator({
-    MigrationAnalyzer? analyzer,
-    bool verbose = false,
-  })  : _analyzer = analyzer ?? MigrationAnalyzer(),
-        _verbose = verbose;
+  MigrationMigrator({MigrationAnalyzer? analyzer, bool verbose = false})
+    : _analyzer = analyzer ?? MigrationAnalyzer(),
+      _verbose = verbose;
   final MigrationAnalyzer _analyzer;
   final bool _verbose;
 
@@ -115,9 +113,11 @@ class MigrationMigrator {
     if (_verbose) {
       stdout.writeln('[INFO] Migration complete');
       stdout.writeln(
-          '[INFO] Applied ${appliedChanges.where((c) => c.success).length} changes');
+        '[INFO] Applied ${appliedChanges.where((c) => c.success).length} changes',
+      );
       stdout.writeln(
-          '[INFO] Failed: ${appliedChanges.where((c) => !c.success).length}');
+        '[INFO] Failed: ${appliedChanges.where((c) => !c.success).length}',
+      );
       if (backupPath != null) {
         stdout.writeln('[INFO] Backup created at: $backupPath');
       }
@@ -133,9 +133,12 @@ class MigrationMigrator {
   }
 
   Future<String?> _createBackup(
-      Directory projectDir, DateTime timestamp) async {
+    Directory projectDir,
+    DateTime timestamp,
+  ) async {
     final backupDir = Directory(
-        '${projectDir.path}/.locus/backup/${_timestampToPath(timestamp)}');
+      '${projectDir.path}/.locus/backup/${_timestampToPath(timestamp)}',
+    );
 
     try {
       await backupDir.create(recursive: true);
@@ -161,7 +164,8 @@ class MigrationMigrator {
 
       if (_verbose) {
         stdout.writeln(
-            '[INFO] Backup created at ${backupDir.path}/backup.tar.gz');
+          '[INFO] Backup created at ${backupDir.path}/backup.tar.gz',
+        );
       }
 
       return backupDir.path;
@@ -197,21 +201,29 @@ class MigrationMigrator {
         final file = File(filePath);
         var content = await file.readAsString();
 
-        final sortedMatches = matches
-            .map((m) => {
-                  'match': m,
-                  'adjustedOffset': m.column +
-                      _calculateOffsetAdjustment(
-                        matches
-                            .where(
-                                (x) => x.line == m.line && x.column < m.column)
-                            .toList(),
-                        m.original.length,
-                      ),
-                })
-            .toList()
-          ..sort((a, b) => (b['adjustedOffset'] as int)
-              .compareTo(a['adjustedOffset'] as int));
+        final sortedMatches =
+            matches
+                .map(
+                  (m) => {
+                    'match': m,
+                    'adjustedOffset':
+                        m.column +
+                        _calculateOffsetAdjustment(
+                          matches
+                              .where(
+                                (x) => x.line == m.line && x.column < m.column,
+                              )
+                              .toList(),
+                          m.original.length,
+                        ),
+                  },
+                )
+                .toList()
+              ..sort(
+                (a, b) => (b['adjustedOffset'] as int).compareTo(
+                  a['adjustedOffset'] as int,
+                ),
+              );
 
         for (final item in sortedMatches) {
           final match = item['match'] as PatternMatch;
@@ -223,8 +235,9 @@ class MigrationMigrator {
           );
 
           if (originalText == match.original) {
-            final pattern = MigrationPatternDatabase.allPatterns
-                .firstWhere((p) => p.id == match.patternId);
+            final pattern = MigrationPatternDatabase.allPatterns.firstWhere(
+              (p) => p.id == match.patternId,
+            );
 
             final replacement = _buildReplacement(match, pattern);
 
@@ -234,29 +247,33 @@ class MigrationMigrator {
               replacement,
             );
 
-            appliedChanges.add(AppliedChange(
-              filePath: filePath,
-              line: match.line,
-              patternId: match.patternId,
-              original: match.original,
-              replacement: replacement,
-              success: true,
-            ));
+            appliedChanges.add(
+              AppliedChange(
+                filePath: filePath,
+                line: match.line,
+                patternId: match.patternId,
+                original: match.original,
+                replacement: replacement,
+                success: true,
+              ),
+            );
 
             if (_verbose) {
               stdout.writeln('[MIGRATED] $filePath:${match.line}');
               stdout.writeln('    ${match.original} → $replacement');
             }
           } else {
-            appliedChanges.add(AppliedChange(
-              filePath: filePath,
-              line: match.line,
-              patternId: match.patternId,
-              original: match.original,
-              replacement: '',
-              success: false,
-              failureReason: 'Text mismatch during replacement',
-            ));
+            appliedChanges.add(
+              AppliedChange(
+                filePath: filePath,
+                line: match.line,
+                patternId: match.patternId,
+                original: match.original,
+                replacement: '',
+                success: false,
+                failureReason: 'Text mismatch during replacement',
+              ),
+            );
 
             stderr.write('[ERROR] $filePath:${match.line} - Text mismatch\n');
           }
@@ -265,19 +282,22 @@ class MigrationMigrator {
         await file.writeAsString(content);
 
         if (_verbose) {
-          stdout
-              .writeln('[INFO] Updated $filePath (${matches.length} changes)');
+          stdout.writeln(
+            '[INFO] Updated $filePath (${matches.length} changes)',
+          );
         }
       } catch (e, stack) {
-        appliedChanges.add(AppliedChange(
-          filePath: filePath,
-          line: 1,
-          patternId: 'unknown',
-          original: '',
-          replacement: '',
-          success: false,
-          failureReason: 'Exception: $e',
-        ));
+        appliedChanges.add(
+          AppliedChange(
+            filePath: filePath,
+            line: 1,
+            patternId: 'unknown',
+            original: '',
+            replacement: '',
+            success: false,
+            failureReason: 'Exception: $e',
+          ),
+        );
 
         stderr.write('[ERROR] Failed to update $filePath: $e\n');
         if (_verbose) {
@@ -290,7 +310,9 @@ class MigrationMigrator {
   }
 
   int _calculateOffsetAdjustment(
-      List<PatternMatch> previousMatches, int currentLength) {
+    List<PatternMatch> previousMatches,
+    int currentLength,
+  ) {
     int adjustment = 0;
     for (final prev in previousMatches) {
       adjustment += prev.replacement.length - prev.original.length;
@@ -325,10 +347,12 @@ class MigrationMigrator {
     }
 
     try {
-      final result = await Process.run(
-        'tar',
-        ['-xzf', backupFile.path, '-C', Directory(backupPath).parent.path],
-      );
+      final result = await Process.run('tar', [
+        '-xzf',
+        backupFile.path,
+        '-C',
+        Directory(backupPath).parent.path,
+      ]);
 
       if (result.exitCode != 0) {
         stderr.write('[ERROR] Failed to restore backup: ${result.stderr}\n');
@@ -400,8 +424,10 @@ class MigrationMigrator {
         stdout.writeln('[INFO] Migrating package: $packageName');
       }
 
-      final appliedChanges =
-          await _applyMigrations(packageAnalysis, packageDir);
+      final appliedChanges = await _applyMigrations(
+        packageAnalysis,
+        packageDir,
+      );
 
       packageResults[packageName] = MigrationResult(
         analysis: packageAnalysis,
@@ -414,10 +440,14 @@ class MigrationMigrator {
 
     if (_verbose) {
       stdout.writeln('[INFO] Monorepo migration complete');
-      final totalSuccessful =
-          packageResults.values.fold(0, (sum, r) => sum + r.successfulChanges);
-      final totalFailed =
-          packageResults.values.fold(0, (sum, r) => sum + r.failedChanges);
+      final totalSuccessful = packageResults.values.fold(
+        0,
+        (sum, r) => sum + r.successfulChanges,
+      );
+      final totalFailed = packageResults.values.fold(
+        0,
+        (sum, r) => sum + r.failedChanges,
+      );
       stdout.writeln('[INFO] Applied $totalSuccessful changes');
       stdout.writeln('[INFO] Failed: $totalFailed');
       if (backupPath != null) {
@@ -454,23 +484,23 @@ class MonorepoMigrationResult {
       packageResults.values.fold(0, (sum, r) => sum + r.failedChanges);
 
   int get filesModified => packageResults.values.fold(<String>{}, (set, r) {
-        set.addAll(r.appliedChanges.map((c) => c.filePath));
-        return set;
-      }).length;
+    set.addAll(r.appliedChanges.map((c) => c.filePath));
+    return set;
+  }).length;
 
   Map<String, dynamic> toJson() => {
-        'dryRun': dryRun,
-        'timestamp': timestamp.toIso8601String(),
-        'summary': {
-          'packages': packageResults.length,
-          'filesModified': filesModified,
-          'successfulChanges': successfulChanges,
-          'failedChanges': failedChanges,
-        },
-        'analysis': analysis.toJson(),
-        'packageResults': {
-          for (final entry in packageResults.entries)
-            entry.key: entry.value.toJson(),
-        },
-      };
+    'dryRun': dryRun,
+    'timestamp': timestamp.toIso8601String(),
+    'summary': {
+      'packages': packageResults.length,
+      'filesModified': filesModified,
+      'successfulChanges': successfulChanges,
+      'failedChanges': failedChanges,
+    },
+    'analysis': analysis.toJson(),
+    'packageResults': {
+      for (final entry in packageResults.entries)
+        entry.key: entry.value.toJson(),
+    },
+  };
 }

@@ -9,26 +9,70 @@ class EventDispatcher(
 ) {
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    // `@Volatile` so writes from the Flutter platform thread (when the
-    // engine attaches/detaches) are visible to readers on background
-    // threads (sync executors, headless dispatch path). Without it, the
-    // Java memory model permits a stale-cache `null` read after attach
-    // — events would silently fall through to the headless dispatcher.
-    @Volatile
-    private var eventSink: EventChannel.EventSink? = null
+    private val eventSinkRegistry = EngineBindingRegistry<EventChannel.EventSink>()
 
-    fun setEventSink(sink: EventChannel.EventSink?) {
-        eventSink = sink
+    fun setEventSink(owner: Any, sink: EventChannel.EventSink) =
+        eventSinkRegistry.claim(owner, sink)
+
+    fun clearEventSink(owner: Any) {
+        eventSinkRegistry.release(owner)
     }
 
-    fun sendEvent(event: Map<String, Any>) {
-        val sink = eventSink
-        if (sink == null) {
-            headlessDispatcher.dispatch(event)
-            return
+    fun sendEvent(
+        event: Map<String, Any>,
+        containsRawLocation: Boolean = false,
+        privacyGuardEnabled: Boolean = false,
+    ) {
+        when (
+            eventDeliveryRoute(
+                hasEventSink = eventSinkRegistry.current() != null,
+                containsRawLocation = containsRawLocation,
+                privacyGuardEnabled = privacyGuardEnabled,
+            )
+        ) {
+            EventDeliveryRoute.HEADLESS -> {
+                headlessDispatcher.dispatch(event)
+                return
+            }
+            EventDeliveryRoute.SUPPRESSED -> return
+            EventDeliveryRoute.EVENT_SINK -> Unit
         }
         mainHandler.post {
-            sink.success(event)
+            val activeSink = eventSinkRegistry.current()
+            if (activeSink == null) {
+                if (
+                    eventDeliveryRoute(
+                        hasEventSink = false,
+                        containsRawLocation = containsRawLocation,
+                        privacyGuardEnabled = privacyGuardEnabled,
+                    ) == EventDeliveryRoute.HEADLESS
+                ) {
+                    headlessDispatcher.dispatch(event)
+                }
+            } else {
+                activeSink.success(event)
+            }
         }
     }
+}
+
+internal enum class EventDeliveryRoute {
+    EVENT_SINK,
+    HEADLESS,
+    SUPPRESSED,
+}
+
+/**
+ * A live UI engine receives raw locations because Dart owns zone-specific
+ * exclusion and obfuscation. Headless callbacks have no restored zone graph,
+ * so the durable native guard must fail closed until Dart releases it.
+ */
+internal fun eventDeliveryRoute(
+    hasEventSink: Boolean,
+    containsRawLocation: Boolean,
+    privacyGuardEnabled: Boolean,
+): EventDeliveryRoute = when {
+    hasEventSink -> EventDeliveryRoute.EVENT_SINK
+    containsRawLocation && privacyGuardEnabled -> EventDeliveryRoute.SUPPRESSED
+    else -> EventDeliveryRoute.HEADLESS
 }

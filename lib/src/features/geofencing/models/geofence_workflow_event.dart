@@ -1,11 +1,7 @@
 import 'package:locus/src/features/geofencing/models/geofence_workflow_state.dart';
 import 'package:locus/src/features/geofencing/models/geofence_workflow_step.dart';
 
-enum GeofenceWorkflowStatus {
-  inProgress,
-  completed,
-  violation,
-}
+enum GeofenceWorkflowStatus { inProgress, completed, violation }
 
 class GeofenceWorkflowEvent {
   const GeofenceWorkflowEvent({

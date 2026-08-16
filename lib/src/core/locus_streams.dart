@@ -4,6 +4,7 @@ import 'package:locus/src/models.dart';
 import 'package:locus/src/observability/locus_logger.dart';
 import 'package:locus/src/observability/locus_reliability_registry.dart';
 import 'package:locus/src/core/event_mapper.dart';
+import 'package:locus/src/core/privacy_event_filter.dart';
 import 'package:locus/src/features/location/services/spoof_detection.dart';
 import 'package:locus/src/features/diagnostics/services/error_recovery.dart';
 import 'package:locus/src/features/geofencing/services/polygon_geofence_service.dart';
@@ -33,6 +34,7 @@ class LocusStreams {
   // Privacy zone integration
   static PrivacyZoneService? _privacyZoneService;
   static StreamSubscription<PrivacyZoneEvent>? _privacyZoneSubscription;
+  static Future<void> _privacyModeWriteTail = Future<void>.value();
 
   /// Stream of all geolocation events (after spoof filtering).
   static Stream<GeolocationEvent<dynamic>> get events {
@@ -82,7 +84,15 @@ class LocusStreams {
 
   /// Sets the privacy zone service for filtering location events.
   /// When set, locations in privacy zones will be obfuscated or excluded.
-  static Future<void> setPrivacyZoneService(PrivacyZoneService? service) async {
+  ///
+  /// [synchronizeInitialState] must be false while registering a newly-created
+  /// service whose zones have not been restored yet. Treating that temporary
+  /// empty state as authoritative would clear the native fail-closed guard
+  /// before the host has had a chance to restore its privacy zones.
+  static Future<void> setPrivacyZoneService(
+    PrivacyZoneService? service, {
+    required bool synchronizeInitialState,
+  }) async {
     await _privacyZoneSubscription?.cancel();
     _privacyZoneSubscription = null;
     _privacyZoneService = service;
@@ -90,12 +100,14 @@ class LocusStreams {
       'state': service != null ? 'registered' : 'cleared',
     });
 
-    await _syncNativePrivacyMode();
-
     if (service != null) {
       _privacyZoneSubscription = service.zoneChanges.listen((_) {
         unawaited(_syncNativePrivacyMode());
       });
+    }
+
+    if (synchronizeInitialState) {
+      await _syncNativePrivacyMode();
     }
   }
 
@@ -103,21 +115,49 @@ class LocusStreams {
     final hasEnabledPrivacyZones =
         _privacyZoneService?.enabledZones.isNotEmpty ?? false;
 
-    // Inform native side to avoid persisting raw locations only when an
-    // enabled privacy zone actually exists.
     try {
-      await LocusChannels.methods
-          .invokeMethod('setPrivacyMode', hasEnabledPrivacyZones);
+      await setNativePrivacyMode(hasEnabledPrivacyZones);
     } catch (error, stack) {
-      // Non-critical: log and continue without propagating.
       _log.eventWarning(
-          'native_privacy_mode_sync_failed', const {}, error, stack);
+        'native_privacy_mode_sync_failed',
+        const {},
+        error,
+        stack,
+      );
     }
   }
 
+  /// Durably updates the native privacy guard.
+  ///
+  /// Privacy API calls use this strict variant so callers are not told that a
+  /// zone mutation succeeded when native raw-location persistence could not be
+  /// guarded. Writes are serialized to prevent an older asynchronous stream
+  /// notification from overtaking a newer explicit mutation.
+  static Future<void> setNativePrivacyMode(bool enabled) {
+    final operation = _privacyModeWriteTail.then(
+      (_) =>
+          LocusChannels.methods.invokeMethod<void>('setPrivacyMode', enabled),
+    );
+
+    _privacyModeWriteTail = operation.catchError((
+      Object error,
+      StackTrace stack,
+    ) {
+      _log.eventWarning(
+        'native_privacy_mode_write_failed',
+        const {},
+        error,
+        stack,
+      );
+    });
+    return operation;
+  }
+
   static Future<void> _onListen() async {
-    await _ensureNativeStreamStarted()
-        .catchError((Object error, StackTrace stack) {
+    await _ensureNativeStreamStarted().catchError((
+      Object error,
+      StackTrace stack,
+    ) {
       _log.eventSevere('native_stream_start_failed', const {}, error, stack);
     });
   }
@@ -166,22 +206,23 @@ class LocusStreams {
       _isStarting = true;
 
       try {
-        _nativeSubscription =
-            LocusChannels.events.receiveBroadcastStream().listen(
-          (event) async {
-            try {
-              final mapped = EventMapper.mapToEvent(event);
-              _processEvent(mapped);
-            } catch (e, stack) {
-              _log.eventSevere('event_mapping_failed', const {}, e, stack);
-              await _handleStreamError(e, stack, 'event_mapping');
-            }
-          },
-          onError: (Object error, StackTrace stackTrace) async {
-            _log.eventSevere('stream_error', const {}, error, stackTrace);
-            await _handleStreamError(error, stackTrace, 'stream');
-          },
-        );
+        _nativeSubscription = LocusChannels.events
+            .receiveBroadcastStream()
+            .listen(
+              (event) async {
+                try {
+                  final mapped = EventMapper.mapToEvent(event);
+                  _processEvent(mapped);
+                } catch (e, stack) {
+                  _log.eventSevere('event_mapping_failed', const {}, e, stack);
+                  await _handleStreamError(e, stack, 'event_mapping');
+                }
+              },
+              onError: (Object error, StackTrace stackTrace) async {
+                _log.eventSevere('stream_error', const {}, error, stackTrace);
+                await _handleStreamError(error, stackTrace, 'stream');
+              },
+            );
       } catch (e, stack) {
         // Cancel any partially-created subscription to prevent leaks
         await _nativeSubscription?.cancel();
@@ -199,7 +240,8 @@ class LocusStreams {
   /// and polygon geofence detection if enabled.
   static void _processEvent(GeolocationEvent<dynamic> event) {
     // Apply location processing to all events that carry Location data
-    final isLocationEvent = event.type == EventType.location ||
+    final isLocationEvent =
+        event.type == EventType.location ||
         event.type == EventType.motionChange ||
         event.type == EventType.heartbeat ||
         event.type == EventType.schedule;
@@ -253,10 +295,9 @@ class LocusStreams {
 
       // Emit the (possibly modified) location event
       if (processedLocation != location) {
-        _eventController?.add(GeolocationEvent<Location>(
-          type: event.type,
-          data: processedLocation,
-        ));
+        _eventController?.add(
+          GeolocationEvent<Location>(type: event.type, data: processedLocation),
+        );
       } else {
         _eventController?.add(event);
       }
@@ -268,13 +309,20 @@ class LocusStreams {
       return;
     }
 
-    // Non-location events pass through unchanged
-    _eventController?.add(event);
+    // Geofence transitions are preserved, but their optional nested location
+    // must pass through the same exclusion/obfuscation policy as location
+    // stream events before it reaches host listeners.
+    _eventController?.add(
+      applyPrivacyToGeofenceEvent(event, _privacyZoneService),
+    );
   }
 
   /// Handles stream errors through the error recovery system.
   static Future<void> _handleStreamError(
-      Object error, StackTrace stackTrace, String operation) async {
+    Object error,
+    StackTrace stackTrace,
+    String operation,
+  ) async {
     // Import and use error recovery if configured
     final errorManager = _errorRecoveryManager;
 
@@ -289,23 +337,26 @@ class LocusStreams {
       );
 
       // Handle error with proper async chain for immediate recovery
-      await errorManager.handleError(locusError).then((action) {
-        _log.eventInfo('error_recovery_action', {'action': action.name});
+      await errorManager
+          .handleError(locusError)
+          .then((action) {
+            _log.eventInfo('error_recovery_action', {'action': action.name});
 
-        // If action is not 'ignore', propagate to listeners
-        if (action != RecoveryAction.ignore) {
-          _eventController?.addError(error, stackTrace);
-        }
-      }).catchError((Object recoveryError, StackTrace recoveryStack) {
-        _log.eventSevere(
-          'error_recovery_failed',
-          const {},
-          recoveryError,
-          recoveryStack,
-        );
-        // Propagate original error if recovery fails
-        _eventController?.addError(error, stackTrace);
-      });
+            // If action is not 'ignore', propagate to listeners
+            if (action != RecoveryAction.ignore) {
+              _eventController?.addError(error, stackTrace);
+            }
+          })
+          .catchError((Object recoveryError, StackTrace recoveryStack) {
+            _log.eventSevere(
+              'error_recovery_failed',
+              const {},
+              recoveryError,
+              recoveryStack,
+            );
+            // Propagate original error if recovery fails
+            _eventController?.addError(error, stackTrace);
+          });
     } else {
       // No error recovery configured, just propagate
       _eventController?.addError(error, stackTrace);

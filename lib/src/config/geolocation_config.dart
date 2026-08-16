@@ -115,11 +115,11 @@ class Config {
       locationUpdateInterval: (map['locationUpdateInterval'] as num?)?.toInt(),
       fastestLocationUpdateInterval:
           (map['fastestLocationUpdateInterval'] as num?)?.toInt(),
-      activityRecognitionInterval:
-          (map['activityRecognitionInterval'] as num?)?.toInt(),
+      activityRecognitionInterval: (map['activityRecognitionInterval'] as num?)
+          ?.toInt(),
       stopTimeout: (map['stopTimeout'] as num?)?.toInt(),
-      stopAfterElapsedMinutes:
-          (map['stopAfterElapsedMinutes'] as num?)?.toInt(),
+      stopAfterElapsedMinutes: (map['stopAfterElapsedMinutes'] as num?)
+          ?.toInt(),
       stopDetectionDelay: (map['stopDetectionDelay'] as num?)?.toInt(),
       motionTriggerDelay: (map['motionTriggerDelay'] as num?)?.toInt(),
       minimumActivityRecognitionConfidence:
@@ -142,15 +142,15 @@ class Config {
       showsBackgroundLocationIndicator:
           map['showsBackgroundLocationIndicator'] as bool?,
       stationaryRadius: (map['stationaryRadius'] as num?)?.toDouble(),
-      desiredOdometerAccuracy:
-          (map['desiredOdometerAccuracy'] as num?)?.toDouble(),
+      desiredOdometerAccuracy: (map['desiredOdometerAccuracy'] as num?)
+          ?.toDouble(),
       elasticityMultiplier: (map['elasticityMultiplier'] as num?)?.toDouble(),
       speedJumpFilter: (map['speedJumpFilter'] as num?)?.toDouble(),
       stopOnStationary: map['stopOnStationary'] as bool?,
       geofenceModeHighAccuracy: map['geofenceModeHighAccuracy'] as bool?,
       geofenceInitialTriggerEntry: map['geofenceInitialTriggerEntry'] as bool?,
-      geofenceProximityRadius:
-          (map['geofenceProximityRadius'] as num?)?.toInt(),
+      geofenceProximityRadius: (map['geofenceProximityRadius'] as num?)
+          ?.toInt(),
       maxMonitoredGeofences: (map['maxMonitoredGeofences'] as num?)?.toInt(),
       locationTimeout: (map['locationTimeout'] as num?)?.toInt(),
       httpTimeout: (map['httpTimeout'] as num?)?.toInt(),
@@ -211,33 +211,39 @@ class Config {
       backgroundPermissionRationale: map['backgroundPermissionRationale'] is Map
           ? PermissionRationale.fromMap(
               Map<String, dynamic>.from(
-                  map['backgroundPermissionRationale'] as Map),
+                map['backgroundPermissionRationale'] as Map,
+              ),
             )
           : null,
       triggerActivities: (map['triggerActivities'] as List?)
-          ?.map((e) => ActivityType.values.firstWhere(
-                (v) => v.name == e,
-                orElse: () => ActivityType.unknown,
-              ))
+          ?.map(
+            (e) => ActivityType.values.firstWhere(
+              (v) => v.name == e,
+              orElse: () => ActivityType.unknown,
+            ),
+          )
           .toList(),
       adaptiveTracking: map['adaptiveTracking'] != null
           ? AdaptiveTrackingConfig.fromMap(
-              Map<String, dynamic>.from(map['adaptiveTracking'] as Map))
+              Map<String, dynamic>.from(map['adaptiveTracking'] as Map),
+            )
           : null,
       lowBattery: map['lowBattery'] != null
           ? LowBatteryConfig.fromMap(
-              Map<String, dynamic>.from(map['lowBattery'] as Map))
+              Map<String, dynamic>.from(map['lowBattery'] as Map),
+            )
           : null,
       spoofDetection: map['spoofDetection'] != null
           ? SpoofDetectionConfig.fromMap(
-              Map<String, dynamic>.from(map['spoofDetection'] as Map))
+              Map<String, dynamic>.from(map['spoofDetection'] as Map),
+            )
           : null,
       compressRequests: map['compressRequests'] as bool? ?? true,
     );
   }
 
   /// The current SDK version.
-  static const String version = '2.3.1';
+  static const String version = '2.4.0';
 
   // Location settings
   /// Desired location accuracy level.
@@ -595,7 +601,7 @@ class Config {
       motionTriggerDelay: motionTriggerDelay ?? this.motionTriggerDelay,
       minimumActivityRecognitionConfidence:
           minimumActivityRecognitionConfidence ??
-              this.minimumActivityRecognitionConfidence,
+          this.minimumActivityRecognitionConfidence,
       useSignificantChangesOnly:
           useSignificantChangesOnly ?? this.useSignificantChangesOnly,
       allowIdenticalLocations:
@@ -605,16 +611,19 @@ class Config {
       disableStopDetection: disableStopDetection ?? this.disableStopDetection,
       disableProviderChangeRecord:
           disableProviderChangeRecord ?? this.disableProviderChangeRecord,
-      disableLocationAuthorizationAlert: disableLocationAuthorizationAlert ??
+      disableLocationAuthorizationAlert:
+          disableLocationAuthorizationAlert ??
           this.disableLocationAuthorizationAlert,
       enableHeadless: enableHeadless ?? this.enableHeadless,
       startOnBoot: startOnBoot ?? this.startOnBoot,
       stopOnTerminate: stopOnTerminate ?? this.stopOnTerminate,
       foregroundService: foregroundService ?? this.foregroundService,
       preventSuspend: preventSuspend ?? this.preventSuspend,
-      pausesLocationUpdatesAutomatically: pausesLocationUpdatesAutomatically ??
+      pausesLocationUpdatesAutomatically:
+          pausesLocationUpdatesAutomatically ??
           this.pausesLocationUpdatesAutomatically,
-      showsBackgroundLocationIndicator: showsBackgroundLocationIndicator ??
+      showsBackgroundLocationIndicator:
+          showsBackgroundLocationIndicator ??
           this.showsBackgroundLocationIndicator,
       stationaryRadius: stationaryRadius ?? this.stationaryRadius,
       desiredOdometerAccuracy:
@@ -695,9 +704,7 @@ class Config {
   /// Returns a map containing all non-null configuration values,
   /// suitable for serialization or platform channel communication.
   JsonMap toMap() {
-    final map = <String, dynamic>{
-      'version': version,
-    };
+    final map = <String, dynamic>{'version': version};
 
     void put(String key, dynamic value) {
       if (value != null) {
@@ -714,8 +721,10 @@ class Config {
     put('stopAfterElapsedMinutes', stopAfterElapsedMinutes);
     put('stopDetectionDelay', stopDetectionDelay);
     put('motionTriggerDelay', motionTriggerDelay);
-    put('minimumActivityRecognitionConfidence',
-        minimumActivityRecognitionConfidence);
+    put(
+      'minimumActivityRecognitionConfidence',
+      minimumActivityRecognitionConfidence,
+    );
     put('useSignificantChangesOnly', useSignificantChangesOnly);
     put('allowIdenticalLocations', allowIdenticalLocations);
     put('disableMotionActivityUpdates', disableMotionActivityUpdates);
@@ -727,8 +736,10 @@ class Config {
     put('stopOnTerminate', stopOnTerminate);
     put('foregroundService', foregroundService);
     put('preventSuspend', preventSuspend);
-    put('pausesLocationUpdatesAutomatically',
-        pausesLocationUpdatesAutomatically);
+    put(
+      'pausesLocationUpdatesAutomatically',
+      pausesLocationUpdatesAutomatically,
+    );
     put('showsBackgroundLocationIndicator', showsBackgroundLocationIndicator);
     put('stationaryRadius', stationaryRadius);
     put('desiredOdometerAccuracy', desiredOdometerAccuracy);
@@ -780,8 +791,10 @@ class Config {
     put('logLevel', logLevel?.name);
     put('logMaxDays', logMaxDays);
     put('heartbeatInterval', heartbeatInterval);
-    put('backgroundPermissionRationale',
-        backgroundPermissionRationale?.toMap());
+    put(
+      'backgroundPermissionRationale',
+      backgroundPermissionRationale?.toMap(),
+    );
     put('triggerActivities', triggerActivities?.map((e) => e.name).toList());
 
     put('adaptiveTracking', adaptiveTracking?.toMap());

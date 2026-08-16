@@ -49,15 +49,15 @@ final class LocusMetricsSnapshot {
 
   /// JSON-encodable representation. Useful for diagnostics dumps.
   Map<String, Object?> toJson() => <String, Object?>{
-        'points_captured': pointsCaptured,
-        'points_sent': pointsSent,
-        'points_dropped': pointsDropped,
-        'points_quarantined_now': pointsQuarantinedNow,
-        'sync_attempts_total': syncAttemptsTotal,
-        'sync_attempts_failed': syncAttemptsFailed,
-        'last_success_at': lastSuccessAt?.toUtc().toIso8601String(),
-        'last_failure_at': lastFailureAt?.toUtc().toIso8601String(),
-      };
+    'points_captured': pointsCaptured,
+    'points_sent': pointsSent,
+    'points_dropped': pointsDropped,
+    'points_quarantined_now': pointsQuarantinedNow,
+    'sync_attempts_total': syncAttemptsTotal,
+    'sync_attempts_failed': syncAttemptsFailed,
+    'last_success_at': lastSuccessAt?.toUtc().toIso8601String(),
+    'last_failure_at': lastFailureAt?.toUtc().toIso8601String(),
+  };
 
   @override
   String toString() => 'LocusMetricsSnapshot(${toJson()})';

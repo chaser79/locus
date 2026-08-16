@@ -53,34 +53,39 @@ class TripState {
   final bool ended;
 
   JsonMap toMap() => {
-        'tripId': tripId,
-        'createdAt': createdAt.toIso8601String(),
-        if (startedAt != null) 'startedAt': startedAt!.toIso8601String(),
-        if (startLocation != null) 'startLocation': startLocation!.toMap(),
-        if (lastLocation != null) 'lastLocation': lastLocation!.toMap(),
-        'distanceMeters': distanceMeters,
-        'idleSeconds': idleSeconds,
-        'maxSpeedKph': maxSpeedKph,
-        'started': started,
-        'ended': ended,
-      };
+    'tripId': tripId,
+    'createdAt': createdAt.toIso8601String(),
+    if (startedAt != null) 'startedAt': startedAt!.toIso8601String(),
+    if (startLocation != null) 'startLocation': startLocation!.toMap(),
+    if (lastLocation != null) 'lastLocation': lastLocation!.toMap(),
+    'distanceMeters': distanceMeters,
+    'idleSeconds': idleSeconds,
+    'maxSpeedKph': maxSpeedKph,
+    'started': started,
+    'ended': ended,
+  };
 
   TripSummary? toSummary(DateTime endedAt) {
     if (startedAt == null) {
       return null;
     }
     final durationSeconds = endedAt.difference(startedAt!).inSeconds;
-    final movingSeconds =
-        (durationSeconds - idleSeconds).clamp(0, durationSeconds);
+    final movingSeconds = (durationSeconds - idleSeconds).clamp(
+      0,
+      durationSeconds,
+    );
     // Use total duration as fallback when movingSeconds is unreliable
     // (e.g., idle detection over-counts due to GPS jitter on short trips).
-    final effectiveSeconds =
-        movingSeconds > 0 ? movingSeconds : durationSeconds;
-    final rawAverageKph =
-        effectiveSeconds > 0 ? (distanceMeters / effectiveSeconds) * 3.6 : 0.0;
+    final effectiveSeconds = movingSeconds > 0
+        ? movingSeconds
+        : durationSeconds;
+    final rawAverageKph = effectiveSeconds > 0
+        ? (distanceMeters / effectiveSeconds) * 3.6
+        : 0.0;
     // The average of any sample set cannot exceed the maximum observed value.
-    final averageSpeedKph =
-        maxSpeedKph > 0 ? rawAverageKph.clamp(0.0, maxSpeedKph) : rawAverageKph;
+    final averageSpeedKph = maxSpeedKph > 0
+        ? rawAverageKph.clamp(0.0, maxSpeedKph)
+        : rawAverageKph;
 
     return TripSummary(
       tripId: tripId,

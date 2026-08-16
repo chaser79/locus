@@ -51,11 +51,7 @@ List<Location> generateClusteredLocations({
     locations.add(
       Location(
         uuid: 'bench-$i',
-        coords: Coords(
-          latitude: lat,
-          longitude: lng,
-          accuracy: 10.0,
-        ),
+        coords: Coords(latitude: lat, longitude: lng, accuracy: 10.0),
         timestamp: baseTime.add(Duration(seconds: i * 30)),
         isMoving: false, // All stationary to test clustering
       ),
@@ -106,8 +102,11 @@ List<Location> generateUniformlySpreadLocations({
 }
 
 /// Measures execution time in microseconds for a function.
-int measureMicroseconds(void Function() fn,
-    {int warmupRuns = 2, int runs = 5}) {
+int measureMicroseconds(
+  void Function() fn, {
+  int warmupRuns = 2,
+  int runs = 5,
+}) {
   // Warmup runs
   for (var i = 0; i < warmupRuns; i++) {
     fn();
@@ -147,9 +146,11 @@ void main() {
         final msPerPoint = timeUs / 1000 / size;
         results.add((size: size, microseconds: timeUs, msPerPoint: msPerPoint));
 
-        print('Size: ${size.toString().padLeft(5)} | '
-            'Time: ${(timeUs / 1000).toStringAsFixed(2).padLeft(10)} ms | '
-            'Per point: ${(msPerPoint * 1000).toStringAsFixed(3).padLeft(8)} μs');
+        print(
+          'Size: ${size.toString().padLeft(5)} | '
+          'Time: ${(timeUs / 1000).toStringAsFixed(2).padLeft(10)} ms | '
+          'Per point: ${(msPerPoint * 1000).toStringAsFixed(3).padLeft(8)} μs',
+        );
       }
 
       print('=' * 60);
@@ -166,7 +167,8 @@ void main() {
         print('  Size ratio: ${sizeRatio.toStringAsFixed(1)}x');
         print('  Time ratio: ${timeRatio.toStringAsFixed(1)}x');
         print(
-            '  Estimated complexity exponent: ${scalingExponent.toStringAsFixed(2)}');
+          '  Estimated complexity exponent: ${scalingExponent.toStringAsFixed(2)}',
+        );
         print('  (1.0 = O(N), 2.0 = O(N²))');
         print('=' * 60);
       }
@@ -188,16 +190,22 @@ void main() {
       for (final size in sizes) {
         final locations = generateUniformlySpreadLocations(count: size);
 
-        final timeUs = measureMicroseconds(() {
-          LocationHistoryCalculator.calculateSummary(locations);
-        }, warmupRuns: 1, runs: 3);
+        final timeUs = measureMicroseconds(
+          () {
+            LocationHistoryCalculator.calculateSummary(locations);
+          },
+          warmupRuns: 1,
+          runs: 3,
+        );
 
         final msPerPoint = timeUs / 1000 / size;
         results.add((size: size, microseconds: timeUs, msPerPoint: msPerPoint));
 
-        print('Size: ${size.toString().padLeft(5)} | '
-            'Time: ${(timeUs / 1000).toStringAsFixed(2).padLeft(10)} ms | '
-            'Per point: ${(msPerPoint * 1000).toStringAsFixed(3).padLeft(8)} μs');
+        print(
+          'Size: ${size.toString().padLeft(5)} | '
+          'Time: ${(timeUs / 1000).toStringAsFixed(2).padLeft(10)} ms | '
+          'Per point: ${(msPerPoint * 1000).toStringAsFixed(3).padLeft(8)} μs',
+        );
       }
 
       print('=' * 60);
@@ -214,7 +222,8 @@ void main() {
         print('  Size ratio: ${sizeRatio.toStringAsFixed(1)}x');
         print('  Time ratio: ${timeRatio.toStringAsFixed(1)}x');
         print(
-            '  Estimated complexity exponent: ${scalingExponent.toStringAsFixed(2)}');
+          '  Estimated complexity exponent: ${scalingExponent.toStringAsFixed(2)}',
+        );
         print('  (1.0 = O(N), 2.0 = O(N²))');
         print('=' * 60);
       }
@@ -233,56 +242,66 @@ void main() {
 
       // Cluster 1: 5 points around (37.42, -122.08)
       for (var i = 0; i < 5; i++) {
-        locations.add(Location(
-          uuid: 'c1-$i',
-          coords: Coords(
-            latitude: 37.4200 + i * 0.00001,
-            longitude: -122.0800 + i * 0.00001,
-            accuracy: 10.0,
+        locations.add(
+          Location(
+            uuid: 'c1-$i',
+            coords: Coords(
+              latitude: 37.4200 + i * 0.00001,
+              longitude: -122.0800 + i * 0.00001,
+              accuracy: 10.0,
+            ),
+            timestamp: baseTime.add(Duration(minutes: i)),
+            isMoving: false,
           ),
-          timestamp: baseTime.add(Duration(minutes: i)),
-          isMoving: false,
-        ));
+        );
       }
 
       // Cluster 2: 3 points around (37.50, -122.20)
       for (var i = 0; i < 3; i++) {
-        locations.add(Location(
-          uuid: 'c2-$i',
-          coords: Coords(
-            latitude: 37.5000 + i * 0.00001,
-            longitude: -122.2000 + i * 0.00001,
-            accuracy: 10.0,
+        locations.add(
+          Location(
+            uuid: 'c2-$i',
+            coords: Coords(
+              latitude: 37.5000 + i * 0.00001,
+              longitude: -122.2000 + i * 0.00001,
+              accuracy: 10.0,
+            ),
+            timestamp: baseTime.add(Duration(minutes: 10 + i)),
+            isMoving: false,
           ),
-          timestamp: baseTime.add(Duration(minutes: 10 + i)),
-          isMoving: false,
-        ));
+        );
       }
 
       // Cluster 3: 4 points around (37.60, -122.30)
       for (var i = 0; i < 4; i++) {
-        locations.add(Location(
-          uuid: 'c3-$i',
-          coords: Coords(
-            latitude: 37.6000 + i * 0.00001,
-            longitude: -122.3000 + i * 0.00001,
-            accuracy: 10.0,
+        locations.add(
+          Location(
+            uuid: 'c3-$i',
+            coords: Coords(
+              latitude: 37.6000 + i * 0.00001,
+              longitude: -122.3000 + i * 0.00001,
+              accuracy: 10.0,
+            ),
+            timestamp: baseTime.add(Duration(minutes: 20 + i)),
+            isMoving: false,
           ),
-          timestamp: baseTime.add(Duration(minutes: 20 + i)),
-          isMoving: false,
-        ));
+        );
       }
 
       final summary = LocationHistoryCalculator.calculateSummary(locations);
 
       print(
-          'Input: ${locations.length} locations in 3 clusters (5, 3, 4 points)');
+        'Input: ${locations.length} locations in 3 clusters (5, 3, 4 points)',
+      );
       print(
-          'Output: ${summary.frequentLocations.length} frequent locations found');
+        'Output: ${summary.frequentLocations.length} frequent locations found',
+      );
       for (final freq in summary.frequentLocations) {
-        print('  - Visits: ${freq.visitCount}, '
-            'Center: (${freq.center.latitude.toStringAsFixed(4)}, '
-            '${freq.center.longitude.toStringAsFixed(4)})');
+        print(
+          '  - Visits: ${freq.visitCount}, '
+          'Center: (${freq.center.latitude.toStringAsFixed(4)}, '
+          '${freq.center.longitude.toStringAsFixed(4)})',
+        );
       }
       print('=' * 60);
 

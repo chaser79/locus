@@ -32,18 +32,12 @@ void main() {
     final location = Location(
       uuid: '1',
       timestamp: DateTime.utc(2025, 1, 1),
-      coords: const Coords(
-        latitude: 0,
-        longitude: 0,
-        accuracy: 5,
-        speed: 3,
-      ),
+      coords: const Coords(latitude: 0, longitude: 0, accuracy: 5, speed: 3),
     );
 
-    controller.add(GeolocationEvent<Location>(
-      type: EventType.location,
-      data: location,
-    ));
+    controller.add(
+      GeolocationEvent<Location>(type: EventType.location, data: location),
+    );
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
     expect(applied?.distanceFilter, 10);

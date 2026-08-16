@@ -17,10 +17,7 @@ void main() {
 
     test('setSyncBodyBuilder stores builder for sync payloads', () async {
       await service.setSyncBodyBuilder((locations, extras) async {
-        return {
-          'count': locations.length,
-          'source': extras['source'],
-        };
+        return {'count': locations.length, 'source': extras['source']};
       });
 
       final result = await mockLocus.invokeSyncBodyBuilder(
@@ -31,27 +28,25 @@ void main() {
         {'source': 'unit-test'},
       );
 
-      expect(result, {
-        'count': 2,
-        'source': 'unit-test',
-      });
+      expect(result, {'count': 2, 'source': 'unit-test'});
     });
 
     test(
-        'setHeadersCallback refreshes immediately and refreshHeaders triggers again',
-        () async {
-      var callbackCalls = 0;
-      await service.setHeadersCallback(() async {
-        callbackCalls++;
-        return {'Authorization': 'Bearer token'};
-      });
+      'setHeadersCallback refreshes immediately and refreshHeaders triggers again',
+      () async {
+        var callbackCalls = 0;
+        await service.setHeadersCallback(() async {
+          callbackCalls++;
+          return {'Authorization': 'Bearer token'};
+        });
 
-      expect(callbackCalls, 1);
+        expect(callbackCalls, 1);
 
-      await service.refreshHeaders();
+        await service.refreshHeaders();
 
-      expect(callbackCalls, 2);
-    });
+        expect(callbackCalls, 2);
+      },
+    );
 
     test('getQueue returns most recent items when limit is set', () async {
       await service.enqueue({'seq': 1});

@@ -151,10 +151,7 @@ void main() {
         radius: 100.0,
       );
 
-      final modified = original.copyWith(
-        radius: 200.0,
-        enabled: false,
-      );
+      final modified = original.copyWith(radius: 200.0, enabled: false);
 
       expect(modified.identifier, 'home'); // Unchanged
       expect(modified.radius, 200.0);
@@ -278,12 +275,14 @@ void main() {
       });
 
       test('removeZone removes existing zone', () async {
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-        ));
+        await service.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+          ),
+        );
 
         final result = await service.removeZone('home');
 
@@ -332,12 +331,14 @@ void main() {
       });
 
       test('updateZone updates existing zone', () async {
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-        ));
+        await service.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+          ),
+        );
 
         final updated = service.getZone('home')!.copyWith(radius: 200.0);
         final result = await service.updateZone(updated);
@@ -347,12 +348,14 @@ void main() {
       });
 
       test('setZoneEnabled enables/disables zone', () async {
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-        ));
+        await service.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+          ),
+        );
 
         await service.setZoneEnabled('home', false);
 
@@ -367,32 +370,41 @@ void main() {
     });
 
     group('location processing', () {
-      test('processLocation returns unmodified for location outside zones',
-          () async {
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-        ));
+      test(
+        'processLocation returns unmodified for location outside zones',
+        () async {
+          await service.addZone(
+            PrivacyZone.create(
+              identifier: 'home',
+              latitude: 37.7749,
+              longitude: -122.4194,
+              radius: 100.0,
+            ),
+          );
 
-        // Location far from the zone
-        final location = _createTestLocation(latitude: 38.0, longitude: -123.0);
-        final result = service.processLocation(location);
+          // Location far from the zone
+          final location = _createTestLocation(
+            latitude: 38.0,
+            longitude: -123.0,
+          );
+          final result = service.processLocation(location);
 
-        expect(result.wasAffected, false);
-        expect(result.processedLocation, equals(location));
-        expect(result.matchedZones, isEmpty);
-      });
+          expect(result.wasAffected, false);
+          expect(result.processedLocation, equals(location));
+          expect(result.matchedZones, isEmpty);
+        },
+      );
 
       test('processLocation excludes location in exclude zone', () async {
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-          action: PrivacyZoneAction.exclude,
-        ));
+        await service.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+            action: PrivacyZoneAction.exclude,
+          ),
+        );
 
         final location = _createTestLocation(
           latitude: 37.7749,
@@ -412,14 +424,16 @@ void main() {
           includePrivacyMetadata: true,
         );
 
-        await metadataService.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-          action: PrivacyZoneAction.obfuscate,
-          obfuscationRadius: 500.0,
-        ));
+        await metadataService.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+            action: PrivacyZoneAction.obfuscate,
+            obfuscationRadius: 500.0,
+          ),
+        );
 
         final location = _createTestLocation(
           latitude: 37.7749,
@@ -429,8 +443,10 @@ void main() {
 
         expect(result.wasObfuscated, true);
         expect(result.processedLocation, isNotNull);
-        expect(result.processedLocation!.coords.latitude,
-            isNot(equals(location.coords.latitude)));
+        expect(
+          result.processedLocation!.coords.latitude,
+          isNot(equals(location.coords.latitude)),
+        );
         expect(result.processedLocation!.extras?['_privacyObfuscated'], true);
 
         await metadataService.dispose();
@@ -466,14 +482,16 @@ void main() {
       });
 
       test('processLocation respects disabled zones', () async {
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-          action: PrivacyZoneAction.exclude,
-          enabled: false,
-        ));
+        await service.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+            action: PrivacyZoneAction.exclude,
+            enabled: false,
+          ),
+        );
 
         final location = _createTestLocation(
           latitude: 37.7749,
@@ -485,20 +503,26 @@ void main() {
       });
 
       test('processLocations filters out excluded locations', () async {
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-          action: PrivacyZoneAction.exclude,
-        ));
+        await service.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+            action: PrivacyZoneAction.exclude,
+          ),
+        );
 
         final locations = [
           _createTestLocation(
-              latitude: 37.7749, longitude: -122.4194), // Inside
+            latitude: 37.7749,
+            longitude: -122.4194,
+          ), // Inside
           _createTestLocation(latitude: 38.0, longitude: -123.0), // Outside
           _createTestLocation(
-              latitude: 37.7749, longitude: -122.4194), // Inside
+            latitude: 37.7749,
+            longitude: -122.4194,
+          ), // Inside
         ];
 
         final processed = service.processLocations(locations);
@@ -508,12 +532,14 @@ void main() {
       });
 
       test('isLocationAffected returns true for location in zone', () async {
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-        ));
+        await service.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+          ),
+        );
 
         final inside = _createTestLocation(
           latitude: 37.7749,
@@ -555,7 +581,9 @@ void main() {
 
         expect(matching.length, 2);
         expect(
-            matching.map((z) => z.identifier), containsAll(['zone1', 'zone2']));
+          matching.map((z) => z.identifier),
+          containsAll(['zone1', 'zone2']),
+        );
       });
     });
 
@@ -564,12 +592,14 @@ void main() {
         final events = <PrivacyZoneEvent>[];
         service.zoneChanges.listen(events.add);
 
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-        ));
+        await service.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+          ),
+        );
 
         await Future.delayed(Duration.zero);
 
@@ -579,12 +609,14 @@ void main() {
       });
 
       test('emits event when zone is removed', () async {
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-        ));
+        await service.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+          ),
+        );
 
         final events = <PrivacyZoneEvent>[];
         service.zoneChanges.listen(events.add);
@@ -598,12 +630,14 @@ void main() {
       });
 
       test('emits event when zone is updated', () async {
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-        ));
+        await service.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+          ),
+        );
 
         final events = <PrivacyZoneEvent>[];
         service.zoneChanges.listen(events.add);
@@ -624,12 +658,14 @@ void main() {
           onPersist: (zones) async => persisted.add(zones),
         );
 
-        await service.addZone(PrivacyZone.create(
-          identifier: 'home',
-          latitude: 37.7749,
-          longitude: -122.4194,
-          radius: 100.0,
-        ));
+        await service.addZone(
+          PrivacyZone.create(
+            identifier: 'home',
+            latitude: 37.7749,
+            longitude: -122.4194,
+            radius: 100.0,
+          ),
+        );
 
         expect(persisted.length, 1);
         expect(persisted[0].length, 1);
@@ -652,12 +688,14 @@ void main() {
     });
 
     test('addPrivacyZone adds a zone', () async {
-      await Locus.privacy.add(PrivacyZone.create(
-        identifier: 'home',
-        latitude: 37.7749,
-        longitude: -122.4194,
-        radius: 100.0,
-      ));
+      await Locus.privacy.add(
+        PrivacyZone.create(
+          identifier: 'home',
+          latitude: 37.7749,
+          longitude: -122.4194,
+          radius: 100.0,
+        ),
+      );
 
       final zones = await Locus.privacy.getAll();
       expect(zones.length, 1);
@@ -665,12 +703,14 @@ void main() {
     });
 
     test('removePrivacyZone removes a zone', () async {
-      await Locus.privacy.add(PrivacyZone.create(
-        identifier: 'home',
-        latitude: 37.7749,
-        longitude: -122.4194,
-        radius: 100.0,
-      ));
+      await Locus.privacy.add(
+        PrivacyZone.create(
+          identifier: 'home',
+          latitude: 37.7749,
+          longitude: -122.4194,
+          radius: 100.0,
+        ),
+      );
 
       final result = await Locus.privacy.remove('home');
       expect(result, true);
@@ -680,24 +720,28 @@ void main() {
     });
 
     test('getPrivacyZone retrieves specific zone', () async {
-      await Locus.privacy.add(PrivacyZone.create(
-        identifier: 'home',
-        latitude: 37.7749,
-        longitude: -122.4194,
-        radius: 100.0,
-      ));
+      await Locus.privacy.add(
+        PrivacyZone.create(
+          identifier: 'home',
+          latitude: 37.7749,
+          longitude: -122.4194,
+          radius: 100.0,
+        ),
+      );
 
       final zone = await Locus.privacy.get('home');
       expect(zone?.identifier, 'home');
     });
 
     test('setPrivacyZoneEnabled toggles zone', () async {
-      await Locus.privacy.add(PrivacyZone.create(
-        identifier: 'home',
-        latitude: 37.7749,
-        longitude: -122.4194,
-        radius: 100.0,
-      ));
+      await Locus.privacy.add(
+        PrivacyZone.create(
+          identifier: 'home',
+          latitude: 37.7749,
+          longitude: -122.4194,
+          radius: 100.0,
+        ),
+      );
 
       await Locus.privacy.setEnabled('home', false);
 
@@ -714,10 +758,6 @@ Location _createTestLocation({
   return Location(
     uuid: 'test-${DateTime.now().millisecondsSinceEpoch}',
     timestamp: DateTime.now(),
-    coords: Coords(
-      latitude: latitude,
-      longitude: longitude,
-      accuracy: 10.0,
-    ),
+    coords: Coords(latitude: latitude, longitude: longitude, accuracy: 10.0),
   );
 }

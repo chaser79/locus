@@ -13,11 +13,7 @@ Location _locationAt({
   return Location(
     uuid: timestamp.microsecondsSinceEpoch.toString(),
     timestamp: timestamp,
-    coords: Coords(
-      latitude: lat,
-      longitude: lng,
-      accuracy: accuracy,
-    ),
+    coords: Coords(latitude: lat, longitude: lng, accuracy: accuracy),
     isMoving: isMoving,
   );
 }
@@ -41,11 +37,13 @@ void main() {
 
     final now = DateTime.utc(2025, 1, 1, 0, 0, 0);
     controller.add(_locationAt(timestamp: now, lat: 0, lng: 0));
-    controller.add(_locationAt(
-      timestamp: now.add(const Duration(seconds: 10)),
-      lat: 0.001,
-      lng: 0.001,
-    ));
+    controller.add(
+      _locationAt(
+        timestamp: now.add(const Duration(seconds: 10)),
+        lat: 0.001,
+        lng: 0.001,
+      ),
+    );
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
     expect(events.any((event) => event.type == TripEventType.tripStart), true);
@@ -74,11 +72,13 @@ void main() {
 
     final now = DateTime.utc(2025, 1, 1, 0, 0, 0);
     controller.add(_locationAt(timestamp: now, lat: 1, lng: 1));
-    controller.add(_locationAt(
-      timestamp: now.add(const Duration(seconds: 5)),
-      lat: 1.001,
-      lng: 1.001,
-    ));
+    controller.add(
+      _locationAt(
+        timestamp: now.add(const Duration(seconds: 5)),
+        lat: 1.001,
+        lng: 1.001,
+      ),
+    );
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
     expect(

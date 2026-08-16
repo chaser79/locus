@@ -63,7 +63,11 @@ void main() {
         ],
         packagesWithLocus: [
           PackageInMonorepo(
-              path: '/a', name: 'a', isApp: false, usesLocus: true),
+            path: '/a',
+            name: 'a',
+            isApp: false,
+            usesLocus: true,
+          ),
         ],
         rootPath: '/root',
       );
@@ -74,9 +78,7 @@ void main() {
     test('hasLocusUsage returns false when no packages use Locus', () {
       final result = MonorepoDetectionResult(
         isMonorepo: true,
-        packages: [
-          PackageInMonorepo(path: '/a', name: 'a', isApp: false),
-        ],
+        packages: [PackageInMonorepo(path: '/a', name: 'a', isApp: false)],
         packagesWithLocus: [],
         rootPath: '/root',
       );
@@ -120,53 +122,64 @@ version: 1.0.0
       await Directory('${tempDir.path}/packages/pkg_a').create(recursive: true);
       await Directory('${tempDir.path}/packages/pkg_b').create(recursive: true);
 
-      await File('${tempDir.path}/packages/pkg_a/pubspec.yaml')
-          .writeAsString('''
+      await File('${tempDir.path}/packages/pkg_a/pubspec.yaml').writeAsString(
+        '''
 name: pkg_a
 version: 1.0.0
-''');
+''',
+      );
 
-      await File('${tempDir.path}/packages/pkg_b/pubspec.yaml')
-          .writeAsString('''
+      await File('${tempDir.path}/packages/pkg_b/pubspec.yaml').writeAsString(
+        '''
 name: pkg_b
 version: 1.0.0
-''');
+''',
+      );
 
       final packages = await MonorepoDetector.findPackages(tempDir);
       expect(packages, hasLength(2));
       expect(packages.map((p) => p.name), containsAll(['pkg_a', 'pkg_b']));
     });
 
-    test('findPackages detects root + subdirectory packages (monorepo)',
-        () async {
-      // Create root package
-      await File('${tempDir.path}/pubspec.yaml').writeAsString('''
+    test(
+      'findPackages detects root + subdirectory packages (monorepo)',
+      () async {
+        // Create root package
+        await File('${tempDir.path}/pubspec.yaml').writeAsString('''
 name: root_pkg
 version: 1.0.0
 ''');
 
-      // Create packages directory
-      await Directory('${tempDir.path}/packages/sub_pkg')
-          .create(recursive: true);
-      await File('${tempDir.path}/packages/sub_pkg/pubspec.yaml')
-          .writeAsString('''
+        // Create packages directory
+        await Directory(
+          '${tempDir.path}/packages/sub_pkg',
+        ).create(recursive: true);
+        await File(
+          '${tempDir.path}/packages/sub_pkg/pubspec.yaml',
+        ).writeAsString('''
 name: sub_pkg
 version: 1.0.0
 ''');
 
-      final packages = await MonorepoDetector.findPackages(tempDir);
-      expect(packages, hasLength(2));
-      expect(packages.map((p) => p.name), containsAll(['root_pkg', 'sub_pkg']));
-    });
+        final packages = await MonorepoDetector.findPackages(tempDir);
+        expect(packages, hasLength(2));
+        expect(
+          packages.map((p) => p.name),
+          containsAll(['root_pkg', 'sub_pkg']),
+        );
+      },
+    );
 
     test('isMonorepo returns true for multiple packages', () async {
       await Directory('${tempDir.path}/packages/pkg_a').create(recursive: true);
       await Directory('${tempDir.path}/packages/pkg_b').create(recursive: true);
 
-      await File('${tempDir.path}/packages/pkg_a/pubspec.yaml')
-          .writeAsString('name: pkg_a');
-      await File('${tempDir.path}/packages/pkg_b/pubspec.yaml')
-          .writeAsString('name: pkg_b');
+      await File(
+        '${tempDir.path}/packages/pkg_a/pubspec.yaml',
+      ).writeAsString('name: pkg_a');
+      await File(
+        '${tempDir.path}/packages/pkg_b/pubspec.yaml',
+      ).writeAsString('name: pkg_b');
 
       expect(await MonorepoDetector.isMonorepo(tempDir), isTrue);
     });
@@ -180,12 +193,14 @@ version: 1.0.0
     test('findPackages ignores build directories', () async {
       // Create a package in build directory (should be ignored)
       await Directory('${tempDir.path}/build/pkg').create(recursive: true);
-      await File('${tempDir.path}/build/pkg/pubspec.yaml')
-          .writeAsString('name: build_pkg');
+      await File(
+        '${tempDir.path}/build/pkg/pubspec.yaml',
+      ).writeAsString('name: build_pkg');
 
       // Create a real package
-      await File('${tempDir.path}/pubspec.yaml')
-          .writeAsString('name: real_pkg');
+      await File(
+        '${tempDir.path}/pubspec.yaml',
+      ).writeAsString('name: real_pkg');
 
       final packages = await MonorepoDetector.findPackages(tempDir);
       expect(packages, hasLength(1));
@@ -195,12 +210,14 @@ version: 1.0.0
     test('findPackages ignores hidden directories', () async {
       // Create a package in hidden directory (should be ignored)
       await Directory('${tempDir.path}/.hidden/pkg').create(recursive: true);
-      await File('${tempDir.path}/.hidden/pkg/pubspec.yaml')
-          .writeAsString('name: hidden_pkg');
+      await File(
+        '${tempDir.path}/.hidden/pkg/pubspec.yaml',
+      ).writeAsString('name: hidden_pkg');
 
       // Create a real package
-      await File('${tempDir.path}/pubspec.yaml')
-          .writeAsString('name: real_pkg');
+      await File(
+        '${tempDir.path}/pubspec.yaml',
+      ).writeAsString('name: real_pkg');
 
       final packages = await MonorepoDetector.findPackages(tempDir);
       expect(packages, hasLength(1));
@@ -209,20 +226,24 @@ version: 1.0.0
 
     test('detectMonorepo identifies packages with Locus usage', () async {
       // Create package with Locus dependency
-      await Directory('${tempDir.path}/packages/with_locus')
-          .create(recursive: true);
-      await File('${tempDir.path}/packages/with_locus/pubspec.yaml')
-          .writeAsString('''
+      await Directory(
+        '${tempDir.path}/packages/with_locus',
+      ).create(recursive: true);
+      await File(
+        '${tempDir.path}/packages/with_locus/pubspec.yaml',
+      ).writeAsString('''
 name: with_locus
 dependencies:
   locus: ^2.0.0
 ''');
 
       // Create package without Locus
-      await Directory('${tempDir.path}/packages/no_locus')
-          .create(recursive: true);
-      await File('${tempDir.path}/packages/no_locus/pubspec.yaml')
-          .writeAsString('''
+      await Directory(
+        '${tempDir.path}/packages/no_locus',
+      ).create(recursive: true);
+      await File(
+        '${tempDir.path}/packages/no_locus/pubspec.yaml',
+      ).writeAsString('''
 name: no_locus
 dependencies:
   flutter: sdk
@@ -260,8 +281,9 @@ dependencies:
   flutter:
     sdk: flutter
 ''');
-      await File('${tempDir.path}/lib/main.dart')
-          .writeAsString('void main() {}');
+      await File(
+        '${tempDir.path}/lib/main.dart',
+      ).writeAsString('void main() {}');
 
       final packages = await MonorepoDetector.findPackages(tempDir);
       expect(packages, hasLength(1));
@@ -271,8 +293,9 @@ dependencies:
     test('findPackages handles common monorepo patterns', () async {
       // Create apps/ and packages/ structure (common pattern)
       await Directory('${tempDir.path}/apps/app1/lib').create(recursive: true);
-      await Directory('${tempDir.path}/packages/shared')
-          .create(recursive: true);
+      await Directory(
+        '${tempDir.path}/packages/shared',
+      ).create(recursive: true);
 
       await File('${tempDir.path}/apps/app1/pubspec.yaml').writeAsString('''
 name: app1
@@ -280,13 +303,15 @@ dependencies:
   flutter:
     sdk: flutter
 ''');
-      await File('${tempDir.path}/apps/app1/lib/main.dart')
-          .writeAsString('void main() {}');
+      await File(
+        '${tempDir.path}/apps/app1/lib/main.dart',
+      ).writeAsString('void main() {}');
 
-      await File('${tempDir.path}/packages/shared/pubspec.yaml')
-          .writeAsString('''
+      await File('${tempDir.path}/packages/shared/pubspec.yaml').writeAsString(
+        '''
 name: shared
-''');
+''',
+      );
 
       final packages = await MonorepoDetector.findPackages(tempDir);
       expect(packages, hasLength(2));

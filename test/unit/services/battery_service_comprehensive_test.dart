@@ -161,10 +161,7 @@ void main() {
       test('should set balanced adaptive config', () async {
         await service.setAdaptiveTracking(AdaptiveTrackingConfig.balanced);
 
-        expect(
-          service.adaptiveTrackingConfig,
-          AdaptiveTrackingConfig.balanced,
-        );
+        expect(service.adaptiveTrackingConfig, AdaptiveTrackingConfig.balanced);
       });
 
       test('should set conservative adaptive config', () async {
@@ -184,10 +181,7 @@ void main() {
         );
 
         await service.setAdaptiveTracking(AdaptiveTrackingConfig.balanced);
-        expect(
-          service.adaptiveTrackingConfig,
-          AdaptiveTrackingConfig.balanced,
-        );
+        expect(service.adaptiveTrackingConfig, AdaptiveTrackingConfig.balanced);
       });
     });
 
@@ -214,20 +208,18 @@ void main() {
 
     group('Benchmarking', () {
       test('should start and stop benchmark with results', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 100,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 100, isCharging: false),
+        );
 
         await service.startBenchmark();
         service.recordBenchmarkLocationUpdate(accuracy: 10);
         service.recordBenchmarkLocationUpdate(accuracy: 15);
         service.recordBenchmarkSync();
 
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 95,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 95, isCharging: false),
+        );
 
         final result = await service.stopBenchmark();
 
@@ -238,16 +230,14 @@ void main() {
       });
 
       test('should handle benchmark without drain', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 80,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 80, isCharging: false),
+        );
 
         await service.startBenchmark();
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 80,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 80, isCharging: false),
+        );
 
         final result = await service.stopBenchmark();
 
@@ -256,18 +246,16 @@ void main() {
       });
 
       test('should handle benchmark while charging', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 50,
-          isCharging: true,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 50, isCharging: true),
+        );
 
         await service.startBenchmark();
         service.recordBenchmarkLocationUpdate();
 
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 55,
-          isCharging: true,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 55, isCharging: true),
+        );
 
         final result = await service.stopBenchmark();
 
@@ -277,10 +265,9 @@ void main() {
       });
 
       test('should handle multiple location updates in benchmark', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 90,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 90, isCharging: false),
+        );
 
         await service.startBenchmark();
         for (int i = 0; i < 10; i++) {
@@ -294,10 +281,9 @@ void main() {
       });
 
       test('should handle multiple sync events in benchmark', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 90,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 90, isCharging: false),
+        );
 
         await service.startBenchmark();
         for (int i = 0; i < 5; i++) {
@@ -364,33 +350,25 @@ void main() {
           events.add(event);
         });
 
-        mockLocus.emitPowerStateChange(PowerStateChangeEvent(
-          previous: const PowerState(
-            batteryLevel: 80,
-            isCharging: false,
+        mockLocus.emitPowerStateChange(
+          PowerStateChangeEvent(
+            previous: const PowerState(batteryLevel: 80, isCharging: false),
+            current: const PowerState(batteryLevel: 70, isCharging: false),
+            changeType: PowerStateChangeType.batteryLevel,
           ),
-          current: const PowerState(
-            batteryLevel: 70,
-            isCharging: false,
-          ),
-          changeType: PowerStateChangeType.batteryLevel,
-        ));
+        );
 
         await Future.delayed(const Duration(milliseconds: 50));
         await subscription.cancel();
 
         // Emit after cancellation
-        mockLocus.emitPowerStateChange(PowerStateChangeEvent(
-          previous: const PowerState(
-            batteryLevel: 70,
-            isCharging: false,
+        mockLocus.emitPowerStateChange(
+          PowerStateChangeEvent(
+            previous: const PowerState(batteryLevel: 70, isCharging: false),
+            current: const PowerState(batteryLevel: 60, isCharging: false),
+            changeType: PowerStateChangeType.batteryLevel,
           ),
-          current: const PowerState(
-            batteryLevel: 60,
-            isCharging: false,
-          ),
-          changeType: PowerStateChangeType.batteryLevel,
-        ));
+        );
 
         await Future.delayed(const Duration(milliseconds: 50));
 
@@ -404,17 +382,13 @@ void main() {
           events.add(event);
         });
 
-        mockLocus.emitPowerStateChange(PowerStateChangeEvent(
-          previous: const PowerState(
-            batteryLevel: 40,
-            isCharging: false,
+        mockLocus.emitPowerStateChange(
+          PowerStateChangeEvent(
+            previous: const PowerState(batteryLevel: 40, isCharging: false),
+            current: const PowerState(batteryLevel: 45, isCharging: true),
+            changeType: PowerStateChangeType.chargingState,
           ),
-          current: const PowerState(
-            batteryLevel: 45,
-            isCharging: true,
-          ),
-          changeType: PowerStateChangeType.chargingState,
-        ));
+        );
 
         await Future.delayed(const Duration(milliseconds: 100));
 
@@ -453,10 +427,9 @@ void main() {
       });
 
       test('should handle benchmark start without location updates', () async {
-        mockLocus.setPowerState(const PowerState(
-          batteryLevel: 75,
-          isCharging: false,
-        ));
+        mockLocus.setPowerState(
+          const PowerState(batteryLevel: 75, isCharging: false),
+        );
 
         await service.startBenchmark();
         final result = await service.stopBenchmark();

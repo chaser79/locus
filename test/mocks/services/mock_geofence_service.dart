@@ -209,10 +209,7 @@ class MockGeofenceService implements GeofenceService {
     void Function(GeofenceEvent) callback, {
     Function? onError,
   }) {
-    return _eventsController.stream.listen(
-      callback,
-      onError: onError,
-    );
+    return _eventsController.stream.listen(callback, onError: onError);
   }
 
   @override
@@ -221,10 +218,7 @@ class MockGeofenceService implements GeofenceService {
     Function? onError,
   }) {
     // Mock implementation - in real implementation would listen to geofence changes
-    return const Stream.empty().listen(
-      callback,
-      onError: onError,
-    );
+    return const Stream.empty().listen(callback, onError: onError);
   }
 
   @override
@@ -232,10 +226,7 @@ class MockGeofenceService implements GeofenceService {
     void Function(GeofenceWorkflowEvent) callback, {
     Function? onError,
   }) {
-    return _workflowEventsController.stream.listen(
-      callback,
-      onError: onError,
-    );
+    return _workflowEventsController.stream.listen(callback, onError: onError);
   }
 
   @override
@@ -294,48 +285,54 @@ class MockGeofenceService implements GeofenceService {
   /// Triggers a geofence entry event.
   void triggerEntry(String identifier, {Location? location}) {
     final geofence = _geofences.cast<Geofence?>().firstWhere(
-          (g) => g?.identifier == identifier,
-          orElse: () => null,
-        );
+      (g) => g?.identifier == identifier,
+      orElse: () => null,
+    );
 
     if (geofence != null && geofence.notifyOnEntry) {
-      _eventsController.add(GeofenceEvent(
-        geofence: geofence,
-        action: GeofenceAction.enter,
-        location: location ?? _createDefaultLocation(geofence),
-      ));
+      _eventsController.add(
+        GeofenceEvent(
+          geofence: geofence,
+          action: GeofenceAction.enter,
+          location: location ?? _createDefaultLocation(geofence),
+        ),
+      );
     }
   }
 
   /// Triggers a geofence exit event.
   void triggerExit(String identifier, {Location? location}) {
     final geofence = _geofences.cast<Geofence?>().firstWhere(
-          (g) => g?.identifier == identifier,
-          orElse: () => null,
-        );
+      (g) => g?.identifier == identifier,
+      orElse: () => null,
+    );
 
     if (geofence != null && geofence.notifyOnExit) {
-      _eventsController.add(GeofenceEvent(
-        geofence: geofence,
-        action: GeofenceAction.exit,
-        location: location ?? _createDefaultLocation(geofence),
-      ));
+      _eventsController.add(
+        GeofenceEvent(
+          geofence: geofence,
+          action: GeofenceAction.exit,
+          location: location ?? _createDefaultLocation(geofence),
+        ),
+      );
     }
   }
 
   /// Triggers a geofence dwell event.
   void triggerDwell(String identifier, {Location? location}) {
     final geofence = _geofences.cast<Geofence?>().firstWhere(
-          (g) => g?.identifier == identifier,
-          orElse: () => null,
-        );
+      (g) => g?.identifier == identifier,
+      orElse: () => null,
+    );
 
     if (geofence != null && geofence.notifyOnDwell) {
-      _eventsController.add(GeofenceEvent(
-        geofence: geofence,
-        action: GeofenceAction.dwell,
-        location: location ?? _createDefaultLocation(geofence),
-      ));
+      _eventsController.add(
+        GeofenceEvent(
+          geofence: geofence,
+          action: GeofenceAction.dwell,
+          location: location ?? _createDefaultLocation(geofence),
+        ),
+      );
     }
   }
 
@@ -346,37 +343,39 @@ class MockGeofenceService implements GeofenceService {
     Location? location,
   }) {
     final polygon = _polygonGeofences.cast<PolygonGeofence?>().firstWhere(
-          (p) => p?.identifier == identifier,
-          orElse: () => null,
-        );
+      (p) => p?.identifier == identifier,
+      orElse: () => null,
+    );
 
     if (polygon != null) {
       // Convert GeofenceAction to PolygonGeofenceEventType
       final eventType = action == GeofenceAction.enter
           ? PolygonGeofenceEventType.enter
           : action == GeofenceAction.exit
-              ? PolygonGeofenceEventType.exit
-              : PolygonGeofenceEventType.dwell;
+          ? PolygonGeofenceEventType.exit
+          : PolygonGeofenceEventType.dwell;
 
       final loc = location ?? _createDefaultLocationForPolygon(polygon);
-      _polygonEventsController.add(PolygonGeofenceEvent(
-        geofence: polygon,
-        type: eventType,
-        timestamp: DateTime.now(),
-        triggerLocation: GeoPoint(
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
+      _polygonEventsController.add(
+        PolygonGeofenceEvent(
+          geofence: polygon,
+          type: eventType,
+          timestamp: DateTime.now(),
+          triggerLocation: GeoPoint(
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+          ),
         ),
-      ));
+      );
     }
   }
 
   /// Checks if a location is within a geofence.
   bool isLocationInGeofence(String identifier, Location location) {
     final geofence = _geofences.cast<Geofence?>().firstWhere(
-          (g) => g?.identifier == identifier,
-          orElse: () => null,
-        );
+      (g) => g?.identifier == identifier,
+      orElse: () => null,
+    );
 
     if (geofence == null) return false;
 
@@ -434,7 +433,8 @@ class MockGeofenceService implements GeofenceService {
     final dLat = _toRadians(lat2 - lat1);
     final dLon = _toRadians(lon2 - lon1);
 
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(_toRadians(lat1)) *
             math.cos(_toRadians(lat2)) *
             math.sin(dLon / 2) *

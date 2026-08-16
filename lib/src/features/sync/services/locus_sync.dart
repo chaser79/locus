@@ -65,7 +65,8 @@ class LocusSync {
   /// / `SwiftLocusPlugin.onListen`), so late subscribers always see the truth.
   static Stream<SyncPauseState> get pauseChanges {
     _pauseChangesController ??= StreamController<SyncPauseState>.broadcast(
-        onListen: _ensurePauseBridge);
+      onListen: _ensurePauseBridge,
+    );
     _ensurePauseBridge();
     return _pauseChangesController!.stream;
   }
@@ -79,12 +80,12 @@ class LocusSync {
     _pauseEventSubscription = LocusStreams.events
         .where((e) => e.type == EventType.syncPauseChange)
         .listen((event) {
-      final state = event.data;
-      if (state is! SyncPauseState) return;
-      _isPaused = state.isPaused;
-      _pauseReason = state.reason;
-      _pauseChangesController?.add(state);
-    });
+          final state = event.data;
+          if (state is! SyncPauseState) return;
+          _isPaused = state.isPaused;
+          _pauseReason = state.reason;
+          _pauseChangesController?.add(state);
+        });
   }
 
   /// Tears down pause-state infrastructure. Called by `Locus.destroy()` via
@@ -238,8 +239,8 @@ class LocusSync {
   }) async {
     final result = await LocusChannels.methods.invokeMethod('enqueue', {
       'payload': payload,
-      if (type != null) 'type': type,
-      if (idempotencyKey != null) 'idempotencyKey': idempotencyKey,
+      'type': ?type,
+      'idempotencyKey': ?idempotencyKey,
     });
     if (result is String && result.isNotEmpty) {
       return result;
@@ -299,13 +300,11 @@ class LocusSync {
       _syncBodyBuilder = builder;
     } on PlatformException catch (e, stack) {
       _log.eventSevere(
-          'set_sync_body_builder_native_failed',
-          {
-            'code': e.code,
-            if (e.message != null) 'message': e.message,
-          },
-          e,
-          stack);
+        'set_sync_body_builder_native_failed',
+        {'code': e.code, if (e.message != null) 'message': e.message},
+        e,
+        stack,
+      );
       // Ensure builder is not set on error
       _syncBodyBuilder = null;
       rethrow;
@@ -348,9 +347,9 @@ class LocusSync {
 
     final result = await LocusChannels.methods
         .invokeMethod('registerHeadlessSyncBodyBuilder', {
-      'dispatcher': dispatcherHandle.toRawHandle(),
-      'callback': callbackHandle.toRawHandle(),
-    });
+          'dispatcher': dispatcherHandle.toRawHandle(),
+          'callback': callbackHandle.toRawHandle(),
+        });
 
     _hasHeadlessBuilder = result == true;
     return _hasHeadlessBuilder;
@@ -374,13 +373,11 @@ class LocusSync {
       );
     }
 
-    await LocusChannels.methods.invokeMethod(
-      'registerHeadlessValidationCallback',
-      {
-        'dispatcher': dispatcherHandle.toRawHandle(),
-        'callback': callbackHandle.toRawHandle(),
-      },
-    );
+    await LocusChannels.methods
+        .invokeMethod('registerHeadlessValidationCallback', {
+          'dispatcher': dispatcherHandle.toRawHandle(),
+          'callback': callbackHandle.toRawHandle(),
+        });
   }
 
   /// Registers a headless-compatible dynamic headers callback.
@@ -401,13 +398,11 @@ class LocusSync {
       );
     }
 
-    await LocusChannels.methods.invokeMethod(
-      'registerHeadlessHeadersCallback',
-      {
-        'dispatcher': dispatcherHandle.toRawHandle(),
-        'callback': callbackHandle.toRawHandle(),
-      },
-    );
+    await LocusChannels.methods
+        .invokeMethod('registerHeadlessHeadersCallback', {
+          'dispatcher': dispatcherHandle.toRawHandle(),
+          'callback': callbackHandle.toRawHandle(),
+        });
   }
 
   /// Returns the native RouteHistory backlog state.
@@ -501,7 +496,8 @@ class LocusSync {
 
       final callback =
           await _resolveTypedCallback<Future<bool> Function(SyncBodyContext)>(
-              call.arguments);
+            call.arguments,
+          );
       if (callback == null) {
         return true;
       }
@@ -511,7 +507,11 @@ class LocusSync {
         return await callback(context);
       } catch (e, stack) {
         _log.eventSevere(
-            'headless_pre_sync_validator_threw', const {}, e, stack);
+          'headless_pre_sync_validator_threw',
+          const {},
+          e,
+          stack,
+        );
         return false;
       }
     });
@@ -528,7 +528,8 @@ class LocusSync {
 
       final callback =
           await _resolveTypedCallback<Future<Map<String, String>> Function()>(
-              call.arguments);
+            call.arguments,
+          );
       if (callback == null) {
         return <String, String>{};
       }

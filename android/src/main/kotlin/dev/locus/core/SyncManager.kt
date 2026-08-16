@@ -40,7 +40,8 @@ class SyncManager(
 
         /**
          * Called when SyncManager needs Dart to build a custom sync body.
-         * Default implementation returns null to use native body builder.
+         * A null response is a retryable builder failure; native body building
+         * is used only when [syncBodyBuilderEnabled] is false.
          */
         fun buildSyncBody(
             locations: List<Map<String, Any>>,

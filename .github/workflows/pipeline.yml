@@ -22,7 +22,7 @@ env:
   # surfaces as "iOS <X.Y> Platform Not Installed" errors. Pinning the
   # macOS runner family (macos-15) is the level of determinism that
   # works without paying for a multi-GB platform download per build.
-  FLUTTER_VERSION: "3.41.9"
+  FLUTTER_VERSION: "3.47.0"
   JAVA_VERSION: "17"
 
 defaults:
@@ -37,7 +37,7 @@ jobs:
     name: Code Quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -63,7 +63,7 @@ jobs:
         run: flutter test --coverage
 
       - name: Upload codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           files: coverage/lcov.info
 
@@ -79,7 +79,7 @@ jobs:
     name: Android Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -91,14 +91,28 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
       - run: flutter pub get
 
+      - name: Android Native Unit Tests
+        working-directory: example/android
+        run: ./gradlew :locus:testDebugUnitTest
+
+      - name: Android Lint
+        working-directory: example/android
+        run: ./gradlew :locus:lintDebug
+
+      - name: Compile Android Instrumentation Tests
+        working-directory: example/android
+        run: ./gradlew :locus:assembleDebugAndroidTest
+
       - name: Build Example APK
         run: cd example && flutter build apk --debug
 
   ios-check:
-    name: iOS Check
+    name: iOS CocoaPods Check
     runs-on: macos-15
+    env:
+      FLUTTER_SWIFT_PACKAGE_MANAGER: "false"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -106,15 +120,75 @@ jobs:
           cache: true
       - run: flutter pub get
 
-      - name: Build Example iOS
+      - name: Verify CocoaPods native test specification
+        run: >-
+          pod ipc spec ios/locus.podspec |
+          ruby -rjson -e
+          'spec = JSON.parse(STDIN.read);
+          abort "missing Tests test spec" unless spec.fetch("testspecs").any? {
+          |item| item["name"] == "Tests" && item["source_files"] == "Tests/**/*.swift" }'
+
+      - name: Test iOS Native Core Against Both Module Names
+        run: |
+          swift test --package-path ios
+          LOCUS_NATIVE_TEST_MODULE=locus swift test --package-path ios --scratch-path ios/.build-lowercase
+
+      - name: Create CocoaPods integration host
+        run: |
+          LOCUS_COCOAPODS_HOST="$RUNNER_TEMP/locus_cocoapods_host"
+          flutter create --platforms=ios --project-name locus_cocoapods_host "$LOCUS_COCOAPODS_HOST"
+          cd "$LOCUS_COCOAPODS_HOST"
+          flutter pub add locus --path "$GITHUB_WORKSPACE"
+          ruby -pi -e "gsub(/# platform :ios, '13\\.0'/, \"platform :ios, '14.0'\")" ios/Podfile
+          ruby -pi -e "gsub('IPHONEOS_DEPLOYMENT_TARGET = 13.0;', 'IPHONEOS_DEPLOYMENT_TARGET = 14.0;')" ios/Runner.xcodeproj/project.pbxproj
+          dart run locus:setup --ios-only
+
+      - name: Build CocoaPods integration host
+        run: cd "$RUNNER_TEMP/locus_cocoapods_host" && flutter build ios --no-codesign --debug
+
+      - name: Verify CocoaPods plugin integration
+        run: |
+          LOCUS_COCOAPODS_HOST="$RUNNER_TEMP/locus_cocoapods_host"
+          grep -q 'locus (from `.symlinks/plugins/locus/ios`)' "$LOCUS_COCOAPODS_HOST/ios/Podfile.lock"
+          grep -q '^framework module locus {$' "$LOCUS_COCOAPODS_HOST/ios/Pods/Target Support Files/locus/locus.modulemap"
+          grep -q 'PRODUCT_MODULE_NAME = locus;' "$LOCUS_COCOAPODS_HOST/ios/Pods/Pods.xcodeproj/project.pbxproj"
+
+      - name: Verify iOS permission-handler definitions
+        run: |
+          LOCUS_COCOAPODS_HOST="$RUNNER_TEMP/locus_cocoapods_host"
+          grep -q 'PERMISSION_LOCATION=1' "$LOCUS_COCOAPODS_HOST/ios/Pods/Pods.xcodeproj/project.pbxproj"
+          grep -q 'PERMISSION_SENSORS=1' "$LOCUS_COCOAPODS_HOST/ios/Pods/Pods.xcodeproj/project.pbxproj"
+
+  ios-swiftpm-check:
+    name: iOS SwiftPM Check
+    runs-on: macos-15
+    env:
+      # Flutter 3.47.0 supports SwiftPM but does not enable it by default.
+      # Keep this explicit so the nested plugin package remains a real CI lane.
+      FLUTTER_SWIFT_PACKAGE_MANAGER: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+
+      - name: Build Example iOS with SwiftPM
         run: cd example && flutter build ios --no-codesign --debug
+
+      - name: Verify SwiftPM plugin package graph
+        run: |
+          test -f example/ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
+          grep -q '.package(name: "locus"' example/ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
 
   # -----------------------------------------------------------------
   # STAGE 2: QUALITY GATE
   # -----------------------------------------------------------------
   quality-gate:
     name: Quality Gate
-    needs: [code-quality, android-check, ios-check]
+    needs: [code-quality, android-check, ios-check, ios-swiftpm-check]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -129,7 +203,11 @@ jobs:
             exit 1
           fi
           if [ "${{ needs.ios-check.result }}" != "success" ]; then
-            echo "::error::iOS check failed"
+            echo "::error::iOS CocoaPods check failed"
+            exit 1
+          fi
+          if [ "${{ needs.ios-swiftpm-check.result }}" != "success" ]; then
+            echo "::error::iOS SwiftPM check failed"
             exit 1
           fi
           echo "All quality checks passed!"
@@ -146,7 +224,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0

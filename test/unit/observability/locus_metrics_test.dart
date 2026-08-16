@@ -63,17 +63,19 @@ void main() {
       expect(snap.lastFailureAt, isNull);
     });
 
-    test('recordSyncFailure advances total + failed and stamps lastFailureAt',
-        () async {
-      final reg = LocusReliabilityRegistry.instance;
-      final at = DateTime.utc(2026, 4, 27, 11, 0, 0);
-      reg.recordSyncFailure(httpStatus: 500, at: at);
-      final snap = await reg.metrics.snapshot();
-      expect(snap.syncAttemptsTotal, 1);
-      expect(snap.syncAttemptsFailed, 1);
-      expect(snap.lastSuccessAt, isNull);
-      expect(snap.lastFailureAt, at);
-    });
+    test(
+      'recordSyncFailure advances total + failed and stamps lastFailureAt',
+      () async {
+        final reg = LocusReliabilityRegistry.instance;
+        final at = DateTime.utc(2026, 4, 27, 11, 0, 0);
+        reg.recordSyncFailure(httpStatus: 500, at: at);
+        final snap = await reg.metrics.snapshot();
+        expect(snap.syncAttemptsTotal, 1);
+        expect(snap.syncAttemptsFailed, 1);
+        expect(snap.lastSuccessAt, isNull);
+        expect(snap.lastFailureAt, at);
+      },
+    );
 
     test('recordDropped accumulates pointsDropped', () async {
       final reg = LocusReliabilityRegistry.instance;
@@ -99,11 +101,13 @@ void main() {
       final events = <LocusReliabilityEvent>[];
       final sub = reg.reliability.listen(events.add);
       reg.emit(PointsEvicted(count: 5, reason: EvictionReason.countLimit));
-      reg.emit(SyncStalled(
-        sinceLastSuccess: const Duration(minutes: 2),
-        consecutiveFailures: 3,
-        lastHttpStatus: 503,
-      ));
+      reg.emit(
+        SyncStalled(
+          sinceLastSuccess: const Duration(minutes: 2),
+          consecutiveFailures: 3,
+          lastHttpStatus: 503,
+        ),
+      );
       // Allow microtask drain for broadcast stream.
       await Future<void>.delayed(Duration.zero);
       await sub.cancel();
@@ -146,10 +150,7 @@ void main() {
 
     test('QuarantinePurged asserts a positive count', () {
       expect(
-        () => QuarantinePurged(
-          count: 0,
-          olderThan: const Duration(days: 7),
-        ),
+        () => QuarantinePurged(count: 0, olderThan: const Duration(days: 7)),
         throwsA(isA<AssertionError>()),
       );
     });
@@ -160,10 +161,13 @@ void main() {
       final after = DateTime.now().toUtc();
       expect(event.occurredAt.isUtc, isTrue);
       expect(
-          event.occurredAt.isAfter(before.subtract(const Duration(seconds: 1))),
-          isTrue);
-      expect(event.occurredAt.isBefore(after.add(const Duration(seconds: 1))),
-          isTrue);
+        event.occurredAt.isAfter(before.subtract(const Duration(seconds: 1))),
+        isTrue,
+      );
+      expect(
+        event.occurredAt.isBefore(after.add(const Duration(seconds: 1))),
+        isTrue,
+      );
     });
   });
 }
