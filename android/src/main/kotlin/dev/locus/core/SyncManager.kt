@@ -1251,6 +1251,10 @@ class SyncManager(
 
     fun buildPayloadFromRecord(record: Map<String, Any>?): Map<String, Any> {
         if (record == null) return emptyMap()
+
+        if(record["coords"] is Map<*, *>) {
+            return record
+        }
         
         val id = record["id"]
         val timestampValue = record["timestamp"]
@@ -1262,6 +1266,7 @@ class SyncManager(
         val altitude = record["altitude"]
         
         if (latitude == null || longitude == null || accuracy == null || timestampValue == null) {
+            Log.w(TAG, "buildPayloadFromRecord: dropping record without coordinates/timestamp (keys=${record.keys})")
             return emptyMap()
         }
         
